@@ -6,7 +6,7 @@ exports.EIP712DOMAIN = [
   { name: 'verifyingContract', type: 'address' },
 ]
 
-exports.AUCTION = [
+exports.Auction = [
   { name: 'auctioneer', type:'address' },
   { name: 'nft', type:'address' },
   { name: 'nftId', type:'uint256' },
@@ -17,7 +17,7 @@ exports.AUCTION = [
   { name: 'bidSigs', type:'bytes[]' },
 ]
 
-exports.BID = [
+exports.Bid = [
   { name: 'bidder', type:'address' },
   { name: 'amount', type:'uint256' },
   { name: 'nonce', type:'uint256' },

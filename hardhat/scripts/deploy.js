@@ -32,11 +32,11 @@ async function deployTipChain() {
 }
 
 async function deployEnglishAuction() {
-  const ExampleNFT = await hre.ethers.getContractFactory('ExampleNFT')
-  const exampleNFT = await ExampleNFT.deploy()
+  const ExampleNft = await hre.ethers.getContractFactory('ExampleNFT')
+  const exampleNft = await ExampleNft.deploy()
 
   const ExampleToken = await hre.ethers.getContractFactory('ExampleToken')
-  const exampleToken = await ExampleToken.deploy(hre.ethers.utils.parseEther('1000000'))
+  const exampleToken = await ExampleToken.deploy(hre.ethers.utils.parseEther('1000000000'))
 
   const EnglishAuction = await hre.ethers.getContractFactory("EnglishAuction");
   const englishAuction  = await EnglishAuction.deploy()
@@ -45,7 +45,7 @@ async function deployEnglishAuction() {
     ` EnglishAuction deployed to ${englishAuction.address}`
   );
 
-  return { 'englishAuctionAddr':englishAuction.address, 'exampleTokenAddr':exampleToken.address, 'exampleNFTAddr': exampleNFT.address }
+  return { 'englishAuctionAddr':englishAuction.address, 'exampleTokenAddr':exampleToken.address, 'exampleNftAddr': exampleNft.address }
 }
 
 // We recommend this pattern to be able to use async/await everywhere

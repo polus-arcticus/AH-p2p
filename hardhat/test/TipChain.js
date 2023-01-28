@@ -52,6 +52,7 @@ describe("Tipchain", async () => {
     const addressBalances = await tipChain.getDepositsByToken(exampleTokenAddr)
     expect(senderAddress).to.equal(thousandExample)
   })
+
   it("a user cannot deposit into an nft they do not own", async () => {
     const thousandExample = hre.ethers.utils.parseEther('1000')
     try {

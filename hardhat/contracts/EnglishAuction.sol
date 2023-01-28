@@ -3,16 +3,10 @@ import 'hardhat/console.sol';
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+
 contract EnglishAuction {
-  bytes32 DOMAIN_SEPARATOR = keccak256(
-    abi.encode(
-      keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
-      keccak256(bytes("english-auction")),
-      keccak256(bytes("1")),
-      1,
-      address(this)
-  )
-  );
+  uint256 chainId;
+  bytes32 DOMAIN_SEPARATOR;
   bytes32 AUCTION_TYPE_HASH = keccak256("Auction(address auctioneer,address nft,uint256 nftId,address token,uint256 bidStart,uint256 deadline,Bid[] bids,bytes[] bidSigs)Bid(address bidder,uint256 amount,uint256 nonce)");
   bytes32 BID_TYPE_HASH = keccak256("Bid(address bidder,uint256 amount,uint256 nonce)");
 
@@ -36,10 +30,23 @@ contract EnglishAuction {
   mapping (address => uint256) usedNonces;
 
   constructor() {
-
+    uint256 ch;
+    assembly {
+      ch := chainid()
+    }
+    DOMAIN_SEPARATOR = keccak256(
+      abi.encode(
+        keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"),
+        keccak256(bytes("EnglishAuction")),
+        keccak256(bytes("1")),
+        ch,
+        address(this)
+    )
+    );
+    chainId = ch;
   }
 
-  function claimAuction(
+  function consumeAuction(
     uint8 v,
     bytes32 r,
     bytes32 s,
@@ -66,6 +73,7 @@ contract EnglishAuction {
     //console.log(msg.sender, 'message.sender');
     require(ecrecover(hash, v, r, s) == msg.sender, "bids are self signed, auction is not");
 
+    Bid memory highestBidder = Bid(address(0), 0, 0);
     for (uint i=0;i < auction.bids.length; i++) {
       bytes32 hashStruct = keccak256(
         abi.encode(
@@ -83,13 +91,17 @@ contract EnglishAuction {
 
       console.log(signer, 'bids loop');
       if (signer == auction.bids[i].bidder) {
-        if (usedNonces[auction.bids[i].bidder] <= auction.bids[i].nonce) {
-          IERC1155(auction.nft).safeTransferFrom(address(this), auction.bids[i].bidder, auction.nftId, 1, abi.encode('data'));
-          IERC20(auction.token).transferFrom(auction.bids[i].sender, auction.auctioneer, auction.bids[i].amount)
+        if (auction.bids[i].amount > highestBidder.amount) {
+          highestBidder = auction.bids[i];
         }
       } else {
         console.log('signature no in, handle faulty situation');
       }
+    }
+
+    if (usedNonces[highestBidder.bidder] <= highestBidder.nonce) {
+      IERC1155(auction.nft).safeTransferFrom(auction.auctioneer, highestBidder.bidder, auction.nftId, 1, abi.encode('data'));
+      IERC20(auction.token).transferFrom(highestBidder.bidder, auction.auctioneer, highestBidder.amount);
     }
   }
   function hashBidSigs(bytes[] memory bidSigs) internal returns (bytes32) {
