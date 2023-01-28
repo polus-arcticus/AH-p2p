@@ -1,27 +1,21 @@
-import hre, { ethers } from "hardhat";
-import { SigningKey } from './utils/SigningKey'
-import { BigNumber, Signer } from "ethers";
-import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-import { signTypedData } from './utils/utils'
+//import hre, { ethers } from "hardhat";
+const hre = require('hardhat')
+//import { SigningKey } from './utils/SigningKey'
+//import { BigNumber, Signer } from "ethers";
+const SignerWithAddress = require('@nomiclabs/hardhat-ethers/signers')
+//import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
+//import { signTypedData } from './utils/utils'
 const { expect,assert } = require('chai')
-import {
+const {
   encrypt,
   recoverPersonalSignature,
   recoverTypedSignature,
   TypedMessage,
   MessageTypes,
   SignTypedDataVersion
-} from '@metamask/eth-sig-util';
-const burnAddress ='0x000000000000000000000000000000000000dEaD'
+} = require('@metamask/eth-sig-util');
 
-const {
-  getSelectors,
-  FacetCutAction,
-  removeSelectors,
-  findAddressPositionInFacets
-} = require('../scripts/libraries/diamond.js')
-
-const { deployDiamond } = require('../scripts/deploy.js')
+const { deployTipchain } = require('../scripts/deploy.js')
 
 function* idMaker() {
   var index = 0;
@@ -31,36 +25,37 @@ function* idMaker() {
 
 
 
-describe("ReceiverPaysFacet", async () => {
+describe("Tipchain", async () => {
   let genId = idMaker()
   let accounts 
   let diamondAddress 
   before(async () => {
-    accounts = await ethers.getSigners();
-    ;({diamond: diamondAddress, caw:cawAddress} = await deployDiamond())
+    accounts = await hre.ethers.getSigners();
+
+    ;({tipChainAddr, exampleTokenAddr} = await deployTipchain())
     
-    exampleToken = await ethers.getContractAt('StandardERC20', cawAddress)
-    permitChain = await ethers.getContractAt('PermitChain', diamondAddress, accounts[0])
-    const trillionExample = ethers.utils.parseEther('1000000000000')
-    const billionExample = ethers.utils.parseEther('1000000000')
+    exampleToken = await hre.ethers.getContractAt('ExampleToken', tipChainAddr)
+    tipChain = await hre.ethers.getContractAt('Tipchain', tipChainAddr, accounts[0])
+    const trillionExample = hre.ethers.utils.parseEther('1000000000000')
+    const billionExample = hre.ethers.utils.parseEther('1000000000')
     await Promise.all(
       accounts.map(async (account, i) => {
         await exampleToken.transfer(account.address,  trillionExample)
-        await exampleToken.connect(account).approve(diamondAddress, billionExample)
+        await exampleToken.connect(account).approve(tipChainAddr, billionExample)
       })
     )
   })
 
   it("allows a user to deposit a token into the tipping pool", async () => {
-    const thousandExample = ethers.utils.parseEther('1000')
-    await permitChain.connect(accounts[1]).deposit(exampleAddress, thousandExample )
-    const addressBalances = await permitChain.getDepositsByToken(exampleAddress)
+    const thousandExample = hre.ethers.utils.parseEther('1000')
+    await tipChain.connect(accounts[1]).deposit(exampleTokenAddr, thousandExample )
+    const addressBalances = await tipChain.getDepositsByToken(exampleTokenAddr)
     expect(senderAddress).to.equal(thousandExample)
   })
   it("a user cannot deposit into an nft they do not own", async () => {
-    const thousandExample = ethers.utils.parseEther('1000')
+    const thousandExample = hre.ethers.utils.parseEther('1000')
     try {
-      await permitChain.connect(accounts[2]).depositCaw(accounts[2], thousandExample)
+      await tipChain.connect(accounts[2]).deposit(exampleTokenAddr, thousandExample)
       assert.fail('failed to prevent deposit ')
     } catch (e) {
       assert.include(e.message, 'ReceiverPaysFacet::must own nft')
@@ -69,32 +64,31 @@ describe("ReceiverPaysFacet", async () => {
 
 
   it("two users chain tips to same message for user", async () => {
-    const thousandExample = ethers.utils.parseEther('1000')
-    const hundredExample = ethers.utils.parseEther('100')
+    const thousandExample = hre.ethers.utils.parseEther('1000')
+    const hundredExample = hre.ethers.utils.parseEther('100')
 
     //const acc5NftId = await usernameFacet.getNftIdByUsername('account5')
-    //await permitChain.connect(accounts[5]).depositCaw(acc5NftId, thousandExample)
-    //const acc5Deposits1 = await permitChain.getCawDepositsByNftId(acc5NftId)
+    //await tipChain.connect(accounts[5]).depositCaw(acc5NftId, thousandExample)
+    //const acc5Deposits1 = await tipChain.getCawDepositsByNftId(acc5NftId)
 
     //const acc4NftId = await usernameFacet.getNftIdByUsername('account4')
-    //await permitChain.connect(accounts[4]).depositCaw(acc4NftId, thousandExample)
-    //const acc4Deposits1 = await permitChain.getCawDepositsByNftId(acc4NftId)
+    //await tipChain.connect(accounts[4]).depositCaw(acc4NftId, thousandExample)
+    //const acc4Deposits1 = await tipChain.getCawDepositsByNftId(acc4NftId)
 
-    await permitChain.connect(accounts[3]).deposit(tokenAddress, thousandExample)
-    const acc3Deposits1 = await permitChain.getDeposits(tokenAddress)
+    await tipChain.connect(accounts[3]).deposit(exampleTokenAddr, thousandExample)
+    const acc3Deposits1 = await tipChain.getDeposits(tokenAddress)
 
-    await permitChain.connect(accounts[2]).depositCaw(accounts[2], thousandExample)
-    const acc2Deposits1 = await permitChain.getDeposits(tokenAddress)
+    await tipChain.connect(accounts[2]).deposit(exampleTokenAddr, thousandExample)
+    const acc2Deposits1 = await tipChain.getDeposits(tokenAddress)
 
-    const claimerNftId = await usernameFacet.getNftIdByUsername('account1')
-    const claimerDeposits1 = await permitChain.getDeposits(accounts[1])
+    const claimerDeposits1 = await tipChain.getDeposits(accounts[1])
 
-    const chainId = (await ethers.provider.getNetwork()).chainId
+    const chainId = (await hre.ethers.provider.getNetwork()).chainId
     const networkId = 1 // hardhat doesn't seem to want to observe networkId
 
     const domain =  {
       chainId: chainId,
-      name: 'Cawdrivium',
+      name: 'Tipchain',
       verifyingContract: diamondAddress,
       version: '1'
     }
@@ -221,31 +215,31 @@ describe("ReceiverPaysFacet", async () => {
     console.log('recoveraddr', recoverAddr)
     console.log('acc2: ', accounts[2].address)
     expect(recoverAddr).to.equal(accounts[1].address.toLowerCase())
-    await permitChain.connect(accounts[1]).claimTipChain(
+    await tipChain.connect(accounts[1]).claimTipChain(
       v,
       r,
       s,
       message
     )
 
-    const acc3Deposits2 = await permitChain.getDeposits(tokenAddress)
-    const acc2Deposits2 = await permitChain.getDeposits(tokenAddress)
-    const claimerDeposits2 = await permitChain.getCawDepositsByNftId(claimerNftId)
+    const acc3Deposits2 = await tipChain.getDeposits(exampleTokenAddr)
+    const acc2Deposits2 = await tipChain.getDeposits(exampleTokenAddr)
+    const claimerDeposits2 = await tipChain.getCawDepositsByNftId(claimerNftId)
     //console.log(ethers.utils.formatEther(senderDeposits2))
     expect(claimerDeposits1.add(hundredExample).add(hundredExample)).to.equal(claimerDeposits2)
     expect(acc2Deposits1.sub(hundredExample)).to.equal(acc2Deposits2)
     expect(acc3Deposits1.sub(hundredExample)).to.equal(acc3Deposits2)
   
     // Running again does not increase payout, blocked by Nonces
-    await permitChain.connect(accounts[1]).claimTipChain(
+    await tipChain.connect(accounts[1]).claimTipChain(
       v,
       r,
       s,
       message
     )
-    const acc3Deposits3 = await permitChain.getCawDepositsByNftId(acc3NftId)
-    const acc2Deposits3 = await permitChain.getCawDepositsByNftId(acc2NftId)
-    const claimerDeposits3 = await permitChain.getCawDepositsByNftId(claimerNftId)
+    const acc3Deposits3 = await tipChain.getCawDepositsByNftId(acc3NftId)
+    const acc2Deposits3 = await tipChain.getCawDepositsByNftId(acc2NftId)
+    const claimerDeposits3 = await tipChain.getCawDepositsByNftId(claimerNftId)
     expect(claimerDeposits2).to.equal(claimerDeposits3)
     expect(acc2Deposits2).to.equal(acc2Deposits3)
     expect(acc3Deposits2).to.equal(acc3Deposits3)
@@ -345,7 +339,7 @@ describe("ReceiverPaysFacet", async () => {
     const s = '0x' + signatureSans0x.substring(64,128);
     const v = parseInt(signatureSans0x.substring(128,130), 16)
 
-    await permitChain.connect(accounts[1]).claimThings(
+    await tipChain.connect(accounts[1]).claimThings(
       v,
       r,
       s,

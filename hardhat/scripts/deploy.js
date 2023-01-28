@@ -6,26 +6,58 @@
 // global scope, and execute the script.
 const hre = require("hardhat");
 
-async function main() {
+async function deployTipChain() {
   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
   const unlockTime = currentTimestampInSeconds + ONE_YEAR_IN_SECS;
 
-  const lockedAmount = hre.ethers.utils.parseEther("1");
+  const ExampleNFT = await hre.ethers.getContractFactory('ExampleNFT')
+  const exampleNFT = await ExampleNFT.deploy()
 
-  const Lock = await hre.ethers.getContractFactory("Lock");
-  const lock = await Lock.deploy(unlockTime, { value: lockedAmount });
+  const ExampleToken = await hre.ethers.getContractFactory('ExampleToken')
+  const exampleToken = await ExampleToken.deploy(hre.ethers.utils.parseEther('1000000'))
+  const TipChain = await hre.ethers.getContractFactory("TipChain");
+  const tipChain  = await TipChain.deploy()
 
-  await lock.deployed();
+  await tipChain.deployed()
+  await exampleNFT.deployed()
+  await exampleToken.deployed()
 
   console.log(
-    `Lock with 1 ETH and unlock timestamp ${unlockTime} deployed to ${lock.address}`
+    ' PermitChain Contract Deployed',
+    ` PermitChain deployed to ${tipChain.address}`
   );
+
+  return { 'tipChainAddr':tipChain.address, 'exampleTokenAddr':exampleToken.address, 'exampleNFTAddr': exampleNFT.address }
+}
+
+async function deployEnglishAuction() {
+  const ExampleNFT = await hre.ethers.getContractFactory('ExampleNFT')
+  const exampleNFT = await ExampleNFT.deploy()
+
+  const ExampleToken = await hre.ethers.getContractFactory('ExampleToken')
+  const exampleToken = await ExampleToken.deploy(hre.ethers.utils.parseEther('1000000'))
+
+  const EnglishAuction = await hre.ethers.getContractFactory("EnglishAuction");
+  const englishAuction  = await EnglishAuction.deploy()
+  console.log(
+    'English Auction Deploy',
+    ` EnglishAuction deployed to ${englishAuction.address}`
+  );
+
+  return { 'englishAuctionAddr':englishAuction.address, 'exampleTokenAddr':exampleToken.address, 'exampleNFTAddr': exampleNFT.address }
 }
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-main().catch((error) => {
+async function deploy() {
+  await deployTipChain()
+  await deployEnglishAuction()
+}
+deploy().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+exports.deployTipChain = deployTipChain
+exports.deployEnglishAuction = deployEnglishAuction
