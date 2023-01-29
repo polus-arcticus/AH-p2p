@@ -1,3 +1,4 @@
+import {useState,useEffect} from 'react'
 import {
   Container,
   Box,
@@ -25,8 +26,14 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@chakra-ui/icons';
+
 import { Link as RouterLink} from 'react-router-dom'
+import { ConnectWallet } from './ConnectWallet'
 export default function WithSubnavigation() {
+  const [showWalletModal, setShowWalletModal] = useState(false)
+  const handleClose = () => {
+    setShowWalletModal(false)
+  }
   const { isOpen, onToggle } = useDisclosure();
   const { colorMode, toggleColorMode  } = useColorMode();
 
@@ -79,8 +86,9 @@ export default function WithSubnavigation() {
               fontSize={'sm'}
               fontWeight={400}
               variant={'link'}
-              href={'#'}>
-              Sign In
+              onClick={() => {}}
+            >
+              Select Network
             </Button>
             <Button
               display={{ base: 'none', md: 'inline-flex' }}
@@ -88,11 +96,11 @@ export default function WithSubnavigation() {
               fontWeight={600}
               color={'white'}
               bg={'pink.400'}
-              href={'#'}
+              onClick={() => { setShowWalletModal(!showWalletModal) }}
               _hover={{
                 bg: 'pink.300',
               }}>
-              Sign Up
+              Connect Wallet
             </Button>
             <Button onClick={toggleColorMode}>
               {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
@@ -104,6 +112,7 @@ export default function WithSubnavigation() {
           <MobileNav />
         </Collapse>
       </Box>
+      <ConnectWallet show={showWalletModal} handleClose={handleClose} />
     </Container>
   );
 }
