@@ -31,10 +31,22 @@ import {
 import { Link as RouterLink} from 'react-router-dom'
 import { ConnectWallet } from './ConnectWallet'
 
+const chainIdToName = (id) => {
+  switch (id) {
+    case 1:
+      return 'mainnet'
+      break
+    case 1337:
+      return 'localhost'
+      break
+    default:
+      return 'Select Network'
+  }
+}
+
 export const NavBar = () => {
-  const web3React = useWeb3React()
-  console.log(web3React)
-  const { accounts } = useWeb3React()
+  const {networkName, setNetworkName} = useState('')
+  const { accounts, chainId } = useWeb3React()
   const [showWalletModal, setShowWalletModal] = useState(false)
   const handleClose = () => {
     setShowWalletModal(false)
@@ -73,7 +85,7 @@ export const NavBar = () => {
               textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
               fontFamily={'heading'}
               color={useColorModeValue('gray.800', 'white')}>
-              <a href="/">Auction House</a>
+              <RouterLink to="">Auction House</RouterLink>
             </Text>
 
             <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
@@ -93,7 +105,7 @@ export const NavBar = () => {
               variant={'link'}
               onClick={() => {}}
             >
-              Select Network
+              {chainIdToName(chainId)}
             </Button>
             <Button
               display={{ base: 'none', md: 'inline-flex' }}
@@ -133,9 +145,9 @@ const DesktopNav = () => {
         <Box key={navItem.label}>
           <Popover trigger={'hover'} placement={'bottom-start'}>
             <PopoverTrigger>
-              <Link
+              <RouterLink
                 p={2}
-                href={navItem.href ?? '#'}
+                to={navItem.href ?? '#'}
                 fontSize={'sm'}
                 fontWeight={500}
                 color={linkColor}
@@ -144,7 +156,7 @@ const DesktopNav = () => {
                   color: linkHoverColor,
                 }}>
                 {navItem.label}
-              </Link>
+              </RouterLink>
             </PopoverTrigger>
 
             {navItem.children && (
@@ -171,8 +183,8 @@ const DesktopNav = () => {
 
 const DesktopSubNav = ({ label, href, subLabel }) => {
   return (
-    <Link
-      href={href}
+    <RouterLink
+      to={href}
       role={'group'}
       display={'block'}
       p={2}
@@ -199,7 +211,7 @@ const DesktopSubNav = ({ label, href, subLabel }) => {
           <Icon color={'pink.400'} w={5} h={5} as={ChevronRightIcon} />
         </Flex>
       </Stack>
-    </Link>
+    </RouterLink>
   );
 };
 
@@ -256,9 +268,9 @@ const MobileNavItem = ({ label, children, href }) => {
           align={'start'}>
           {children &&
               children.map((child) => (
-                <Link key={child.label} py={2} href={child.href}>
+                <RouterLink key={child.label} py={2} to={child.href}>
                   {child.label}
-                </Link>
+                </RouterLink>
               ))}
         </Stack>
       </Collapse>

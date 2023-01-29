@@ -47,7 +47,7 @@ const SocialButton = ({
   );
 };
 
-export default function LargeWithAppLinksAndSocial() {
+export const Footer = () => {
   return (
     <Container maxW={"6xl"}>
     <Box

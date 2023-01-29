@@ -2,8 +2,12 @@
 import {
   createBrowserRouter,
   RouterProvider,
-
+  BrowserRouter,
+  Routes,
+  Route,
 } from "react-router-dom";
+import { NavBar } from '@/components/NavBar'
+import { Footer } from '@/components/Footer'
 import { Home } from '@/views/Home/Home'
 import { Docs } from '@/views/Docs/Docs'
 import { Auction } from '@/views/Auction/Auction'
@@ -41,5 +45,19 @@ const router = createBrowserRouter([
 ]);
 
 export const Router = () => {
-  return <RouterProvider router={router} />
+  return (
+  <BrowserRouter>
+    <NavBar />
+    <Routes>
+      <Route path="/" element={<Home />}/>
+      <Route path="/auctions" element={<Auction />}>
+        <Route path="create" element={<Create />}/>
+        <Route path="active" element={<Active />}/>
+      </Route>
+      <Route path="docs" element={<Docs />}>
+      </Route>
+    </Routes>
+    <Footer />
+  </BrowserRouter>
+  )
 }

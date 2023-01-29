@@ -1,5 +1,5 @@
 import {useState,useEffect} from 'react'
-
+import {useWeb3React} from '@web3-react/core'
 import {
   Modal,
   ModalOverlay,
@@ -14,11 +14,16 @@ import {
 
 export const ConnectWallet = ({show, handleClose}) => {
   const { isOpen, onOpen, onClose } = useDisclosure()
+  const {connector} = useWeb3React()
   useEffect(() => {
     if (show) {
       onOpen()
     }
   }, [show])
+  const handleConnectMetamask = async () => {
+    await connector.activate()
+    onClose()
+  }
 
   return (
     <>
@@ -31,6 +36,8 @@ export const ConnectWallet = ({show, handleClose}) => {
           <ModalHeader>Connect With</ModalHeader>
           <ModalCloseButton />
           <ModalBody>
+            <Button width="100%" variant="outline"
+              onClick={handleConnectMetamask}>Metamask</Button>
           </ModalBody>
           <ModalFooter>
             <Button onClick={onClose}>Close</Button>
