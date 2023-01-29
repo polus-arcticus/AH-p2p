@@ -96,12 +96,16 @@ contract EnglishAuction {
         }
       } else {
         console.log('signature no in, handle faulty situation');
+        console.log('signature-bids mismatch');
       }
     }
 
     if (usedNonces[highestBidder.bidder] <= highestBidder.nonce) {
       IERC1155(auction.nft).safeTransferFrom(auction.auctioneer, highestBidder.bidder, auction.nftId, 1, abi.encode('data'));
       IERC20(auction.token).transferFrom(highestBidder.bidder, auction.auctioneer, highestBidder.amount);
+      usedNonces[highestBidder.bidder] += 1;
+    } else {
+      console.log('warning, nonce not unique');
     }
   }
   function hashBidSigs(bytes[] memory bidSigs) internal returns (bytes32) {
