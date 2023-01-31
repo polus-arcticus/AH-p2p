@@ -1,96 +1,79 @@
-mport { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useWeb3React } from '@web3-react/core'
 import { getExampleToken, getExampleNft } from './utils'
-import Static from 'config/Static.json'
+import {ethers} from 'ethers'
+import Static from '@/assets/Static.json'
 
-export const useGetTokenBalance = (address) => {
+export const useGetTokenBalance = () => {
 	const [balance, setBalance] = useState("")
-	const { account, provider } = useWeb3React()
+  const { account, provider } = useWeb3React()
 
-	const fetchBalance = useCallback(async () => {
+	const fetchBalance = useCallback(async (address) => {
 		console.log('fetching balance')
 		const erc20 = getExampleToken(provider, address)
 		try {
-			setBalance(await erc20.methods.balanceOf(account).call({from:account}))
-
-		} catch (e) {
+      const response = await erc20.balanceOf(account)
+      setBalance(ethers.utils.parseEther(response))
+    }
+    catch (e) {
 			console.log(e)
 			setBalance('0')
 		}
-	}, [account, address, provider])
-
-	useEffect(() => {
-		if (account && provider) {
-			fetchBalance()
-		}
-	}, [account, provider, fetchBalance])
+	}, [account])
 
 	return {balance, fetchBalance}
 }
 
-export const useGetAllowance = (address:string) => {
+
+export const useTokenAllowance = () => {
 	const [allowance, setAllowance] = useState("")
 	const { account, provider } = useWeb3React()
 
-	const fetchAllowance = useCallback(async () => {
+	const fetchAllowance = useCallback(async (address) => {
 		const erc20 = getExampleToken(provider, address)
-		const allow = await erc20.methods.allowance(account, Static.addresses.diamond).call({from:account})
+		const allow = await erc20.allowance(account, address)
 		setAllowance(allow)
 		console.log('fetch allowance')
-	}, [account, address, provider])
+	}, [])
 
-	useEffect(() => {
-		if (account) {
-			fetchAllowance()
-		}
-	}, [fetchAllowance, account])
-
-	return allowance
-}
-
-
-export const useSetAllowance = (address: string, amount:number) => {
-	const {account, provider } = useWeb3React()
-
-	const handleApprove = useCallback(async () => {
-		console.log('handleApprove')
+  const createAllowance = useCallback(async (address, amount) => {
 		const contract = getExampleToken(provider, address)
 		try {
-			const approve = await contract.methods.approve(
+			const approve = await contract.approve(
 				Static.addresses.diamond,
-				provider.utils.toWei(String(amount), 'ether')
-			).send({ from: account })
+				ethers.utils.parseUnits(String(amount), 'ether')
+			)
 			return approve.status
 		} catch (e) {
 			console.log(e)
 			return false
 		}
-	}, [account, provider, amount, address])
 
-	return { onApprove: handleApprove }
+  })
+
+	return {allowance, fetchAllowance, createAllowance}
 }
 
-
-export const useNft = (address) => {
+export const useNft = () => {
 	const {account, provider } = useWeb3React()
   // {id:number, amount:number}
   const [balances, setBalances] = useState({})
   const [allowance, setAllowance] = useState(null)
 
-  const fetchBalance = useCallback((id) => {
-		const contract = getExampleNft(provider, address)
+  const fetchBalance = useCallback(async (addressNft, id) => {
+		const contract = getExampleNft(provider, addressNft)
     try {
       const response = await contract.balanceOf(account, id)
-      const existing = balances.find((balance) => balance.id == id)
-      balances[id] = response
+      console.log(ethers.utils)
+      balances[id] = ethers.utils.formatUnits(response, 0)
       setBalances(balances)
     } catch (e) {
 			console.log(e)
 			return false
     }
-  },[])
+  },[account, provider])
 
-  const fetchAllowance = useCallback((auctioneer) => {
+  const fetchAllowance = useCallback(async (auctioneer) => {
 		const contract = getExampleNft(provider, address)
     try {
       const response = await contract.isApprovedForAll(auctioneer, contract.address)
@@ -100,7 +83,7 @@ export const useNft = (address) => {
       return false
     }
   }, [])
-  const setAllowance = useCallback((auctioneer) => {
+  const createAllowance = useCallback(async (auctioneer, address) => {
 		const contract = getExampleNft(provider, address)
     try {
       const response = await contract.setApprovalForAll(contract.address, auctioneer)
@@ -112,7 +95,7 @@ export const useNft = (address) => {
   }, [])
 
 
-  const createSafeTransferFrom = useCallback((auctioneer, bidder, id, amount, data) => {
+  const createSafeTransferFrom = useCallback(async (auctioneer, bidder, id, amount, data) => {
 		const contract = getExampleNft(provider, address)
 
     try {
@@ -125,7 +108,7 @@ export const useNft = (address) => {
 
   return { 
     fetchAllowance,
-    setAllowance,
+    createAllowance,
     allowance,
     fetchBalance,
     balances,

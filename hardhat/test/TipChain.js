@@ -68,13 +68,13 @@ describe("Tipchain", async () => {
     const thousandExample = hre.ethers.utils.parseEther('1000')
     const hundredExample = hre.ethers.utils.parseEther('100')
 
-    //const acc5NftId = await usernameFacet.getNftIdByUsername('account5')
-    //await tipChain.connect(accounts[5]).depositCaw(acc5NftId, thousandExample)
-    //const acc5Deposits1 = await tipChain.getCawDepositsByNftId(acc5NftId)
+    //const acc5NFTId = await usernameFacet.getNFTIdByUsername('account5')
+    //await tipChain.connect(accounts[5]).depositCaw(acc5NFTId, thousandExample)
+    //const acc5Deposits1 = await tipChain.getCawDepositsByNFTId(acc5NFTId)
 
-    //const acc4NftId = await usernameFacet.getNftIdByUsername('account4')
-    //await tipChain.connect(accounts[4]).depositCaw(acc4NftId, thousandExample)
-    //const acc4Deposits1 = await tipChain.getCawDepositsByNftId(acc4NftId)
+    //const acc4NFTId = await usernameFacet.getNFTIdByUsername('account4')
+    //await tipChain.connect(accounts[4]).depositCaw(acc4NFTId, thousandExample)
+    //const acc4Deposits1 = await tipChain.getCawDepositsByNFTId(acc4NFTId)
 
     await tipChain.connect(accounts[3]).deposit(exampleTokenAddr, thousandExample)
     const acc3Deposits1 = await tipChain.getDeposits(tokenAddress)
@@ -225,7 +225,7 @@ describe("Tipchain", async () => {
 
     const acc3Deposits2 = await tipChain.getDeposits(exampleTokenAddr)
     const acc2Deposits2 = await tipChain.getDeposits(exampleTokenAddr)
-    const claimerDeposits2 = await tipChain.getCawDepositsByNftId(claimerNftId)
+    const claimerDeposits2 = await tipChain.getCawDepositsByNFTId(claimerNFTId)
     //console.log(ethers.utils.formatEther(senderDeposits2))
     expect(claimerDeposits1.add(hundredExample).add(hundredExample)).to.equal(claimerDeposits2)
     expect(acc2Deposits1.sub(hundredExample)).to.equal(acc2Deposits2)
@@ -238,9 +238,9 @@ describe("Tipchain", async () => {
       s,
       message
     )
-    const acc3Deposits3 = await tipChain.getCawDepositsByNftId(acc3NftId)
-    const acc2Deposits3 = await tipChain.getCawDepositsByNftId(acc2NftId)
-    const claimerDeposits3 = await tipChain.getCawDepositsByNftId(claimerNftId)
+    const acc3Deposits3 = await tipChain.getCawDepositsByNFTId(acc3NFTId)
+    const acc2Deposits3 = await tipChain.getCawDepositsByNFTId(acc2NFTId)
+    const claimerDeposits3 = await tipChain.getCawDepositsByNFTId(claimerNFTId)
     expect(claimerDeposits2).to.equal(claimerDeposits3)
     expect(acc2Deposits2).to.equal(acc2Deposits3)
     expect(acc3Deposits2).to.equal(acc3Deposits3)

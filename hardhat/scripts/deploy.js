@@ -37,7 +37,7 @@ async function deployTipChain() {
   return { 'tipChainAddr':tipChain.address, 'exampleTokenAddr':exampleToken.address, 'exampleNFTAddr': exampleNFT.address }
 }
 
-async function deployEnglishAuction() {
+async function deployEnglishAuction(withSeed) {
   
   const ExampleNFT = await ethers.getContractFactory('ExampleNFT')
   const exampleNFT = await ExampleNFT.deploy()
@@ -51,12 +51,33 @@ async function deployEnglishAuction() {
     'English Auction Deploy',
     ` EnglishAuction deployed to ${englishAuction.address}`
   );
+  if (withSeed) {
+    const nftAuctionId = 0
+    const thousand = hre.ethers.utils.parseEther('1000')
+    const accounts = await ethers.getSigners();
+    const deployer = accounts[0]
+    const auctioneer = accounts[1]
+    const bidderOne = accounts[2]
+    const bidderTwo = accounts[3]
+    const bidderThree = accounts[4]
+    console.log('auctioneer address')
+    const nftResponse = await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, nftAuctionId, 1, 0xf18)
+    console.log(nftResponse)
+
+    await Promise.all(
+      [bidderOne,bidderTwo,bidderThree].map(async (account, i) => {
+        await exampleToken.connect(deployer).transfer(account.address,  thousand)
+        // approves auction contract to move bidders funds
+        //await exampleToken.connect(account).approve(englishAuctionAddr, hundredThousand)
+      })
+    )
+  }
  fs.writeFileSync('../web/src/assets/Static.json',JSON.stringify({
     englishAuctionAddr: englishAuction.address,
-    englishAuctionAbi: EnglishAuctionJson.abi,
     exampleTokenAddr: exampleToken.address,
-    exampleTokenAbi: ExampleTokenJson.abi,
     exampleNftAddr: exampleNFT.address,
+    englishAuctionAbi: EnglishAuctionJson.abi,
+    exampleTokenAbi: ExampleTokenJson.abi,
     exampleNftAbi: ExampleNFTJson.abi,
   }), (err) => {
     if (err) {
@@ -74,7 +95,7 @@ async function deployEnglishAuction() {
 // and properly handle errors.
 async function deploy() {
   //await deployTipChain()
-  await deployEnglishAuction()
+  await deployEnglishAuction(true)
 }
 deploy().catch((error) => {
   console.error(error);

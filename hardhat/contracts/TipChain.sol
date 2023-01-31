@@ -104,7 +104,7 @@ function claimTipChain(
   TipChain memory tipChain
 ) external {
   // It will delightfully more efficient if users come together to make a big sig send that a user can claim in a single sweep
-  //require(st.nftIdBalances[tipChain.claimerNftId][msg.sender] > 0, "ReceiverPayFacet::msg.sender must own nft to claim");
+  //require(st.nftIdBalances[tipChain.claimerNFTId][msg.sender] > 0, "ReceiverPayFacet::msg.sender must own nft to claim");
 
   bytes32 hashStruct = keccak256(
     abi.encode(
@@ -141,9 +141,9 @@ function claimTipChain(
     if (signer == tipChain.tips[i].sender) {
       if (usedNonces[tipChain.tips[i].sender] <= tipChain.tips[i].senderNonce) {
         /* transfer
-           st.nftIdCawDeposits[tipChain.tips[i].senderNftId] -= tipChain.tips[i].amount;
-           st.nftIdCawDeposits[tipChain.claimerNftId] += tipChain.tips[i].amount;
-           st.nftIdUsedNonces[tipChain.tips[i].senderNftId]++;
+           st.nftIdCawDeposits[tipChain.tips[i].senderNFTId] -= tipChain.tips[i].amount;
+           st.nftIdCawDeposits[tipChain.claimerNFTId] += tipChain.tips[i].amount;
+           st.nftIdUsedNonces[tipChain.tips[i].senderNFTId]++;
          */
 
       }

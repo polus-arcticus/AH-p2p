@@ -21,7 +21,7 @@ function* idMaker() {
 describe("English Auction", async () => {
   
   const genId = idMaker()
-  const auctionedNftId = 0
+  const auctionedNFTId = 0
   const million = hre.ethers.utils.parseEther('1000000')
   const hundredThousand = hre.ethers.utils.parseEther('100000')
   const tenThousand = hre.ethers.utils.parseEther('10000')
@@ -32,7 +32,7 @@ describe("English Auction", async () => {
   let domain
   let englishAuctionAddr
   let exampleTokenAddr
-  let exampleNftAddr
+  let exampleNFTAddr
   let accounts
   let deployer
   let auctioneer
@@ -51,9 +51,9 @@ describe("English Auction", async () => {
     bidder3 = accounts[4]
 
     // deploy, loaded contract instances
-    ;({englishAuctionAddr, exampleTokenAddr, exampleNftAddr} = await deployEnglishAuction())
+    ;({englishAuctionAddr, exampleTokenAddr, exampleNFTAddr} = await deployEnglishAuction())
     exampleToken = await hre.ethers.getContractAt('ExampleToken', exampleTokenAddr)
-    exampleNft = await hre.ethers.getContractAt('ExampleNFT', exampleNftAddr)
+    exampleNFT = await hre.ethers.getContractAt('ExampleNFT', exampleNFTAddr)
     englishAuction = await hre.ethers.getContractAt('EnglishAuction', englishAuctionAddr)
     
     domain = {
@@ -64,9 +64,9 @@ describe("English Auction", async () => {
     }
 
     // nft for auctioneer to auction
-    await exampleNft.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNftId, 1, 0xf18)
+    await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNFTId, 1, 0xf18)
     // authorizes auction contract to move nft
-    await exampleNft.connect(auctioneer).setApprovalForAll(englishAuctionAddr, true)
+    await exampleNFT.connect(auctioneer).setApprovalForAll(englishAuctionAddr, true)
 
     //preloading example token for bidders
     await Promise.all(
@@ -79,15 +79,15 @@ describe("English Auction", async () => {
   })
 
   it("allows an auctioneer to create an auction for a nft in base token", async () => {
-    const nftBalanceBidder1_initial = await exampleNft.balanceOf(bidder1.address, auctionedNftId)
+    const nftBalanceBidder1_initial = await exampleNFT.balanceOf(bidder1.address, auctionedNFTId)
     const tokenBalanceBidder1_initial = await exampleToken.balanceOf(bidder1.address)
     const tokenBalanceAuctioneer_initial = await exampleToken.balanceOf(auctioneer.address)
 
     // auctioneer creates an auction by starting the Auction Permit Chain
     let auction = {
       auctioneer: auctioneer.address,
-      nft: exampleNftAddr,
-      nftId: auctionedNftId,
+      nft: exampleNFTAddr,
+      nftId: auctionedNFTId,
       token: exampleTokenAddr,
       bidStart: thousand,
       deadline:  deadline,
@@ -125,7 +125,7 @@ describe("English Auction", async () => {
     // Auctioneer consumes the auction on chain
     await englishAuction.connect(auctioneer).consumeAuction(v,r,s, auction)
 
-    const nftBalanceBidder1_final = await exampleNft.balanceOf(bidder1.address, auctionedNftId)
+    const nftBalanceBidder1_final = await exampleNFT.balanceOf(bidder1.address, auctionedNFTId)
     const tokenBalanceBidder1_final = await exampleToken.balanceOf(bidder1.address)
     const tokenBalanceAuctioneer_final = await exampleToken.balanceOf(auctioneer.address)
 
@@ -137,18 +137,18 @@ describe("English Auction", async () => {
   })
 
   it("Takes highest bid contractually", async () => {
-    await exampleNft.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNftId, 1, 0x9e3779)
+    await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNFTId, 1, 0x9e3779)
 
-    const nftBalanceBidder1_initial = await exampleNft.balanceOf(bidder1.address, auctionedNftId)
-    const nftBalanceBidder2_initial = await exampleNft.balanceOf(bidder2.address, auctionedNftId)
+    const nftBalanceBidder1_initial = await exampleNFT.balanceOf(bidder1.address, auctionedNFTId)
+    const nftBalanceBidder2_initial = await exampleNFT.balanceOf(bidder2.address, auctionedNFTId)
     const tokenBalanceBidder1_initial = await exampleToken.balanceOf(bidder1.address)
     const tokenBalanceBidder2_initial = await exampleToken.balanceOf(bidder2.address)
     const tokenBalanceAuctioneer_initial = await exampleToken.balanceOf(auctioneer.address)
 
     let auction = {
       auctioneer: auctioneer.address,
-      nft: exampleNftAddr,
-      nftId: auctionedNftId,
+      nft: exampleNFTAddr,
+      nftId: auctionedNFTId,
       token: exampleTokenAddr,
       bidStart: thousand,
       deadline:  deadline,
@@ -202,8 +202,8 @@ describe("English Auction", async () => {
     // Auctioneer consumes the auction on chain
     await englishAuction.connect(auctioneer).consumeAuction(v,r,s, auction)
 
-    const nftBalanceBidder1_final = await exampleNft.balanceOf(bidder1.address, auctionedNftId)
-    const nftBalanceBidder2_final = await exampleNft.balanceOf(bidder2.address, auctionedNftId)
+    const nftBalanceBidder1_final = await exampleNFT.balanceOf(bidder1.address, auctionedNFTId)
+    const nftBalanceBidder2_final = await exampleNFT.balanceOf(bidder2.address, auctionedNFTId)
     const tokenBalanceBidder1_final = await exampleToken.balanceOf(bidder1.address)
     const tokenBalanceBidder2_final = await exampleToken.balanceOf(bidder2.address)
     const tokenBalanceAuctioneer_final = await exampleToken.balanceOf(auctioneer.address)

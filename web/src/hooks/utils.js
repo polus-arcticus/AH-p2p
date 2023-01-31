@@ -1,11 +1,11 @@
 import Static from '@/assets/Static.json'
-
+import { ethers } from 'ethers'
 export const getEnglishAuction = (provider) => {
-  return new provider.ethers.Contract(Static.EnglishAuctionAddr, Static.EnglishAuctionAbi )
+  return new ethers.Contract(Static.englishAuctionAddr, Static.englishAuctionAbi, provider )
 }
-export const getExampleToken = (provider) => {
-  return new provider.ethers.Contract(Static.ExampleTokenAddr, Static.ExampleTokenAbi )
+export const getExampleToken = (provider, address) => {
+  return new ethers.Contract(address, Static.exampleTokenAbi, provider )
 }
-export const getExampleNft = (provider) => {
-  return new provider.ethers.Contract(Static.ExampleNftAddr, Static.ExampleNftAbi )
+export const getExampleNft = (provider, address) => {
+  return new ethers.Contract(address, Static.exampleNftAbi, provider )
 }
