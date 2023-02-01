@@ -1,11 +1,9 @@
-FROM node:latest
+FROM node:19-alpine as base
 
-ENV APP_ROOT /app
-
-RUN mkdir ${APP_ROOT}
-WORKDIR ${APP_ROOT}
-ADD . ${APP_ROOT}
-
+COPY . /hardhat
+WORKDIR /hardhat
+COPY package*.json ./
+RUN apk --no-cache --virtual build-dependencies add python3 make g++ bash curl
 RUN npm install
+
 EXPOSE 8545
-CMD ["npx", "hardhat", "node"]
