@@ -7,13 +7,14 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract EnglishAuction {
   uint256 chainId;
   bytes32 DOMAIN_SEPARATOR;
-  bytes32 AUCTION_TYPE_HASH = keccak256("Auction(address auctioneer,address nft,uint256 nftId,address token,uint256 bidStart,uint256 deadline,Bid[] bids,bytes[] bidSigs)Bid(address bidder,uint256 amount,uint256 nonce)");
-  bytes32 BID_TYPE_HASH = keccak256("Bid(address bidder,uint256 amount,uint256 nonce)");
+  bytes32 AUCTION_TYPE_HASH = keccak256("Auction(address auctioneer,address nft,uint256 nftId,address token,uint256 bidStart,uint256 deadline,bytes32 auctionSigHash,Bid[] bids,bytes[] bidSigs)Bid(address bidder,uint256 amount,uint256 nonce,bytes32 auctionSigHash)");
+  bytes32 BID_TYPE_HASH = keccak256("Bid(address bidder,uint256 amount,uint256 nonce,bytes32 auctionSigHash)");
 
   struct Bid {
     address bidder;
     uint256 amount;
     uint256 nonce;
+    bytes32 auctionSigHash;
   }
 
   struct Auction {
@@ -23,6 +24,7 @@ contract EnglishAuction {
     address token;
     uint256 bidStart;
     uint256 deadline;
+    bytes32 auctionSigHash;
     Bid[] bids;
     bytes[] bidSigs;
   }
@@ -52,7 +54,6 @@ contract EnglishAuction {
     bytes32 s,
     Auction memory auction
   ) external {
-
     bytes32 hashStruct = keccak256(
       abi.encode(
         AUCTION_TYPE_HASH,
@@ -62,6 +63,7 @@ contract EnglishAuction {
         auction.token,
         auction.bidStart,
         auction.deadline,
+        auction.auctionSigHash,
         hashBids(auction.bids),
         hashBidSigs(auction.bidSigs)
     )
@@ -71,16 +73,18 @@ contract EnglishAuction {
     //console.log(ECDSA.recover(hash, v, r, s));
     //console.log('^ ecdsa reover');
     //console.log(msg.sender, 'message.sender');
+    console.log('ecrecover', ecrecover(hash,v,r,s));
     require(ecrecover(hash, v, r, s) == msg.sender, "bids are self signed, auction is not");
 
-    Bid memory highestBidder = Bid(address(0), 0, 0);
+    Bid memory highestBidder = Bid(address(0), 0, 0, auction.auctionSigHash);
     for (uint i=0;i < auction.bids.length; i++) {
       bytes32 hashStruct = keccak256(
         abi.encode(
           BID_TYPE_HASH,
           auction.bids[i].bidder,
           auction.bids[i].amount,
-          auction.bids[i].nonce
+          auction.bids[i].nonce,
+          auction.bids[i].auctionSigHash
       )
       );
       address signer = recoverSigner(
@@ -124,7 +128,8 @@ contract EnglishAuction {
           BID_TYPE_HASH,
           bids[i].bidder,
           bids[i].amount,
-          bids[i].nonce
+          bids[i].nonce,
+          bids[i].auctionSigHash
       )
       );
       //type no supported in packed mode

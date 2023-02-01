@@ -26,7 +26,11 @@ import { Field, Form, Formik  } from 'formik';
 import {useGetTokenBalance, useTokenAllowance, useNft} from '@/hooks/useExamples'
 import {useCreateAuction} from '@/hooks/useEnglishAuction'
 
-const Form1 = ({handleUpdateProgress}) => {
+import {SingleDatepicker} from 'chakra-dayzed-datepicker'
+import { useWeb3React } from '@web3-react/core'
+
+const Form1 = ({handleCreateAuction}) => {
+  const { account } = useWeb3React()
   const {allowance:tokenAllowance, fetchAllowance:fetchTokenAllowance} = useTokenAllowance()
   const {balance:tokenBalance, fetchBalance:fetchTokenBalance} = useGetTokenBalance()
   const {balances:nftBalances, fetchBalance:fetchNftBalance} = useNft()
@@ -72,7 +76,7 @@ const Form1 = ({handleUpdateProgress}) => {
   }
   const [nftConfirmed, setNftConfirmed] = useState(false)
   const [tokenConfirmed, setTokenConfirmed] = useState(false)
-
+  const [date, setDate] = useState(new Date());
 
   return (
     <Formik
@@ -97,7 +101,7 @@ const Form1 = ({handleUpdateProgress}) => {
           }
         }
 
-        if (values.tokenAddress && values.startBid && !tokenConfirmed) {
+        if (values.tokenAddress && values.startPrice && !tokenConfirmed) {
           try {
             const res = await fetchTokenBalance(values.tokenAddress)
               if (tokenBalance >= 0) {
@@ -118,13 +122,11 @@ const Form1 = ({handleUpdateProgress}) => {
         nftAddress: '',
         startPrice: '',
         tokenAddress: '',
-        deadline: '',
-        signedBy: ''
+        deadline: new Date(),
+        signWith: ''
       }}
-      onSubmit={(values, actions) => {
-
-        console.log(values, actions)
-        console.log('handle submit')
+      onSubmit={async(values, actions) => {
+        handleCreateAuction(values, 1, 33.33)
       }}
     >
       {(props) => (
@@ -183,12 +185,16 @@ const Form1 = ({handleUpdateProgress}) => {
             </Field>
           </Flex>
           <Flex>
-            <Field name="deadline" validate={validateDeadline}>
-              {({field, form}) => (
-                <FormControl isInvalid={form.errors.deadline} mr="5%">
+            <Field name="deadline" id={"deadline"} validate={validateDeadline}>
+              {({field: {value}, form: {errors, setFieldValue}}) => (
+                <FormControl isInvalid={errors.deadline} mr="5%">
                   <FormLabel fontWeight={'normal'}>Deadline</FormLabel>
-                  <Input {...field} placeholder="Deadline" />
-                  <FormErrorMessage>{form.errors.deadline}</FormErrorMessage>
+                    <SingleDatepicker
+                      name="deadline"
+                      date={value}
+                      onDateChange={(date) => setFieldValue("deadline", date) }
+                    />
+                  <FormErrorMessage>{errors.deadline}</FormErrorMessage>
                 </FormControl>
               )}
             </Field>
@@ -220,7 +226,6 @@ const Form1 = ({handleUpdateProgress}) => {
                   variant="outline"
                   isDisabled={props.isValid === false}
                   onClick={() => {
-                    handleStepDiff(1, 33.33)
                   }}
                   isLoading={props.isSubmitting}
                   type="submit"
@@ -438,12 +443,14 @@ const Form3 = () => {
 };
 
 export const CreateAuctionForm = () => {
+  const { auctionData, createAuction } = useCreateAuction()
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(33.33);
-  const handleUpdateProgress = (stepDiff, progressDiff) => {
+  const handleCreateAuction = async (data, stepDiff, progressDiff) => {
+    await createAuction(data)
     setStep(step+stepDiff)
-    setStep(progress+setProgress)
+    setProgress(progress+progressDiff)
   }
   return (
     <>
@@ -461,7 +468,7 @@ export const CreateAuctionForm = () => {
           mb="5%"
           mx="5%"
           isAnimated></Progress>
-        {step === 1 ? <Form1 handleUpdateProgress={handleUpdateProgress}/> : step === 2 ? <Form2 /> : <Form3 />}
+        {step === 1 ? <Form1 handleCreateAuction={handleCreateAuction} /> : step === 2 ? <Form2 /> : <Form3 />}
         <ButtonGroup mt="5%" w="100%">
           {/*
           <Flex w="100%" justifyContent="space-between">

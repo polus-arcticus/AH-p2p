@@ -11,7 +11,7 @@ const {
 } = require('@metamask/eth-sig-util');
 
 const { deployEnglishAuction } = require('../scripts/deploy.js')
-const { Bid, Auction } = require('./type-hashes.js')
+const { Bid, Auction, AuctionAuthSig } = require('./type-hashes.js')
 function* idMaker() {
   var index = 0;
   while (true)
@@ -32,7 +32,7 @@ describe("English Auction", async () => {
   let domain
   let englishAuctionAddr
   let exampleTokenAddr
-  let exampleNFTAddr
+  let exampleNftAddr
   let accounts
   let deployer
   let auctioneer
@@ -51,9 +51,9 @@ describe("English Auction", async () => {
     bidder3 = accounts[4]
 
     // deploy, loaded contract instances
-    ;({englishAuctionAddr, exampleTokenAddr, exampleNFTAddr} = await deployEnglishAuction())
+    ;({englishAuctionAddr, exampleTokenAddr, exampleNftAddr} = await deployEnglishAuction())
     exampleToken = await hre.ethers.getContractAt('ExampleToken', exampleTokenAddr)
-    exampleNFT = await hre.ethers.getContractAt('ExampleNFT', exampleNFTAddr)
+    exampleNFT = await hre.ethers.getContractAt('ExampleNFT', exampleNftAddr)
     englishAuction = await hre.ethers.getContractAt('EnglishAuction', englishAuctionAddr)
     
     domain = {
@@ -84,13 +84,26 @@ describe("English Auction", async () => {
     const tokenBalanceAuctioneer_initial = await exampleToken.balanceOf(auctioneer.address)
 
     // auctioneer creates an auction by starting the Auction Permit Chain
-    let auction = {
+    let createAuction = {
       auctioneer: auctioneer.address,
-      nft: exampleNFTAddr,
+      nft: exampleNftAddr,
       nftId: auctionedNFTId,
       token: exampleTokenAddr,
       bidStart: thousand,
       deadline:  deadline,
+    }
+
+
+    const auctionAuthSigHash = ethers.utils.keccak256(await auctioneer._signTypedData(
+      domain,
+      { AuctionAuthSig },
+      createAuction
+    ))
+
+
+    let auction = {
+      ...createAuction,
+      auctionSigHash: auctionAuthSigHash,
       bids: [],
       bidSigs: []
     }
@@ -100,7 +113,8 @@ describe("English Auction", async () => {
     const bid1 = {
       bidder: bidder1.address,
       amount: bid1Price,
-      nonce: 0
+      nonce: 0,
+      auctionSigHash: auctionAuthSigHash
     }
     const bidSig1 = await bidder1._signTypedData(
       domain,
@@ -110,17 +124,18 @@ describe("English Auction", async () => {
     // auctioneer pushes bid into the permit chain
     auction.bids.push(bid1)
     auction.bidSigs.push(bidSig1)
-
+    
+    console.log(auction)
     const auctionSig = await auctioneer._signTypedData(
       domain,
       { Auction, Bid },
       auction
     )
+    console.log(auctionSig)
     const auctionSigNo0x = auctionSig.substring(2)
     const r = '0x' + auctionSigNo0x.substring(0,64);
     const s = '0x' + auctionSigNo0x.substring(64,128);
     const v = parseInt(auctionSigNo0x.substring(128,130), 16)
-    
 
     // Auctioneer consumes the auction on chain
     await englishAuction.connect(auctioneer).consumeAuction(v,r,s, auction)
@@ -135,7 +150,6 @@ describe("English Auction", async () => {
     expect(tokenBalanceAuctioneer_final.sub(tokenBalanceAuctioneer_initial)).to.equal(bid1Price)
 
   })
-
   it("Takes highest bid contractually", async () => {
     await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNFTId, 1, 0x9e3779)
 
@@ -144,24 +158,37 @@ describe("English Auction", async () => {
     const tokenBalanceBidder1_initial = await exampleToken.balanceOf(bidder1.address)
     const tokenBalanceBidder2_initial = await exampleToken.balanceOf(bidder2.address)
     const tokenBalanceAuctioneer_initial = await exampleToken.balanceOf(auctioneer.address)
-
-    let auction = {
+    
+    let createAuction = {
       auctioneer: auctioneer.address,
-      nft: exampleNFTAddr,
+      nft: exampleNftAddr,
       nftId: auctionedNFTId,
       token: exampleTokenAddr,
       bidStart: thousand,
       deadline:  deadline,
+    }
+
+    const auctionAuthSigHash = ethers.utils.keccak256(await auctioneer._signTypedData(
+      domain,
+      { AuctionAuthSig },
+      createAuction
+    ))
+
+    let auction = {
+      ...createAuction,
+      auctionSigHash: auctionAuthSigHash,
       bids: [],
       bidSigs: []
     }
+
 
     // bidder can add a bid to the bid and bidSig arrays
     const bidPrice1 = hundred
     const bid1 = {
       bidder: bidder1.address,
       amount: bidPrice1,
-      nonce: 1
+      nonce: 1,
+      auctionSigHash: auctionAuthSigHash
     }
     const bidSig1 = await bidder1._signTypedData(
       domain,
@@ -177,7 +204,8 @@ describe("English Auction", async () => {
     const bid2 = {
       bidder: bidder2.address,
       amount: bidPrice2,
-      nonce: 0
+      nonce: 0,
+      auctionSigHash: auctionAuthSigHash
     }
     const bidSig2 = await bidder2._signTypedData(
       domain,

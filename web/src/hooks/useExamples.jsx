@@ -13,7 +13,7 @@ export const useGetTokenBalance = () => {
 		const erc20 = getExampleToken(provider, address)
 		try {
       const response = await erc20.balanceOf(account)
-      setBalance(ethers.utils.parseEther(response))
+      setBalance(ethers.utils.formatEther(response))
     }
     catch (e) {
 			console.log(e)
@@ -62,7 +62,9 @@ export const useNft = () => {
 
   const fetchBalance = useCallback(async (addressNft, id) => {
 		const contract = getExampleNft(provider, addressNft)
+    console.log(contract)
     try {
+      console.log(account, id)
       const response = await contract.balanceOf(account, id)
       console.log(ethers.utils)
       balances[id] = ethers.utils.formatUnits(response, 0)
