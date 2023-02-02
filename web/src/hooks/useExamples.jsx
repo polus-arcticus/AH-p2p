@@ -9,17 +9,17 @@ export const useGetTokenBalance = () => {
   const { account, provider } = useWeb3React()
 
 	const fetchBalance = useCallback(async (address) => {
-		console.log('fetching balance')
 		const erc20 = getExampleToken(provider, address)
 		try {
-      const response = await erc20.balanceOf(account)
+      const response = await erc20.balanceOf(address)
+      console.log(response)
       setBalance(ethers.utils.formatEther(response))
     }
     catch (e) {
 			console.log(e)
 			setBalance('0')
 		}
-	}, [account])
+	}, [account, provider])
 
 	return {balance, fetchBalance}
 }

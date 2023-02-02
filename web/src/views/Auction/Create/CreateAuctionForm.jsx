@@ -18,6 +18,14 @@ import {
   FormHelperText,
   FormErrorMessage,
   InputRightElement,
+  Grid,
+  Card,
+  CardHeader,
+  CardBody,
+  CardFooter,
+  Stack,
+  Image,
+  Text
 } from '@chakra-ui/react';
 
 import { useToast } from '@chakra-ui/react';
@@ -104,12 +112,12 @@ const Form1 = ({handleCreateAuction}) => {
         if (values.tokenAddress && values.startPrice && !tokenConfirmed) {
           try {
             const res = await fetchTokenBalance(values.tokenAddress)
-              if (tokenBalance >= 0) {
-                setTokenConfirmed(true)
-              } else {
-                setTokenConfirmed(false)
-                errors.tokenAddress = 'Address doesnt seem to be a erc20 contract'
-              }
+            if (tokenBalance >= 0) {
+              setTokenConfirmed(true)
+            } else {
+              setTokenConfirmed(false)
+              errors.tokenAddress = 'Address doesnt seem to be a erc20 contract'
+            }
           } catch (e) {
             console.log(e)
             return 
@@ -189,11 +197,11 @@ const Form1 = ({handleCreateAuction}) => {
               {({field: {value}, form: {errors, setFieldValue}}) => (
                 <FormControl isInvalid={errors.deadline} mr="5%">
                   <FormLabel fontWeight={'normal'}>Deadline</FormLabel>
-                    <SingleDatepicker
-                      name="deadline"
-                      date={value}
-                      onDateChange={(date) => setFieldValue("deadline", date) }
-                    />
+                  <SingleDatepicker
+                    name="deadline"
+                    date={value}
+                    onDateChange={(date) => setFieldValue("deadline", date) }
+                  />
                   <FormErrorMessage>{errors.deadline}</FormErrorMessage>
                 </FormControl>
               )}
@@ -242,139 +250,129 @@ const Form1 = ({handleCreateAuction}) => {
   );
 };
 
-const Form2 = () => {
+const Form2 = ({auctionData, handlePublish}) => {
+
+  const validateStorageOption = (value) => {
+    let error
+    if (!value) {error = 'please enter a start price'}
+    return error
+  }
+  const validateHostChoice =(value) => {
+    let error
+    if (!value) {error = 'please enter a token to denominate the auction with'}
+    return error
+  }
+
   return (
-    <>
-      <Heading w="100%" textAlign={'center'} fontWeight="normal" mb="2%">
-        Confirm
-      </Heading>
-      <FormControl as={GridItem} colSpan={[6, 3]}>
-        <FormLabel
-          htmlFor="country"
-          fontSize="sm"
-          fontWeight="md"
-          color="gray.700"
-          _dark={{
-            color: 'gray.50',
-          }}>
-          Country / Region
-        </FormLabel>
-        <Select
-          id="country"
-          name="country"
-          autoComplete="country"
-          placeholder="Select option"
-          focusBorderColor="brand.400"
-          shadow="sm"
-          size="sm"
-          w="full"
-          rounded="md">
-          <option>United States</option>
-          <option>Canada</option>
-          <option>Mexico</option>
-        </Select>
-      </FormControl>
+    <Formik
+      validate={async () => {
 
-      <FormControl as={GridItem} colSpan={6}>
-        <FormLabel
-          htmlFor="street_address"
-          fontSize="sm"
-          fontWeight="md"
-          color="gray.700"
-          _dark={{
-            color: 'gray.50',
-          }}
-          mt="2%">
-          Street address
-        </FormLabel>
-        <Input
-          type="text"
-          name="street_address"
-          id="street_address"
-          autoComplete="street-address"
-          focusBorderColor="brand.400"
-          shadow="sm"
-          size="sm"
-          w="full"
-          rounded="md"
-        />
-      </FormControl>
+      }}
+      onSubmit={async (actions, values) => {
+        handlePublish(values.hostChoice, values.storageChoice, auctionData)
+        console.log(auctionData)
+      }}
+      initialValues={{
+        hostChoise: '',
+        storageChoice: '',
+        confirm: false,
+      }}
+    >
+      {(props) => (
+        <Form>
+          <Heading w="100%" textAlign={'center'} fontWeight="normal" mb="2%">
+            Confirm
+          </Heading>
+          <Card
+            direction={{ base: 'column', sm: 'row' }}
+            overflow='hidden'
+            variant='outline'
+          >
+            <Box
+              w="61.8%">
 
-      <FormControl as={GridItem} colSpan={[6, 6, null, 2]}>
-        <FormLabel
-          htmlFor="city"
-          fontSize="sm"
-          fontWeight="md"
-          color="gray.700"
-          _dark={{
-            color: 'gray.50',
-          }}
-          mt="2%">
-          City
-        </FormLabel>
-        <Input
-          type="text"
-          name="city"
-          id="city"
-          autoComplete="city"
-          focusBorderColor="brand.400"
-          shadow="sm"
-          size="sm"
-          w="full"
-          rounded="md"
-        />
-      </FormControl>
+            </Box>
 
-      <FormControl as={GridItem} colSpan={[6, 3, null, 2]}>
-        <FormLabel
-          htmlFor="state"
-          fontSize="sm"
-          fontWeight="md"
-          color="gray.700"
-          _dark={{
-            color: 'gray.50',
-          }}
-          mt="2%">
-          State / Province
-        </FormLabel>
-        <Input
-          type="text"
-          name="state"
-          id="state"
-          autoComplete="state"
-          focusBorderColor="brand.400"
-          shadow="sm"
-          size="sm"
-          w="full"
-          rounded="md"
-        />
-      </FormControl>
+            <Stack w="100%">
+              <CardBody>
+                <Flex>
+                  <Field name="storageOption" validate={validateStorageOption}>
+                    {({field, form}) => (
+                      <FormControl as={GridItem} colSpan={[6, 3]}>
+                        <FormLabel
+                          htmlFor="storageOption"
+                          fontSize="sm"
+                          fontWeight="md"
+                          color="gray.700"
+                          _dark={{
+                            color: 'gray.50',
+                          }}>
+                          Country / Region
+                        </FormLabel>
+                        <Select
+                          id="storageOption"
+                          name="storageOption"
+                          autoComplete="storageOption"
+                          placeholder="Select option"
+                          focusBorderColor="brand.400"
+                          shadow="sm"
+                          size="sm"
+                          w="full"
+                          rounded="md">
+                          <option>Browser Storage</option>
+                          <option>IPFS Pin</option>
+                          <option>Export to JSON</option>
+                        </Select>
+                      </FormControl>
 
-      <FormControl as={GridItem} colSpan={[6, 3, null, 2]}>
-        <FormLabel
-          htmlFor="postal_code"
-          fontSize="sm"
-          fontWeight="md"
-          color="gray.700"
-          _dark={{
-            color: 'gray.50',
-          }}
-          mt="2%">
-          ZIP / Postal
-        </FormLabel>
-        <Input
-          type="text"
-          name="postal_code"
-          id="postal_code"
-          autoComplete="postal-code"
-          focusBorderColor="brand.400"
-          shadow="sm"
-          size="sm"
-          w="full"
-          rounded="md"
-        />
-      </FormControl>
-    </>
+                    )}
+                  </Field>
+                </Flex>
+                <Flex>
+                  <Field name="hostChoice" validate={validateHostChoice}>
+                    {({field, form}) => (
+                      <FormControl as={GridItem} colSpan={[6, 3]}>
+                        <FormLabel
+                          htmlFor="hostChoice"
+                          fontSize="sm"
+                          fontWeight="md"
+                          color="gray.700"
+                          _dark={{
+                            color: 'gray.50',
+                          }}>
+                          Country / Region
+                        </FormLabel>
+                        <Select
+                          id="hostChoice"
+                          name="hostChoice"
+                          autoComplete="hostChoice"
+                          placeholder="Select option"
+                          focusBorderColor="brand.400"
+                          shadow="sm"
+                          size="sm"
+                          w="full"
+                          rounded="md">
+                          <option>IPFS Pubsub</option>
+                          <option>Pin on another node</option>
+                          <option></option>
+                        </Select>
+                      </FormControl>
+
+                    )}
+                  </Field>
+                </Flex>
+              </CardBody>
+
+              <CardFooter>
+                <Button variant='solid' colorScheme='blue'>
+                  Buy Latte
+                </Button>
+              </CardFooter>
+            </Stack>
+          </Card> 
+        </Form>
+      )}
+    </Formik>
   );
 };
 
@@ -447,10 +445,19 @@ export const CreateAuctionForm = () => {
   const toast = useToast();
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(33.33);
+
   const handleCreateAuction = async (data, stepDiff, progressDiff) => {
     await createAuction(data)
     setStep(step+stepDiff)
     setProgress(progress+progressDiff)
+  }
+  /**
+   * hostChoice => {'ipfsPubsub', }
+   * storageChoice => { 'temporary', 'localStorage', 'sessionStorage', 'ipfsAddress' }
+   */
+  const handlePublish = async (hostChoice, storageChoice, confirmedAuctionData) => {
+    hostChoice = ''
+
   }
   return (
     <>
@@ -468,7 +475,13 @@ export const CreateAuctionForm = () => {
           mb="5%"
           mx="5%"
           isAnimated></Progress>
-        {step === 1 ? <Form1 handleCreateAuction={handleCreateAuction} /> : step === 2 ? <Form2 /> : <Form3 />}
+        {
+          step === 1 ?
+            <Form1 handleCreateAuction={handleCreateAuction} /> :
+            step === 2 ?
+              <Form2 handlePublish={handlePublish} auctionData={auctionData} /> :
+              <Form3 />
+        }
         <ButtonGroup mt="5%" w="100%">
           {/*
           <Flex w="100%" justifyContent="space-between">

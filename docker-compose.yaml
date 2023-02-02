@@ -109,7 +109,7 @@ services:
       dockerfile: ./Dockerfile.dev
     command: npm run dev
     volumes:
-      - ./web/:/app/
+      - ./web/:/app:rw
       - /app/node_modules
     ports:
       - "5173:5173"
