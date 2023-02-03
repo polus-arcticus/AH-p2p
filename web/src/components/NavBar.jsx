@@ -30,7 +30,7 @@ import {
 
 import { Link as RouterLink} from 'react-router-dom'
 import { ConnectWallet } from './ConnectWallet'
-
+import { substringAddr } from './Utils'
 const chainIdToName = (id) => {
   switch (id) {
     case 1:
@@ -112,12 +112,9 @@ export const NavBar = () => {
               fontSize={'sm'}
               fontWeight={600}
               color={'white'}
-              bg={'pink.400'}
               onClick={() => { setShowWalletModal(!showWalletModal) }}
-              _hover={{
-                bg: 'pink.300',
-              }}>
-                {accounts ? `${accounts[0].substring(0, 6)}...${accounts[0].substring(accounts[0].length - 4)}` : 'Connect Wallet'}
+            >
+                {accounts ? substringAddr(accounts[0]) : 'Connect Wallet'}
             </Button>
             <Button onClick={toggleColorMode}>
               {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}

@@ -9,26 +9,27 @@ import {
   GridItem
 } from '@chakra-ui/react'
 
-const Row =({nft, bidders, token, highestBid, deadline})  => {
+const Row =({nft, bidders, token, highestBid, deadline, status})  => {
   return (
-    <Grid templateColumns='repeat(5,1fr)' gap={6}>
+    <Grid templateColumns='repeat(6,1fr)' gap={6}>
       <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{nft}</GridItem>
       <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{bidders}</GridItem>
       <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{token}</GridItem>
       <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{highestBid}</GridItem>
       <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{deadline}</GridItem>
+      <GridItem sx={{display:'flex', alignItems:'center'}} w='100%' h="10" >{status}</GridItem>
     </Grid>
   )
 }
 
-export const ActiveAuctions = () => {
+export const MyCurrentAuctions = () => {
 	return (
-		<Accordion allowToggle>
+		<Accordion allowToggle mb="5%">
 			<AccordionItem>
 				<h2>
 					<AccordionButton>
 						<Box as="span" flex='1' textAlign='left'>
-              <Row nft={'NFT'} bidders={'bidders'} token={'Token'} highestBid={'Highest Bid'} deadline={'deadline'} />
+              <Row nft={'NFT'} bidders={'bidders'} token={'Token'} highestBid={'Highest Bid'} deadline={'deadline'} status={'status'} />
 						</Box>
 						<AccordionIcon />
 					</AccordionButton>

@@ -3,7 +3,7 @@ import {
 } from '@chakra-ui/react'
 import GridListWithCTA from './GridListWithCTA'
 import { Outlet } from 'react-router-dom'
-export const Auction = () => {
+export const Auctions = () => {
   return (
     <Container maxW={'6xl'}>
       <GridListWithCTA />

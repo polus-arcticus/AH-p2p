@@ -57,7 +57,7 @@ function App() {
       }
     })
       //const ps = new IPFSPubsub(ipfs, 'my-room')
-      const room = new Room(ipfs, 'my-room')
+    const room = new Room(ipfs, 'my-room')
 		room.on('peer joined', (peer) => {
 			console.log('Peer joined the room', peer)
 

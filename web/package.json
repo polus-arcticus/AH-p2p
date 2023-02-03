@@ -30,7 +30,20 @@
     "react-icons": "^4.7.1",
     "react-router-dom": "^6.8.0",
     "sort-by": "^1.2.0",
-    "vite-plugin-node-polyfills": "^0.7.0"
+    "vite-plugin-node-polyfills": "^0.7.0",
+    "@chainsafe/libp2p-gossipsub": "^6.1.0",
+    "@libp2p/mplex": "^7.1.1",
+    "@libp2p/webrtc-direct": "^5.0.0",
+    "@libp2p/webrtc-star-signalling-server": "^3.0.0",
+    "@libp2p/websockets": "^5.0.3",
+    "@multiformats/multiaddr": "^11.3.0",
+    "hyperdiff": "^2.0.13",
+    "ipfs-core": "^0.18.0",
+    "ipfs-core-config": "^0.7.0",
+    "libp2p": "^0.42.2",
+    "lodash.clonedeep": "^4.5.0",
+    "orbit-db": "^0.29.0",
+    "orbit-db-pubsub": "^0.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.26",
