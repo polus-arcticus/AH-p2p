@@ -6,7 +6,6 @@ import { Outlet } from 'react-router-dom'
 export const Auctions = () => {
   return (
     <Container maxW={'6xl'}>
-      <GridListWithCTA />
       <Outlet />
     </Container>
   )

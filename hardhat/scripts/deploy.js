@@ -40,7 +40,6 @@ async function deployTipChain() {
 
 async function deployEnglishAuction(withSeed) {
   const [deployer] = await ethers.getSigners()
-  console.log('deployer', deployer)
   const weiAmount = (await deployer.getBalance()).toString()
   console.log("Account balance:", (await ethers.utils.formatEther(weiAmount)));
 

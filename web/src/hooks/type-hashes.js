@@ -31,7 +31,7 @@ export const Bid = [
   { name: 'bidder', type:'address' },
   { name: 'amount', type:'uint256' },
   { name: 'nonce', type:'uint256' },
-  { name: 'auctionSignHash', type: 'bytes32' }
+  { name: 'auctionSigHash', type: 'bytes32' }
 ]
 
 

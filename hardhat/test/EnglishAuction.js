@@ -109,11 +109,13 @@ describe("English Auction", async () => {
     }
 
     // bidder can add a bid to the bid and bidSig arrays
+    const bid1LatestNonce = await englishAuction.connect(bidder1).usedNonces(bidder1.address)
+    console.log('latest nonce:', bid1LatestNonce)
     const bid1Price = hundred;
     const bid1 = {
       bidder: bidder1.address,
       amount: bid1Price,
-      nonce: 0,
+      nonce: bid1LatestNonce,
       auctionSigHash: auctionAuthSigHash
     }
     const bidSig1 = await bidder1._signTypedData(
@@ -125,13 +127,11 @@ describe("English Auction", async () => {
     auction.bids.push(bid1)
     auction.bidSigs.push(bidSig1)
     
-    console.log(auction)
     const auctionSig = await auctioneer._signTypedData(
       domain,
       { Auction, Bid },
       auction
     )
-    console.log(auctionSig)
     const auctionSigNo0x = auctionSig.substring(2)
     const r = '0x' + auctionSigNo0x.substring(0,64);
     const s = '0x' + auctionSigNo0x.substring(64,128);
@@ -148,7 +148,9 @@ describe("English Auction", async () => {
     expect(nftBalanceBidder1_final).to.equal(1)
     expect(tokenBalanceBidder1_initial.sub(tokenBalanceBidder1_final)).to.equal(bid1Price)
     expect(tokenBalanceAuctioneer_final.sub(tokenBalanceAuctioneer_initial)).to.equal(bid1Price)
-
+    
+    const bid1LatestNonce2 = await englishAuction.connect(bidder1).usedNonces(bidder1.address)
+    expect((bid1LatestNonce2).sub(bid1LatestNonce)).to.equal(1)
   })
   it("Takes highest bid contractually", async () => {
     await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNFTId, 1, 0x9e3779)
@@ -183,11 +185,13 @@ describe("English Auction", async () => {
 
 
     // bidder can add a bid to the bid and bidSig arrays
+    const bid1LatestNonce = await englishAuction.connect(bidder1).usedNonces(bidder1.address)
+    console.log('bid1LatestNonce', bid1LatestNonce)
     const bidPrice1 = hundred
     const bid1 = {
       bidder: bidder1.address,
       amount: bidPrice1,
-      nonce: 1,
+      nonce: bid1LatestNonce,
       auctionSigHash: auctionAuthSigHash
     }
     const bidSig1 = await bidder1._signTypedData(
@@ -200,11 +204,12 @@ describe("English Auction", async () => {
     auction.bidSigs.push(bidSig1)
     
     // bidder 2 can add a bid to the bid and bidSig arrays
+    const bid2LatestNonce = await englishAuction.connect(bidder2).usedNonces(bidder2.address)
     const bidPrice2 = thousand
     const bid2 = {
       bidder: bidder2.address,
       amount: bidPrice2,
-      nonce: 0,
+      nonce: bid2LatestNonce,
       auctionSigHash: auctionAuthSigHash
     }
     const bidSig2 = await bidder2._signTypedData(

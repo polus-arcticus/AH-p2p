@@ -29,7 +29,7 @@ contract EnglishAuction {
     bytes[] bidSigs;
   }
 
-  mapping (address => uint256) usedNonces;
+  mapping (address => uint256) public usedNonces;
 
   constructor() {
     uint256 ch;

@@ -2,6 +2,7 @@ import EventEmitter from 'events'
 import { pipe } from 'it-pipe'
 import PROTOCOL from './protocol.js'
 import encoding from './encoding.js'
+import decoding from './decoding.js'
 
 export default class Connection extends EventEmitter {
   constructor (remoteId, libp2p, room) {

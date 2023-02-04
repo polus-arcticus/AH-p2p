@@ -5,7 +5,6 @@ import { Router } from '@/router'
 import {Footer} from '@/components/Footer'
 export const App = () => {
   const data = useWeb3React()
-  console.log('data', data)
   const {connector} = useWeb3React()
   useEffect(() => {
     connector.connectEagerly().catch(() => {

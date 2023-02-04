@@ -63,7 +63,9 @@ export default class PubSubRoom extends EventEmitter {
   }
 
   async broadcast (_message) {
+    console.log('broadcasting', _message)
     const message = encoding(_message)
+    console.log('broadcasting::encoding', message)
     await this._libp2p.pubsub.publish(this._topic, message)
   }
 
