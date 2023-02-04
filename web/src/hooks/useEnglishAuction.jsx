@@ -26,14 +26,14 @@ const getAuction = (roomKey) => {
 
 function parseAuctionForSig(auction) {
   let parsedAuction = Object.assign({}, auction)
-  parsedAuction.bidStart = ethers.utils.formatUnits(auction.bidStart, 0)
+  parsedAuction.bidStart = ethers.utils.parseUnits(auction.bidStart, 'ether')
   parsedAuction.deadline = Math.floor(auction.deadline.getTime() / 1000)
   return parsedAuction
 
 }
 function parseBidForSig(bid) {
   let parsedBid = Object.assign({}, bid)
-  parsedBid.amount = ethers.utils.formatUnits(bid.amount, 0)
+  parsedBid.amount = ethers.utils.parseUnits(bid.amount, 'ether')
   return parsedBid
 
 }
@@ -137,22 +137,27 @@ export const useAuctions = (defaultRoomKey=null) => {
 
 export const useAuctionRoom = (defaultRoomKey=null) => {
   const { account, provider, chainId } = useWeb3React()
-  let initAuct;
-  let initBidCount;
-  let initHighBid;
+  let initAuct = {}
+  let initBidCount = 0;
+  let initHighBid = 0;
+  let initBids = [];
+  let initBidSigs = []
   if (defaultRoomKey) {
     initAuct = getAuction(defaultRoomKey)
-    console.log(initAuct)
     initBidCount = initAuct.auctionData.bids.length
     initHighBid = initAuct.auctionData.bids.reduce((a,b) => {
       return (a.amount > b.amount) ? a : b
     }).amount
+    initBids = initAuct.auctionData.bids
+    initBidSigs = initAuct.auctionData.bidSigs
   }
   const [auction, setAuction] = useState(initAuct)
   const [bidCount, setBidCount] =useState(initBidCount)
   const [highBid, setHighBid] =useState(initHighBid)
-  const [roomKey, setRoomKey] = useState(defaultRoomKey)
+  const [bids, setBids] = useState(initBids)
+  const [bidSigs, setBidSigs] = useState(initBidSigs)
 
+  const [roomKey, setRoomKey] = useState(defaultRoomKey)
   const [room, setRoom] = useState({leave: () => null})
   const [ipfs, setIpfs] = useState({})
   const [peers ,setPeers] = useState({})
@@ -199,15 +204,14 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       switch (payload.message) {
         case 'bid':
           console.log('setting on bid')
-          setAuction(old => {
-            old.auctionData.bids.push(payload.bid)
-            old.auctionData.bidSigs.push(payload.bidSig)
-            return old
-          })
+          setBids(old => [...old, payload.bid])
+          setBidSigs(old => [...old, payload.bidSigs])
+          console.log('updating bid count')
           setBidCount(old => old + 1)
           if (payload.bid.amount > highBid) {
             setHighBid(payload.bid.amount)
           }
+
           const auction = JSON.parse(localStorage.getItem(roomKey))
           auction.auctionData.bids.push(payload.bid)
           auction.auctionData.bidSigs.push(payload.bidSig)
@@ -238,7 +242,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
     setRoom(roomInstance)
     setRoomKey(key)
     setIpfs(instance)
-  },[])
+  },[auction])
 
   const leaveRoom = useCallback(async() => {
     console.log('called leaveroom', room)

@@ -162,17 +162,13 @@ export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleS
           stat={peerCount}
           icon={<BsPerson size={'3em'} />}
         />
-        {(auction.auctionData.auctioneer !== account) &&
+        {(auction.auctionData.auctioneer == account) ?
             (<StatsCardBidButton
               title={'Create Bid'}
               handleSubmitBid={handleSubmitBid}
-              icon={<BsPerson size={'3em'} />}
-            />)
+              icon={<BsPerson size={'3em'} />} />) :
+            (<StatsCardConsumeAuctionButton />)
         }
-        {(auction.auctionData.auctioneer == account) &&
-            (<StatsCardConsumeButton />)
-        }
-        <StatsCardConsumeAuctionButton />
     </SimpleGrid>
     </Box>
   );
