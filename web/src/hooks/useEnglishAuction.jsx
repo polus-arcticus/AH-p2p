@@ -35,16 +35,26 @@ function parseBidForSig(bid) {
   let parsedBid = Object.assign({}, bid)
   parsedBid.amount = ethers.utils.parseUnits(bid.amount, 'ether')
   return parsedBid
-
 }
+
+function parseConsumeForSig(roomKey) {
+  const {auctionData, networkParams}= getAuction(roomKey)
+  auctionData.deadline = Math.floor(new Date(auctionData.deadline).getTime() / 1000)
+  auctionData.bids = auctionData.bids.map((bid) => {
+    bid.amount = ethers.utils.parseUnits(bid.amount, 'ether')
+    return bid
+  })
+  return auctionData
+
+} 
 
 export const useCreateAuction = (auction)=> {
   const [auctionData, setAuctionData] = useState({
     auctioneer: '',
     nft: '',
-    nftId: 0,
+    nftId: '0',
     token: '',
-    bidStart: 0,
+    bidStart: '0',
     deadline: new Date(),
     bids: [],
     bidSigs: []
@@ -127,7 +137,8 @@ export const useAuctions = (defaultRoomKey=null) => {
 
 
   const fetchAuctions = useCallback((filter,sort) => {
-    setAuctions(getAuction()())
+    setAuctions(getAuction())
+
   },[])
 
 
@@ -137,35 +148,24 @@ export const useAuctions = (defaultRoomKey=null) => {
 
 export const useAuctionRoom = (defaultRoomKey=null) => {
   const { account, provider, chainId } = useWeb3React()
-  let initAuct = {}
-  let initBidCount = 0;
-  let initHighBid = 0;
-  let initBids = [];
-  let initBidSigs = []
-  if (defaultRoomKey) {
-    initAuct = getAuction(defaultRoomKey)
-    initBidCount = initAuct.auctionData.bids.length
-    initHighBid = initAuct.auctionData.bids.reduce((a,b) => {
-      return (a.amount > b.amount) ? a : b
-    }).amount
-    initBids = initAuct.auctionData.bids
-    initBidSigs = initAuct.auctionData.bidSigs
-  }
-  const [auction, setAuction] = useState(initAuct)
-  const [bidCount, setBidCount] =useState(initBidCount)
-  const [highBid, setHighBid] =useState(initHighBid)
-  const [bids, setBids] = useState(initBids)
-  const [bidSigs, setBidSigs] = useState(initBidSigs)
+  const [auction, setAuction] = useState(null)
+  const [network, setNetwork] = useState(null)
+  const [bidCount, setBidCount] =useState(null)
+  const [highBid, setHighBid] = useState(null)
+  const [bids, setBids] = useState(null)
+  const [bidSigs, setBidSigs] = useState(null)
 
   const [roomKey, setRoomKey] = useState(defaultRoomKey)
   const [room, setRoom] = useState({leave: () => null})
   const [ipfs, setIpfs] = useState({})
   const [peers ,setPeers] = useState({})
   const [peerCount, setPeerCount] = useState(0)
-  
+
   const fetchAuction = useCallback((roomKey) => {
-    setAuction(getAuction(roomKey))
-  },[])
+    const auctionData = getAuction(roomKey)
+    setAuction(auctionData.auctionData)
+    setNetwork(auctionData.networkParams)
+  },[auction])
 
   const fetchRoom = useCallback(async (newRoomKey=null) => {
     const key = newRoomKey ? newRoomKey: roomKey
@@ -203,20 +203,20 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       const payload = JSON.parse(decoding(msg.data))
       switch (payload.message) {
         case 'bid':
+
+          const auct = JSON.parse(localStorage.getItem(roomKey))
+          auct.auctionData.bids.push(payload.bid)
+          auct.auctionData.bidSigs.push(payload.bidSig)
+          localStorage.setItem(roomKey, JSON.stringify(auct))
           console.log('setting on bid')
           setBids(old => [...old, payload.bid])
-          setBidSigs(old => [...old, payload.bidSigs])
+          setBidSigs(old => [...old, payload.bidSig])
           console.log('updating bid count')
           setBidCount(old => old + 1)
           if (payload.bid.amount > highBid) {
             setHighBid(payload.bid.amount)
           }
 
-          const auction = JSON.parse(localStorage.getItem(roomKey))
-          auction.auctionData.bids.push(payload.bid)
-          auction.auctionData.bidSigs.push(payload.bidSig)
-          localStorage.setItem(roomKey, JSON.stringify(auction))
-          
       }
 
 
@@ -269,12 +269,12 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       const parsedInitBid = parseBidForSig(initBid)
       const signer = provider.getSigner()
       console.log(signer)
-      const bidSigHash = await signer._signTypedData(
+      const bidSig = await signer._signTypedData(
         domain,
         { Bid },
         parsedInitBid
       )
-      await room.broadcast(JSON.stringify({message: 'bid', bid: initBid, bidSig: bidSigHash}))
+      await room.broadcast(JSON.stringify({message: 'bid', bid: initBid, bidSig: bidSig}))
       // Makes more sense for auction to do a sendTo(peer, message)
     } catch (e) {
       console.log(e)
@@ -282,13 +282,85 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
     }
   }, [provider, account, room, chainId])
 
+  const submitAuction = useCallback(async () => {
+    console.log('submit auction')
+    const signer = provider.getSigner()
+    const contract = getEnglishAuction(signer)
+
+    const domain = {
+      name:  'EnglishAuction',
+      version: '1',
+      chainId: chainId,
+      verifyingContract: contract.address
+    }
+    const digest =parseConsumeForSig(roomKey)
+    const auctionSig = await signer._signTypedData(
+      domain,
+      { Auction, Bid },
+      digest
+    )
+    const auctionSigNo0x = auctionSig.substring(2)
+    const r = '0x' + auctionSigNo0x.substring(0,64);
+    const s = '0x' + auctionSigNo0x.substring(64,128);
+    const v = parseInt(auctionSigNo0x.substring(128,130), 16)
+
+    try {
+      const res = await contract.consumeAuction(v,r,s,digest)
+      console.log(res)
+    } catch (e) {
+      console.log(e)
+      return
+    }
+  }, [account,provider,room])
+
   useEffect(() => {
-    fetchRoom(defaultRoomKey)
-    return function cleanup() {
+    console.log('should run')
+    let initAuct = {}
+    let initNetwork = {}
+    let initBidCount = 0;
+    let initHighBid = 0;
+    let initBids = [];
+    let initBidSigs = []
+    if (defaultRoomKey) {
+      const {
+        auctionData:initAuct,
+        networkParams: initNetwork
+      } = getAuction(defaultRoomKey)
+      console.log(initAuct, initNetwork)
+      initBidCount = initAuct.bids.length
+      initHighBid = initAuct.bids.length ?
+        (initAuct.bids.reduce((a,b) => {
+          return (a.amount > b.amount) ? a : b
+      }).amount):
+        initAuct.bidStart
+      initBids = initAuct.bids
+      initBidSigs = initAuct.bidSigs
+      setAuction(initAuct)
+      setNetwork(initNetwork)
+      setBidCount(initBidCount)
+      setHighBid(initHighBid)
+      setBids(initBids)
+      setBidSigs(initBidSigs)
+    }
+    console.log('initAuct', initAuct)
+      fetchRoom(defaultRoomKey)
+      return function cleanup() {
       console.log('cleaning up pubsub room')
       //leaveRoom()
     }
   }, [])
-
-  return {auction, room, ipfs, peers, peerCount, submitBid, fetchRoom, leaveRoom, highBid, bidCount}
+  console.log('auction', auction)
+  return {
+    fetchRoom:fetchRoom,
+    auction:auction,
+    room:room,
+    ipfs:ipfs,
+    peers:peers,
+    peerCount:peerCount,
+    highBid:highBid,
+    bidCount:bidCount,
+    submitBid:submitBid,
+    submitAuction:submitAuction,
+    leaveRoom:leaveRoom
+  }
 }

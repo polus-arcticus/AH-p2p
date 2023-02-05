@@ -13,7 +13,7 @@ import {
   InputRightElement,
   Input
 } from '@chakra-ui/react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BsPerson } from 'react-icons/bs';
 import { FiServer, FiTrendingUp } from 'react-icons/fi';
 import { RiAuctionLine } from 'react-icons/ri'
@@ -57,7 +57,7 @@ function StatsCard(props) {
     </Stat>
   );
 }
-function StatsCardBidButton({handleSubmitBid}) {
+function StatsCardBidButton({handleSubmitBid, handleSubmitAuction}) {
   const [bidAmount, setBidAmount] = useState(0)
   return (
     <Stat
@@ -88,7 +88,7 @@ function StatsCardBidButton({handleSubmitBid}) {
     </Stat>
   );
 }
-function StatsCardConsumeAuctionButton({handleConsumeAuction}) {
+function StatsCardConsumeAuctionButton({handleConsumeAuction, handleSubmitAuction}) {
   return (
     <Stat
       px={{ base: 2, md: 4 }}
@@ -102,16 +102,21 @@ function StatsCardConsumeAuctionButton({handleConsumeAuction}) {
         w="100%"
         variant="outline"
         onClick={() => {
-          handleConsumeAuction()
+          handleSubmitAuction()
         }}
-      >Consume</Button>
+      >Submit Auction</Button>
     </Stat>
   );
 }
 
-export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleSubmitBid}) => {
+export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleSubmitBid, handleSubmitAuction}) => {
   const {account} = useWeb3React()
-  const {seconds,minutes,hours,days} = useTimer({expiryTimestamp: new Date(auction.auctionData.deadline)})
+  const {seconds,minutes,hours,days, restart} = useTimer({expiryTimestamp: new Date()})
+  useEffect(() => {
+    if (auction) {
+      restart(auction.deadline)
+    }
+  }, [auction])
   return (
     <Box maxW="7xl" mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
       <chakra.h1
@@ -119,32 +124,32 @@ export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleS
         fontSize={'4xl'}
         py={10}
         fontWeight={'bold'}>
-        Auction {substringAddr(auction.auctionData.auctionSigHash)}
+        Auction {auction ? substringAddr(auction.auctionSigHash): ''}
       </chakra.h1>
       <SimpleGrid columns={{ base: 1, sm: 1, md: 2, lg: 3 }} spacing={{ base: 5, lg: 8 }}>
         <StatsCard
           title={'Auctioneer'}
-          stat={substringAddr(auction.auctionData.auctioneer)}
+          stat={auction ? substringAddr(auction.auctioneer): ''}
           icon={<RiAuctionLine size={'3em'} />}
         />
         <StatsCard
           title={'Nft'}
-          stat={`${auction.auctionData.nftId}: ${substringAddr(auction.auctionData.nft)}`}
+          stat={auction ? `${auction.nftId}: ${substringAddr(auction.nft)}` : ''}
           icon={<SlPicture size={'3em'} />}
         />
         <StatsCard
           title={'Priced In'}
-          stat={substringAddr(auction.auctionData.token)}
+          stat={auction ? substringAddr(auction.token): ''}
           icon={<GiToken size={'3em'} />}
         />
         <StatsCard
           title={'Starting Price'}
-          stat={auction.auctionData.bidStart}
+          stat={auction ? auction.bidStart: ''}
           icon={<VscDebugStart size={'3em'} />}
         />
         <StatsCard
           title={'High Bid'}
-          stat={highBid}
+          stat={highBid ? highBid: ''}
           icon={<TbMountain size={'3em'} />}
         />
         <StatsCard
@@ -162,12 +167,12 @@ export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleS
           stat={peerCount}
           icon={<BsPerson size={'3em'} />}
         />
-        {(auction.auctionData.auctioneer == account) ?
+        {(auction && auction.auctioneer == account) ?
+            (<StatsCardConsumeAuctionButton handleSubmitAuction={handleSubmitAuction} />):
             (<StatsCardBidButton
               title={'Create Bid'}
               handleSubmitBid={handleSubmitBid}
-              icon={<BsPerson size={'3em'} />} />) :
-            (<StatsCardConsumeAuctionButton />)
+              icon={<BsPerson size={'3em'} />} />)
         }
     </SimpleGrid>
     </Box>

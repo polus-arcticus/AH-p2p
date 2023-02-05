@@ -15,36 +15,6 @@ import { Auction } from '@/views/Auctions/Auction/Auction'
 import { Active } from '@/views/Auctions/Active/Active'
 import { Create } from '@/views/Auctions/Create/Create'
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Home />,
-    errorElement: <div>error</div>,
-  },
-  {
-    path: "/docs",
-    element: <Docs />,
-    errorElement: <div>error</div>,
-  },
-  {
-    path: "/auctions",
-    element: <Auction />,
-    errorElement: <div>error</div>,
-    children: [
-      {
-        path: "create",
-        element: <Create />
-      },
-      {
-        path: "active",
-        element: <Active />
-      },
-
-    ]
-  },
-
-]);
-
 export const Router = () => {
   return (
   <BrowserRouter>
