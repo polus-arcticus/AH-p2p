@@ -4,7 +4,7 @@ import { Container } from '@chakra-ui/react'
 
 import { useAuctionRoom } from '@/hooks/useEnglishAuction'
 import {useWeb3React} from '@web3-react/core'
-import {useNft, useTokenAllowance} from '@/hooks/useExamples'
+import {useNft, useFetchNftBalance,useGetTokenBalance,  useFetchNftAllowance, useTokenAllowance} from '@/hooks/useExamples'
 
 import {useParams} from 'react-router-dom'
 
@@ -14,17 +14,28 @@ export const Auction = () => {
   const {account} = useWeb3React()
 
   const {
-    allowance:nftAllowance,
-    fetchAllowance:fetchNftAllowance,
     createAllowance: createNftAllowance
   } = useNft()
+
+  const {
+    allowance:auctioneerNftAllowance,
+    fetchAllowance:fetchAuctioneerNftAllowance
+  } = useFetchNftAllowance()
+
+  const {
+    fetchNftBalance: fetchAuctioneerNftBalance,
+    balance: auctioneerNftBalance
+  } = useFetchNftBalance()
 
   const {
     allowance:tokenAllowance,
     fetchAllowance:fetchTokenAllowance,
     createAllowance: createTokenAllowance
   } = useTokenAllowance()
-
+  const {
+    balance:tokenBalance,
+    fetchBalance:fetchTokenBalance
+  } = useGetTokenBalance()
   const params = useParams()
 
   const {
@@ -38,7 +49,6 @@ export const Auction = () => {
   } = useAuctionRoom(params.roomKey)
 
   const handleSubmitBid = async (value) => {
-    console.log(value)
     await submitBid(value)
   }
   const handleSubmitAuction = async () => {
@@ -53,8 +63,10 @@ export const Auction = () => {
 
   useEffect(() => {
     if (account && auction) {
-      fetchNftAllowance(auction.nft)
+      fetchAuctioneerNftAllowance(auction.nft, auction.auctioneer)
+      fetchAuctioneerNftBalance(auction.nft, auction.auctioneer, auction.nftId)
       fetchTokenAllowance(auction.token)
+      fetchTokenBalance(auction.token)
 
     }
   }, [account])
@@ -63,7 +75,9 @@ export const Auction = () => {
     <Container maxW={"6xl"}>
       <BasicStatistics
         account={account}
-        nftAllowance={nftAllowance}
+        auctioneerNftBalance={auctioneerNftBalance}
+        auctioneerNftAllowance={auctioneerNftAllowance}
+        tokenBalance={tokenBalance}
         tokenAllowance={tokenAllowance}
         highBid={highBid}
         bidCount={bidCount}

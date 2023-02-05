@@ -18,7 +18,7 @@ import {
 import {SingleDatepicker} from 'chakra-dayzed-datepicker'
 export const AuctionDetails = ({initialData, handleCreateAuction}) => {
   const { account } = useWeb3React()
-  const {allowance:tokenAllowance, fetchAllowance:fetchTokenAllowance} = useTokenAllowance()
+  const {allowance:tokenAllowance, fetchAllowance:fetchAccountTokenAllowance} = useTokenAllowance()
   const {balance:tokenBalance, fetchBalance:fetchTokenBalance} = useGetTokenBalance()
   const {balances:nftBalances, fetchBalance:fetchNftBalance} = useNft()
 

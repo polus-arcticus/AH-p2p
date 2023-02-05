@@ -51,6 +51,7 @@ function parseConsumeForSig(roomKey) {
 export const useCreateAuction = (auction)=> {
   const [auctionData, setAuctionData] = useState({
     auctioneer: '',
+    auctioneerNonce: '',
     nft: '',
     nftId: '0',
     token: '',
@@ -85,6 +86,7 @@ export const useCreateAuction = (auction)=> {
     }
     let initAuction = {
       auctioneer: data.auctioneer,
+      auctioneerNonce: (await englishAuction.usedNonces(account)).toString(),
       nft: data.nft,
       nftId: data.nftId,
       token: data.token,
@@ -246,7 +248,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
   const submitBid = useCallback(async (amount) => {
     const englishAuction = getEnglishAuction(provider)
     try {
-      const latestNonce = await englishAuction.usedNonces(account)
+      const latestNonce = (await englishAuction.usedNonces(account)).toString()
       let domain = {
         name:  'EnglishAuction',
         version: '1',
@@ -256,7 +258,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       let initBid = {
         bidder: account,
         amount: amount,
-        nonce: latestNonce,
+        bidderNonce: latestNonce,
         auctionSigHash: roomKey
       }
       const parsedInitBid = parseBidForSig(initBid)

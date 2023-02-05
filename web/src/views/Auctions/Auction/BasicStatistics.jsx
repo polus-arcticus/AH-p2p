@@ -11,7 +11,18 @@ import {
   InputGroup,
   InputLeftElement,
   InputRightElement,
-  Input
+  Input,
+  Tooltip,
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+  PopoverHeader,
+  PopoverBody,
+  PopoverFooter,
+  PopoverArrow,
+  PopoverCloseButton,
+  PopoverAnchor,
+  Text
 } from '@chakra-ui/react';
 import { useState, useEffect } from 'react';
 import { BsPerson } from 'react-icons/bs';
@@ -25,15 +36,68 @@ import { TbMountain } from 'react-icons/tb'
 import { FaEnvelopeOpenText, FaCheck } from 'react-icons/fa'
 import {substringAddr} from '@/components/Utils'
 import {useTimer} from 'react-timer-hook'
-function StatsCard(props) {
-  const { title, stat, icon } = props;
+
+const HoverMessage = ({
+  hovered, handleClose, status, title, info, description
+}) => {
   return (
+    <Popover
+      isOpen={hovered ? hovered: false}
+      onClose={handleClose}
+      >
+      <PopoverContent>
+        <PopoverArrow />
+        <PopoverHeader>{title}</PopoverHeader>
+        <Text>{description}</Text>
+        <PopoverBody>
+          {info}
+        </PopoverBody>
+      </PopoverContent>
+    </Popover>
+  )
+  
+}
+function StatsCard({
+  title,
+  stat,
+  icon,
+  status,
+  infoChoices,
+  description
+}) {
+  const [borderColour, setBorderColour] = useState('teal')
+  const [showDetails, setShowDetails] = useState(false)
+  const [activeInfo, setActiveInfo] = useState(null)
+  const handleClose = () => {
+    setShowDetails(false)
+  }
+  useEffect(() => {
+    switch (status) {
+      case 'success':
+        setBorderColour('green')
+        setActiveInfo(infoChoices.success)
+        break
+      case 'warning':
+        setBorderColour('yellow')
+        setActiveInfo(infoChoices.warning)
+        break
+      case 'error':
+        setBorderColour('red')
+        setActiveInfo(infoChoices.error)
+        break
+      default:
+        setBorderColour('teal')
+    }
+  }, [status])
+  return (<>
     <Stat
+      onMouseOver={() => setShowDetails(true)}
+      onMouseLeave={() => setShowDetails(false)}
       px={{ base: 2, md: 4 }}
       py={'5'}
       shadow={'xl'}
       border={'1px solid'}
-      borderColor={useColorModeValue('gray.800', 'gray.500')}
+      borderColor={borderColour}
       rounded={'lg'}>
       <Flex justifyContent={'space-between'}>
         <Box pl={{ base: 2, md: 4 }}>
@@ -53,10 +117,20 @@ function StatsCard(props) {
           {icon}
         </Box>
       </Flex>
+      <HoverMessage
+        handleClose={handleClose}
+        hovered={showDetails}
+        status={status}
+        title={title}
+        description={description}
+        info={activeInfo}
+        status={status}
+      />
     </Stat>
+  </>
   );
 }
-function StatsCardBidButton({handleSubmitBid, handleSubmitAuction}) {
+function StatsCardBidButton({tokenBalance, handleSubmitBid, handleSubmitAuction}) {
   const [bidAmount, setBidAmount] = useState(0)
   return (
     <Stat
@@ -66,24 +140,38 @@ function StatsCardBidButton({handleSubmitBid, handleSubmitAuction}) {
       border={'1px solid'}
       borderColor={useColorModeValue('gray.800', 'gray.500')}
       rounded={'lg'}>
-      <InputGroup>
-        <InputLeftElement
-          pointerEvents='none'
-          color='gray.300'
-          fontSize='1.2em'
-          children='$'
-        />
-        <Input value={bidAmount} onChange={(e) => {
-          setBidAmount(e.target.value)
-        }} placeholder='Amount' />
-        <Button
-          colorScheme="teal"
-          w="32.8%"
-          onClick={() => {
-            handleSubmitBid(bidAmount)
-          }}
-        >Bid</Button>
-      </InputGroup>
+
+      <Box
+        pr={1}
+        pl={{ base: 2, md: 4 }}>
+        <StatLabel
+          sx={{whiteSpace: 'none'}}
+          fontWeight={'medium'} isTruncated>
+          Available: {tokenBalance}
+        </StatLabel>
+        <InputGroup
+        >
+          <InputLeftElement
+            pointerEvents='none'
+            color='gray.300'
+            fontSize='1.2em'
+            children='$'
+          />
+          <Input
+            value={bidAmount}
+            onChange={(e) => {
+              setBidAmount(e.target.value)
+            }}
+          />
+          <Button
+            colorScheme="teal"
+            w="32.8%"
+            onClick={() => {
+              handleSubmitBid(bidAmount)
+            }}
+          >Bid</Button>
+        </InputGroup>
+      </Box>
     </Stat>
   );
 }
@@ -158,10 +246,12 @@ export const  BasicStatistics = ({
   handleSubmitAuction,
   handleApproveNft,
   handleApproveToken,
-  nftAllowance,
-  tokenAllowance
+  auctioneerNftAllowance,
+  auctioneerNftBalance,
+  tokenAllowance,
+  tokenBalance,
 }) => {
-  console.log('tk allow',tokenAllowance, highBid)
+  console.log(auctioneerNftAllowance)
   const {seconds,minutes,hours,days, restart} = useTimer({expiryTimestamp: new Date()})
   useEffect(() => {
     if (auction) {
@@ -186,6 +276,13 @@ export const  BasicStatistics = ({
         <StatsCard
           title={'Nft'}
           stat={auction ? `${auction.nftId}: ${substringAddr(auction.nft)}` : ''}
+          status={auctioneerNftBalance ? 'success': 'warning'}
+          description='The address of the user who has commited to auctioning this nft'
+          infoChoices={{
+            success: 'The auctioneer owns the nft and has approved the auction contract',
+            warning: 'The auctioneer owns the nft, but has not approved the contract',
+            error: 'The auctioneer does not own this nft, beware!'
+          }}
           icon={<SlPicture size={'3em'} />}
         />
         <StatsCard
@@ -219,23 +316,24 @@ export const  BasicStatistics = ({
           icon={<BsPerson size={'3em'} />}
         />
         {(auction && auction.auctioneer == account) ?
-            ((nftAllowance) ?
+            ((auctioneerNftAllowance) ?
               (<StatsCardConsumeAuctionButton
                 handleSubmitAuction={handleSubmitAuction}
-                />) :
+              />) :
               (<StatsCardNftAllowanceButton
-          handleApproveNft={handleApproveNft}
-          />)) :
+                handleApproveNft={handleApproveNft}
+              />)) :
             ((tokenAllowance > highBid) ? 
               (<StatsCardBidButton
                 title={'Create Bid'}
                 handleSubmitBid={handleSubmitBid}
+                tokenBalance={tokenBalance}
                 icon={<BsPerson size={'3em'} />} />):
               (<StatsCardTokenAllowanceCard
                 handleApproveToken={handleApproveToken} />
-            ))
+              ))
         }
-    </SimpleGrid>
+      </SimpleGrid>
     </Box>
   );
-        }
+}

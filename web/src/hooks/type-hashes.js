@@ -8,6 +8,7 @@ export const EIP712DOMAIN = [
 
 export const Auction = [
   { name: 'auctioneer', type:'address' },
+  { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
   { name: 'nftId', type:'uint256' },
   { name: 'token', type:'address' },
@@ -20,6 +21,7 @@ export const Auction = [
 
 export const AuctionAuthSig = [
   { name: 'auctioneer', type:'address' },
+  { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
   { name: 'nftId', type:'uint256' },
   { name: 'token', type:'address' },
@@ -30,7 +32,7 @@ export const AuctionAuthSig = [
 export const Bid = [
   { name: 'bidder', type:'address' },
   { name: 'amount', type:'uint256' },
-  { name: 'nonce', type:'uint256' },
+  { name: 'bidderNonce', type:'uint256' },
   { name: 'auctionSigHash', type: 'bytes32' }
 ]
 
