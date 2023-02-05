@@ -30,26 +30,29 @@ export const useTokenAllowance = () => {
 	const { account, provider } = useWeb3React()
 
 	const fetchAllowance = useCallback(async (address) => {
+		console.log('fetching token allowance')
 		const erc20 = getExampleToken(provider, address)
-		const allow = await erc20.allowance(account, address)
-		setAllowance(allow)
-		console.log('fetch allowance')
-	}, [])
+		const allow = await erc20.allowance(account, Static.englishAuctionAddr)
+		console.log(' token allowance', ethers.utils.formatUnits(allow, 0))
+		setAllowance(Number( ethers.utils.formatUnits(allow,18) ))
+	}, [account, provider])
 
-  const createAllowance = useCallback(async (address, amount) => {
-		const contract = getExampleToken(provider, address)
+  const createAllowance = useCallback(async (address) => {
+    const signer = provider.getSigner()
+		const contract = getExampleToken(signer, address)
 		try {
-			const approve = await contract.approve(
-				Static.addresses.diamond,
-				ethers.utils.parseUnits(String(amount), 'ether')
-			)
-			return approve.status
+			const tx = await contract.approve(
+				Static.englishAuctionAddr,
+				ethers.constants.MaxUint256)
+      const receipt = await tx.wait(1)
+      console.log(receipt)
+      await fetchAllowance(address)
 		} catch (e) {
 			console.log(e)
 			return false
 		}
 
-  })
+  }, [account, provider])
 
 	return {allowance, fetchAllowance, createAllowance}
 }
@@ -67,7 +70,7 @@ export const useNft = () => {
       console.log(account, id)
       const response = await contract.balanceOf(account, id)
       console.log(ethers.utils)
-      balances[id] = ethers.utils.formatUnits(response, 0)
+      balances[id] = ethers.utils.formatUnits(response, 18)
       setBalances(balances)
     } catch (e) {
 			console.log(e)
@@ -75,26 +78,30 @@ export const useNft = () => {
     }
   },[account, provider])
 
-  const fetchAllowance = useCallback(async (auctioneer) => {
-		const contract = getExampleNft(provider, address)
+  const fetchAllowance = useCallback(async (addressNft) => {
+		const contract = getExampleNft(provider, addressNft)
     try {
-      const response = await contract.isApprovedForAll(auctioneer, contract.address)
+      const response = await contract.isApprovedForAll(account, Static.englishAuctionAddr)
+      console.log('allowance response', response)
       setAllowance(response)
     } catch (e) {
       console.log(e)
       return false
     }
-  }, [])
-  const createAllowance = useCallback(async (auctioneer, address) => {
-		const contract = getExampleNft(provider, address)
+  }, [account, provider])
+  const createAllowance = useCallback(async (nftAddress) => {
+    const signer = provider.getSigner()
+		const contract = getExampleNft(signer, nftAddress)
     try {
-      const response = await contract.setApprovalForAll(contract.address, auctioneer)
-      setAllowance(response)
+      const response = await contract.setApprovalForAll(Static.englishAuctionAddr, true)
+      const receipt = await response.wait(1)
+      console.log('receipt', receipt)
+      await fetchAllowance(nftAddress)
     } catch (e) {
       console.log(e)
       return false
     }
-  }, [])
+  }, [account, provider])
 
 
   const createSafeTransferFrom = useCallback(async (auctioneer, bidder, id, amount, data) => {

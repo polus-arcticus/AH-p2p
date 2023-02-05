@@ -25,7 +25,6 @@ import { TbMountain } from 'react-icons/tb'
 import { FaEnvelopeOpenText, FaCheck } from 'react-icons/fa'
 import {substringAddr} from '@/components/Utils'
 import {useTimer} from 'react-timer-hook'
-import {useWeb3React} from '@web3-react/core'
 function StatsCard(props) {
   const { title, stat, icon } = props;
   return (
@@ -109,8 +108,60 @@ function StatsCardConsumeAuctionButton({handleConsumeAuction, handleSubmitAuctio
   );
 }
 
-export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleSubmitBid, handleSubmitAuction}) => {
-  const {account} = useWeb3React()
+function StatsCardNftAllowanceButton({handleApproveNft}) {
+  return (
+    <Stat
+      px={{ base: 2, md: 4 }}
+      py={'7'}
+      shadow={'xl'}
+      border={'1px solid'}
+      borderColor={useColorModeValue('gray.800', 'gray.500')}
+      rounded={'lg'}>
+      <Button
+        colorScheme="yellow"
+        w="100%"
+        variant="outline"
+        onClick={() => {
+          handleApproveNft()
+        }}
+      >Approve Nft for Auction</Button>
+    </Stat>
+  );
+}
+function StatsCardTokenAllowanceCard({handleApproveToken}) {
+  return (
+    <Stat
+      px={{ base: 2, md: 4 }}
+      py={'7'}
+      shadow={'xl'}
+      border={'1px solid'}
+      borderColor={useColorModeValue('gray.800', 'gray.500')}
+      rounded={'lg'}>
+      <Button
+        colorScheme="yellow"
+        w="100%"
+        variant="outline"
+        onClick={() => {
+          handleApproveToken()
+        }}
+      >Approve Token</Button>
+    </Stat>
+  );
+}
+export const  BasicStatistics = ({
+  account,
+  bidCount,
+  highBid,
+  auction,
+  peerCount,
+  handleSubmitBid,
+  handleSubmitAuction,
+  handleApproveNft,
+  handleApproveToken,
+  nftAllowance,
+  tokenAllowance
+}) => {
+  console.log('tk allow',tokenAllowance, highBid)
   const {seconds,minutes,hours,days, restart} = useTimer({expiryTimestamp: new Date()})
   useEffect(() => {
     if (auction) {
@@ -168,11 +219,21 @@ export const  BasicStatistics = ({bidCount, highBid, auction, peerCount, handleS
           icon={<BsPerson size={'3em'} />}
         />
         {(auction && auction.auctioneer == account) ?
-            (<StatsCardConsumeAuctionButton handleSubmitAuction={handleSubmitAuction} />):
-            (<StatsCardBidButton
-              title={'Create Bid'}
-              handleSubmitBid={handleSubmitBid}
-              icon={<BsPerson size={'3em'} />} />)
+            ((nftAllowance) ?
+              (<StatsCardConsumeAuctionButton
+                handleSubmitAuction={handleSubmitAuction}
+                />) :
+              (<StatsCardNftAllowanceButton
+          handleApproveNft={handleApproveNft}
+          />)) :
+            ((tokenAllowance > highBid) ? 
+              (<StatsCardBidButton
+                title={'Create Bid'}
+                handleSubmitBid={handleSubmitBid}
+                icon={<BsPerson size={'3em'} />} />):
+              (<StatsCardTokenAllowanceCard
+                handleApproveToken={handleApproveToken} />
+            ))
         }
     </SimpleGrid>
     </Box>

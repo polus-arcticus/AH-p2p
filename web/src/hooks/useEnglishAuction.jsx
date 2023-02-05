@@ -93,7 +93,6 @@ export const useCreateAuction = (auction)=> {
     }
     const parsedInitAuction = parseAuctionForSig(initAuction)
     const signer = provider.getSigner()
-    console.log(signer)
     const auctionSigHash = ethers.utils.keccak256(await signer._signTypedData(
       domain,
       { AuctionAuthSig },
@@ -169,7 +168,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
 
   const fetchRoom = useCallback(async (newRoomKey=null) => {
     const key = newRoomKey ? newRoomKey: roomKey
-    console.log('key', key)
     const instance = await IPFS.create({
       repo: '/ipfs/repos/'+ Math.random()+'ok',
       EXPERIMENTAL: { pubsub: true },
@@ -181,7 +179,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
         }
       }
     })
-    console.log('instance', instance)
     const roomInstance = new Room(instance, key)
 
     roomInstance.on('peer joined', (peer) => {
@@ -208,10 +205,8 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
           auct.auctionData.bids.push(payload.bid)
           auct.auctionData.bidSigs.push(payload.bidSig)
           localStorage.setItem(roomKey, JSON.stringify(auct))
-          console.log('setting on bid')
           setBids(old => [...old, payload.bid])
           setBidSigs(old => [...old, payload.bidSig])
-          console.log('updating bid count')
           setBidCount(old => old + 1)
           if (payload.bid.amount > highBid) {
             setHighBid(payload.bid.amount)
@@ -224,7 +219,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
 
     roomInstance.on('peer left', (peer) => {
       console.log('Peer left...', peer)
-      console.log('peers[peer]', peers[peer])
       if (peers[peer]) {
         peers[peer] = false
         setPeers(old => {
@@ -253,7 +247,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
     const englishAuction = getEnglishAuction(provider)
     try {
       const latestNonce = await englishAuction.usedNonces(account)
-      console.log('latestNonce', latestNonce)
       let domain = {
         name:  'EnglishAuction',
         version: '1',
@@ -268,7 +261,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       }
       const parsedInitBid = parseBidForSig(initBid)
       const signer = provider.getSigner()
-      console.log(signer)
       const bidSig = await signer._signTypedData(
         domain,
         { Bid },
@@ -305,8 +297,10 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
     const v = parseInt(auctionSigNo0x.substring(128,130), 16)
 
     try {
-      const res = await contract.consumeAuction(v,r,s,digest)
-      console.log(res)
+      const tx = await contract.consumeAuction(v,r,s,digest)
+      console.log('tx', tx)
+      const receipt = await tx.wait(1)
+      console.log('receipt', receipt)
     } catch (e) {
       console.log(e)
       return
@@ -314,7 +308,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
   }, [account,provider,room])
 
   useEffect(() => {
-    console.log('should run')
     let initAuct = {}
     let initNetwork = {}
     let initBidCount = 0;
@@ -326,7 +319,6 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
         auctionData:initAuct,
         networkParams: initNetwork
       } = getAuction(defaultRoomKey)
-      console.log(initAuct, initNetwork)
       initBidCount = initAuct.bids.length
       initHighBid = initAuct.bids.length ?
         (initAuct.bids.reduce((a,b) => {
@@ -342,14 +334,11 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       setBids(initBids)
       setBidSigs(initBidSigs)
     }
-    console.log('initAuct', initAuct)
       fetchRoom(defaultRoomKey)
       return function cleanup() {
-      console.log('cleaning up pubsub room')
       //leaveRoom()
     }
   }, [])
-  console.log('auction', auction)
   return {
     fetchRoom:fetchRoom,
     auction:auction,
