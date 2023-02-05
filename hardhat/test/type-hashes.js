@@ -8,6 +8,7 @@ exports.EIP712DOMAIN = [
 
 exports.Auction = [
   { name: 'auctioneer', type:'address' },
+  { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
   { name: 'nftId', type:'uint256' },
   { name: 'token', type:'address' },
@@ -19,6 +20,7 @@ exports.Auction = [
 ]
 exports.AuctionAuthSig = [
   { name: 'auctioneer', type:'address' },
+  { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
   { name: 'nftId', type:'uint256' },
   { name: 'token', type:'address' },
@@ -28,13 +30,7 @@ exports.AuctionAuthSig = [
 exports.Bid = [
   { name: 'bidder', type:'address' },
   { name: 'amount', type:'uint256' },
-  { name: 'nonce', type:'uint256' },
+  { name: 'bidderNonce', type:'uint256' },
   { name: 'auctionSigHash', type:'bytes32' }
 ]
-
-exports.englishAuctionTypes = {
-
-}
-
-
 

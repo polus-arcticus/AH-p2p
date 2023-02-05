@@ -7,18 +7,22 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 contract EnglishAuction {
   uint256 chainId;
   bytes32 DOMAIN_SEPARATOR;
-  bytes32 AUCTION_TYPE_HASH = keccak256("Auction(address auctioneer,address nft,uint256 nftId,address token,uint256 bidStart,uint256 deadline,bytes32 auctionSigHash,Bid[] bids,bytes[] bidSigs)Bid(address bidder,uint256 amount,uint256 nonce,bytes32 auctionSigHash)");
-  bytes32 BID_TYPE_HASH = keccak256("Bid(address bidder,uint256 amount,uint256 nonce,bytes32 auctionSigHash)");
+  bytes BID_TYPE = "Bid(address bidder,uint256 amount,uint256 bidderNonce,bytes32 auctionSigHash)";
+  bytes AUCTION_TYPE = abi.encodePacked("Auction(address auctioneer,uint256 auctioneerNonce,address nft,uint256 nftId,address token,uint256 bidStart,uint256 deadline,bytes32 auctionSigHash,Bid[] bids,bytes[] bidSigs)", BID_TYPE);
+  bytes32 BID_TYPE_HASH = keccak256(BID_TYPE);
+  bytes32 AUCTION_TYPE_HASH = keccak256(AUCTION_TYPE);
+
 
   struct Bid {
     address bidder;
     uint256 amount;
-    uint256 nonce;
+    uint256 bidderNonce;
     bytes32 auctionSigHash;
   }
 
   struct Auction {
     address auctioneer;
+    uint256 auctioneerNonce;
     address nft;
     uint256 nftId;
     address token;
@@ -58,6 +62,7 @@ contract EnglishAuction {
       abi.encode(
         AUCTION_TYPE_HASH,
         auction.auctioneer,
+        auction.auctioneerNonce,
         auction.nft,
         auction.nftId,
         auction.token,
@@ -69,106 +74,109 @@ contract EnglishAuction {
     )
     );
     bytes32 hash = keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct));
-    //console.log(ecrecover(hash,v,r,s), 'ecrecover');
-    //console.log(ECDSA.recover(hash, v, r, s));
-    //console.log('^ ecdsa reover');
-    //console.log(msg.sender, 'message.sender');
-    console.log('ecrecover', ecrecover(hash,v,r,s));
-    require(ecrecover(hash, v, r, s) == msg.sender, "bids are self signed, auction is not");
+    require(ecrecover(hash, v, r, s) == msg.sender, "auction can only be consumed by auctioneer");
 
-    Bid memory highestBidder = Bid(address(0), 0, 0, auction.auctionSigHash);
+    // enforce bid ordering in contract in attempt to save gas
+    uint256 lastBid = type(uint256).max;
     for (uint i=0;i < auction.bids.length; i++) {
-      bytes32 hashStruct = keccak256(
-        abi.encode(
-          BID_TYPE_HASH,
-          auction.bids[i].bidder,
-          auction.bids[i].amount,
-          auction.bids[i].nonce,
-          auction.bids[i].auctionSigHash
-      )
-      );
-      address signer = recoverSigner(
-        keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct)),
-        auction.bidSigs[i]
-      );
-      console.log('bid signer', signer);
-
-      console.log(signer, 'bids loop');
-      if (signer == auction.bids[i].bidder) {
-        if (auction.bids[i].amount > highestBidder.amount) {
-          highestBidder = auction.bids[i];
+      require(auction.bids[i].amount <= lastBid, "Please order the bids from highest to smallest prior to consuming, this saves gas");
+      lastBid = auction.bids[i].amount;
+    }
+    uint256 iter = 0;
+    bool swapMade = false;
+    while (!swapMade) {
+      if (
+        auction.bids[iter].bidderNonce == usedNonces[auction.bids[iter].bidder] &&
+        IERC20(auction.token).allowance(auction.bids[iter].bidder, address(this)) >= auction.bids[iter].amount
+      ) {
+        bytes32 hashStruct = keccak256(
+          abi.encode(
+            BID_TYPE_HASH,
+            auction.bids[iter].bidder,
+            auction.bids[iter].amount,
+            auction.bids[iter].bidderNonce,
+            auction.bids[iter].auctionSigHash
+        )
+        );
+        address signer = recoverSigner(
+          keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, hashStruct)),
+          auction.bidSigs[iter]
+        );
+        if (signer == auction.bids[iter].bidder) {
+          IERC1155(auction.nft).safeTransferFrom(auction.auctioneer, auction.bids[iter].bidder, auction.nftId, 1, abi.encode('data'));
+          IERC20(auction.token).transferFrom(auction.bids[iter].bidder, auction.auctioneer, auction.bids[iter].amount);
+          usedNonces[auction.bids[iter].bidder] += 1;
+          usedNonces[auction.auctioneer] += 1;
+          swapMade = true;
+        } else {
+        console.log("bidder didn't seem to actually sign bid");
+          iter++;
         }
       } else {
-        console.log('signature no in, handle faulty situation');
-        console.log('signature-bids mismatch');
+        console.log('bidder either didnt use nonce or didnt provide allowance');
+        iter++;
       }
     }
+}
 
-    if (usedNonces[highestBidder.bidder] <= highestBidder.nonce) {
-      IERC1155(auction.nft).safeTransferFrom(auction.auctioneer, highestBidder.bidder, auction.nftId, 1, abi.encode('data'));
-      IERC20(auction.token).transferFrom(highestBidder.bidder, auction.auctioneer, highestBidder.amount);
-      usedNonces[highestBidder.bidder] += 1;
-    } else {
-      console.log('warning, nonce not unique');
-    }
+
+function hashBidSigs(bytes[] memory bidSigs) internal returns (bytes32) {
+  bytes memory packed;
+  for (uint i =0; i < bidSigs.length ; i++) {
+    packed = abi.encodePacked(packed, keccak256(bidSigs[i])); 
   }
-  function hashBidSigs(bytes[] memory bidSigs) internal returns (bytes32) {
-    bytes memory packed;
-    for (uint i =0; i < bidSigs.length ; i++) {
-      packed = abi.encodePacked(packed, keccak256(bidSigs[i])); 
-    }
-    return keccak256(packed);
+  return keccak256(packed);
+}
+
+function hashBids(Bid[] memory bids) internal returns (bytes32) {
+  bytes memory packed;
+  for (uint i =0; i < bids.length ; i++) {
+    bytes32 hashStruct = keccak256(
+      abi.encode(
+        BID_TYPE_HASH,
+        bids[i].bidder,
+        bids[i].amount,
+        bids[i].bidderNonce,
+        bids[i].auctionSigHash
+    )
+    );
+    //type no supported in packed mode
+    packed = abi.encodePacked(packed, hashStruct); 
   }
+  return keccak256(packed);
+}
 
-  function hashBids(Bid[] memory bids) internal returns (bytes32) {
-    bytes memory packed;
-    for (uint i =0; i < bids.length ; i++) {
-      bytes32 hashStruct = keccak256(
-        abi.encode(
-          BID_TYPE_HASH,
-          bids[i].bidder,
-          bids[i].amount,
-          bids[i].nonce,
-          bids[i].auctionSigHash
-      )
-      );
-      //type no supported in packed mode
-      packed = abi.encodePacked(packed, hashStruct); 
-    }
-    return keccak256(packed);
-  }
+/// signature methods.
+function splitSignature(bytes memory sig)
+internal
+pure
+returns (uint8 v, bytes32 r, bytes32 s)
+{
+  require(sig.length == 65);
 
-  /// signature methods.
-  function splitSignature(bytes memory sig)
-  internal
-  pure
-  returns (uint8 v, bytes32 r, bytes32 s)
-  {
-    require(sig.length == 65);
-
-    assembly {
-      // first 32 bytes, after the length prefix.
-      r := mload(add(sig, 32))
-      // second 32 bytes.
-      s := mload(add(sig, 64))
-      // final byte (first byte of the next 32 bytes).
-      v := byte(0, mload(add(sig, 96)))
-    }
-
-    return (v, r, s);
+  assembly {
+    // first 32 bytes, after the length prefix.
+    r := mload(add(sig, 32))
+    // second 32 bytes.
+    s := mload(add(sig, 64))
+    // final byte (first byte of the next 32 bytes).
+    v := byte(0, mload(add(sig, 96)))
   }
 
-  function recoverSigner(bytes32 message, bytes memory sig)
-  internal
-  pure
-  returns (address)
-  {
-    (uint8 v, bytes32 r, bytes32 s) = splitSignature(sig);
+  return (v, r, s);
+}
 
-    return ecrecover(message, v, r, s);
-  }
-  /// builds a prefixed hash to mimic the behavior of eth_sign.
-  function prefixed(bytes32 hash) internal pure returns (bytes32) {
-    return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
-  }
+function recoverSigner(bytes32 message, bytes memory sig)
+internal
+pure
+returns (address)
+{
+  (uint8 v, bytes32 r, bytes32 s) = splitSignature(sig);
+
+  return ecrecover(message, v, r, s);
+}
+/// builds a prefixed hash to mimic the behavior of eth_sign.
+function prefixed(bytes32 hash) internal pure returns (bytes32) {
+  return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n32", hash));
+}
 }
