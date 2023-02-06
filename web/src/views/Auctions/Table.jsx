@@ -9,8 +9,10 @@ import {
   GridItem,
   Button
 } from '@chakra-ui/react'
+import {useState, useEffect} from 'react'
 import { substringAddr } from '@/components/Utils'
-import {useNavigate} from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+
 const Row =({auctioneer, nft, bidders, token, highestBid, deadline})  => {
   return (
     <Grid templateColumns='1fr 1fr 0.5fr 1fr 0.5fr 1fr' gap={6}>
@@ -23,8 +25,6 @@ const Row =({auctioneer, nft, bidders, token, highestBid, deadline})  => {
     </Grid>
   )
 }
-
-
 const AuctionItem = ({auction}) => {
   const navigate =useNavigate()
   console.log(auction)
@@ -63,18 +63,25 @@ const AuctionItem = ({auction}) => {
   )
 }
 
-export const ActiveAuctions = ({auctions}) => {
-  const auctionItems = auctions.map((auction,i) => {
-    console.log('auction', auction)
+export const Table = ({auctions}) => {
+  const [auctionItems, setAuctionItems] =useState(<></>)
+  useEffect(() => {
+    if (auctions.length > 0) {
+      console.log('table::auctions', auctions)
+  setAuctionItems(auctions.map((auction,i) => {
+    console.log('table::auction.completed',auction.completed)
     return (<AuctionItem key={i} auction={auction.auctionData}/>)
-  })
+  }))
+
+    }
+  }, [auctions])
   return (
     <Accordion allowToggle mb="5%">
       <AccordionItem>
         <h2>
           <AccordionButton>
             <Box as="span" flex='1' textAlign='left'>
-              <Row auctioneer={'Auctioneer'} nft={'NFT'} bidders={'bidders'} token={'Token'} highestBid={'Highest Bid'} deadline={'deadline'} />
+              <Row auctioneer={'Auctioneer'} nft={'NFT'} bidders={'Bidders'} token={'Token'} highestBid={'Highest Bid'} deadline={'Deadline'} />
             </Box>
             <AccordionIcon />
           </AccordionButton>

@@ -6,12 +6,13 @@ import { useAuctionRoom } from '@/hooks/useEnglishAuction'
 import {useWeb3React} from '@web3-react/core'
 import {useNft, useFetchNftBalance,useGetTokenBalance,  useFetchNftAllowance, useTokenAllowance} from '@/hooks/useExamples'
 
-import {useParams} from 'react-router-dom'
+import {useParams, useNavigate} from 'react-router-dom'
 
 import  {BasicStatistics} from './BasicStatistics'
 
 export const Auction = () => {
   const {account} = useWeb3React()
+  const navigate = useNavigate()
 
   const {
     createAllowance: createNftAllowance
@@ -53,9 +54,11 @@ export const Auction = () => {
   }
   const handleSubmitAuction = async () => {
     await submitAuction()
+    navigate('completed')
   }
   const handleApproveNft = async () => {
     await createNftAllowance(auction.nft)
+    await fetchAllowance(auction.nft, account)
   }
   const handleApproveToken = async () => {
     await createTokenAllowance(auction.token)

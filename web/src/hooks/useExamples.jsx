@@ -121,7 +121,6 @@ export const useNft = () => {
       const response = await contract.setApprovalForAll(Static.englishAuctionAddr, true)
       const receipt = await response.wait(1)
       console.log('receipt', receipt)
-      await fetchAllowance(nftAddress)
     } catch (e) {
       console.log(e)
       return false

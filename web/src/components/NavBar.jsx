@@ -287,6 +287,11 @@ const NAV_ITEMS = [
         href: '/auctions/active',
       },
       {
+        label: 'Archived Auctions',
+        subLabel: 'Available historical records of past auctions youve engaged with',
+        href: '/auctions/archived',
+      },
+      {
         label: 'Create Auction',
         subLabel: 'List your own NFT for auction',
         href: '/auctions/create',

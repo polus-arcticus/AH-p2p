@@ -12,7 +12,9 @@ import { Home } from '@/views/Home/Home'
 import { Docs } from '@/views/Docs/Docs'
 import { Auctions } from '@/views/Auctions/Auctions'
 import { Auction } from '@/views/Auctions/Auction/Auction'
+import { Completed } from '@/views/Auctions/Auction/Completed/Completed' 
 import { Active } from '@/views/Auctions/Active/Active'
+import { Archived } from '@/views/Auctions/Archived/Archived'
 import { Create } from '@/views/Auctions/Create/Create'
 
 export const Router = () => {
@@ -22,9 +24,12 @@ export const Router = () => {
     <Routes>
       <Route path="/" element={<Home />}/>
       <Route path="/auctions" element={<Auctions />}>
-        <Route path=":roomKey" element={<Auction />}/>
+        <Route path=":roomKey" element={<Auction />}>
+        </Route>
+        <Route path=":roomKey/completed" element={<Completed />} />
         <Route path="create" element={<Create />}/>
         <Route path="active" element={<Active />}/>
+        <Route path="archived" element={<Archived />}/>
       </Route>
       <Route path="docs" element={<Docs />}>
       </Route>

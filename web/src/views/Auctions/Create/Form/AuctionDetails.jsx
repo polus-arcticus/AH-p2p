@@ -1,5 +1,5 @@
 import {useState} from 'react'
-import {useGetTokenBalance, useTokenAllowance, useNft} from '@/hooks/useExamples'
+import {useGetTokenBalance, useTokenAllowance, useFetchNftBalance, useFetchNftAllowance} from '@/hooks/useExamples'
 import { useWeb3React } from '@web3-react/core'
 
 import { Field, Form, Formik  } from 'formik';
@@ -20,8 +20,7 @@ export const AuctionDetails = ({initialData, handleCreateAuction}) => {
   const { account } = useWeb3React()
   const {allowance:tokenAllowance, fetchAllowance:fetchAccountTokenAllowance} = useTokenAllowance()
   const {balance:tokenBalance, fetchBalance:fetchTokenBalance} = useGetTokenBalance()
-  const {balances:nftBalances, fetchBalance:fetchNftBalance} = useNft()
-
+  const {balances:nftBalances, fetchBalance:fetchNftBalance} = useFetchNftBalance()
 
   const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);

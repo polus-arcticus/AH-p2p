@@ -21,7 +21,12 @@ const getAuctions = (keyMap) => {
 }
 const getAuction = (roomKey) => {
   return JSON.parse(localStorage.getItem(roomKey))
+}
 
+const setAuctionCompleted = (roomKey) => {
+  const auction = getAuction(roomKey)
+  auction.completed = true
+  localStorage.setItem(roomKey, JSON.stringify(auction))
 }
 
 function parseAuctionForSig(auction) {
@@ -40,6 +45,17 @@ function parseBidForSig(bid) {
 function parseConsumeForSig(roomKey) {
   const {auctionData, networkParams}= getAuction(roomKey)
   auctionData.deadline = Math.floor(new Date(auctionData.deadline).getTime() / 1000)
+  // merge bidsigs into bids array
+  auctionData.bids = auctionData.bids.map((bid, i) => {
+    bid.bidSig = auctionData.bidSigs[i]
+    return bid
+  })
+  // sort with them inside
+  auctionData.bids = auctionData.bids.sort((a,b) => Number(b.amount) - Number(a.amount))
+  // take them back into bidSig array order of sorted
+  auctionData.bidSigs = auctionData.bids.map((bid) => {
+    return bid.bidSig
+  })
   auctionData.bids = auctionData.bids.map((bid) => {
     bid.amount = ethers.utils.parseUnits(bid.amount, 'ether')
     return bid
@@ -122,7 +138,7 @@ export const useCreateAuction = (auction)=> {
     const keyMap = JSON.parse(localStorage.getItem(AUCTIONS_KEY_MAP)) || []
     keyMap.push(roomKey)
     localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(keyMap))
-    localStorage.setItem(roomKey, JSON.stringify({auctionData, networkParams}))
+    localStorage.setItem(roomKey, JSON.stringify({auctionData, networkParams, completed: false}))
     setRoomKey(roomKey)
     return roomKey
 
@@ -131,18 +147,28 @@ export const useCreateAuction = (auction)=> {
   return { auctionData, networkParams, roomKey, createAuction, defineNetwork, publishAuction }
 }
 
-export const useAuctions = (defaultRoomKey=null) => {
+export const useAuctions = (defaultRoomKey=null,defaultFilter=null) => {
+  console.log('default filter', defaultFilter)
   const [keyMap, setKeyMap] = useState(getKeyMap())
-  const [auctions, setAuctions] = useState(getAuctions(keyMap))
+  const [auctions, setAuctions] = useState([])
   const [auction, setAuction] = useState(defaultRoomKey ? getAuction(defaultRoomKey): {})
 
 
-  const fetchAuctions = useCallback((filter,sort) => {
-    setAuctions(getAuction())
+  const fetchAuctions = useCallback((filter=defaultFilter,sort=null) => {
+    const storage = getAuctions(getKeyMap())
+    if (filter) {
+      const {filterKey, filterValue} = filter
+      setAuctions(storage.filter((item) => {
+        return item[filterKey] == filterValue
+      }))
+    } else {
+      setAuctions(getAuctions(getKeyMap()))
+    }
 
   },[])
-
-
+  useEffect(() => {
+      fetchAuctions()
+  },[])
   return {auctions, keyMap, fetchAuctions}
 }
 
@@ -194,6 +220,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
         setPeerCount(old => old + 1)
       } else {
         console.log('peer join oversent')
+        console.log('test')
       }
     })
 
@@ -287,7 +314,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       chainId: chainId,
       verifyingContract: contract.address
     }
-    const digest =parseConsumeForSig(roomKey)
+    const digest = parseConsumeForSig(roomKey)
     const auctionSig = await signer._signTypedData(
       domain,
       { Auction, Bid },
@@ -303,6 +330,7 @@ export const useAuctionRoom = (defaultRoomKey=null) => {
       console.log('tx', tx)
       const receipt = await tx.wait(1)
       console.log('receipt', receipt)
+      setAuctionCompleted(roomKey)
     } catch (e) {
       console.log(e)
       return
