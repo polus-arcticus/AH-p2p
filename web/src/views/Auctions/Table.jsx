@@ -27,7 +27,6 @@ const Row =({auctioneer, nft, bidders, token, highestBid, deadline})  => {
 }
 const AuctionItem = ({auction}) => {
   const navigate =useNavigate()
-  console.log(auction)
   const highestBid = (auction.bids.length > 0) ? Math.max(...auction.bids.map((bid) => bid.amount)): auction.bidStart
   return (
     <AccordionItem>
@@ -67,9 +66,7 @@ export const Table = ({auctions}) => {
   const [auctionItems, setAuctionItems] =useState(<></>)
   useEffect(() => {
     if (auctions.length > 0) {
-      console.log('table::auctions', auctions)
   setAuctionItems(auctions.map((auction,i) => {
-    console.log('table::auction.completed',auction.completed)
     return (<AuctionItem key={i} auction={auction.auctionData}/>)
   }))
 

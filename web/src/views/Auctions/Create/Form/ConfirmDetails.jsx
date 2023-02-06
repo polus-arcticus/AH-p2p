@@ -14,7 +14,7 @@ import {
   StatNumber,
   StatHelpText,
 } from '@chakra-ui/react'
-export const ConfirmDetails = ({auctionData, handlePublish, networkParams, handleBack}) => {
+export const ConfirmDetails = ({auctionData, handlePublish, connection, handleBack}) => {
   return (
         <Box>
           <Heading w="100%" textAlign={'center'} fontWeight="normal" mb="2%">
@@ -58,14 +58,9 @@ export const ConfirmDetails = ({auctionData, handlePublish, networkParams, handl
           </StatGroup>
           <StatGroup>
             <Stat>
-              <StatLabel>Host</StatLabel>
-              <StatNumber>{networkParams.host}</StatNumber>
-              <StatHelpText>method to host auction from</StatHelpText>
-            </Stat>
-            <Stat>
-              <StatLabel>Storage</StatLabel>
-              <StatNumber>{networkParams.storage}</StatNumber>
-              <StatHelpText>where the permit message is</StatHelpText>
+              <StatLabel>Connection</StatLabel>
+              <StatNumber>{connection.connection}</StatNumber>
+              <StatHelpText>Which protocol and storage paradigm one is using</StatHelpText>
             </Stat>
           </StatGroup>
           <ButtonGroup mt="5%" w="100%">

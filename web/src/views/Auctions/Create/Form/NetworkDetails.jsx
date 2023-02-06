@@ -22,14 +22,14 @@ import {
   GridItem,
   Select
 } from '@chakra-ui/react'
-export const NetworkDetails = ({auctionData, networkParams, handleDefineNetwork, handleBack}) => {
+export const NetworkDetails = ({auctionData, connection, handleDefineNetwork, handleBack}) => {
+
   return (
     <Formik
       onSubmit={async (data) => {
-        handleDefineNetwork(data.host, data.storage)
-        console.log(auctionData)
+        handleDefineNetwork(data.connection)
       }}
-      initialValues={networkParams}
+      initialValues={connection}
     >
       {(props) => (
         <Form>
@@ -73,11 +73,11 @@ export const NetworkDetails = ({auctionData, networkParams, handleDefineNetwork,
             </Stat>
           </StatGroup>
           <Flex>
-            <Field name="storage">
+            <Field name="connection">
               {({field, form}) => (
                 <FormControl as={GridItem} colSpan={[6, 3]}>
                   <FormLabel
-                    htmlFor="storage"
+                    htmlFor="connection"
                     fontSize="sm"
                     fontWeight="md"
                     color="gray.700"
@@ -88,56 +88,23 @@ export const NetworkDetails = ({auctionData, networkParams, handleDefineNetwork,
                   </FormLabel>
                   <Select
                     {...field}
-                    id="storage"
-                    name="storage"
-                    autoComplete="storage"
+                    id="connection"
+                    name="connection"
+                    autoComplete="connection"
                     placeholder="Select Choice"
                     focusBorderColor="brand.400"
                     shadow="sm"
                     size="sm"
                     w="full"
                     rounded="md">
-                    <option value="localstorage">LocalStorage</option>
-                    <option value="orbit-db">IPFS Pin</option>
+                    <option value="localstorage">Ipfs Pubsub + Localstorage</option>
+                    <option value="orbit-db">Ipfs Pubsub + Orbit Db</option>
+                    <option value="gun-js">Gunjs</option>
                     <option value="fleek">Fleek</option>
                     <option value="jsonExport">Export to JSON</option>
                   </Select>
 
-                  <FormErrorMessage>{form.errors.storage}</FormErrorMessage>
-                </FormControl>
-              )}
-            </Field>
-          </Flex>
-          <Flex>
-            <Field name="host">
-              {({field, form}) => (
-                <FormControl as={GridItem} colSpan={[6, 3]}>
-                  <FormLabel
-                    htmlFor="host"
-                    fontSize="sm"
-                    fontWeight="md"
-                    color="gray.700"
-                    _dark={{
-                      color: 'gray.50',
-                    }}>
-                    Choose Hosting Method
-                  </FormLabel>
-                  <Select
-                    {...field}
-                    id="host"
-                    name="host"
-                    autoComplete="host"
-                    placeholder="Select option"
-                    focusBorderColor="brand.400"
-                    shadow="sm"
-                    size="sm"
-                    w="full"
-                    rounded="md">
-                    <option value="ipfsPubsub">IPFS Pubsub</option>
-                    <option value="pinToOrbit-db">Pin with Orbit-db</option>
-                    <option value="selfHost">I want to host it myself</option>
-                  </Select>
-                  <FormErrorMessage>{form.errors.host}</FormErrorMessage>
+                  <FormErrorMessage>{form.errors.connection}</FormErrorMessage>
                 </FormControl>
               )}
             </Field>

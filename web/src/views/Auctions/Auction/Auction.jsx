@@ -19,13 +19,13 @@ export const Auction = () => {
   } = useNft()
 
   const {
-    allowance:auctioneerNftAllowance,
-    fetchAllowance:fetchAuctioneerNftAllowance
+    nftAllowance:auctioneerNftAllowance,
+    fetchNftAllowance:fetchAuctioneerNftAllowance
   } = useFetchNftAllowance()
 
   const {
     fetchNftBalance: fetchAuctioneerNftBalance,
-    balance: auctioneerNftBalance
+    nftBalance: auctioneerNftBalance
   } = useFetchNftBalance()
 
   const {
@@ -58,7 +58,7 @@ export const Auction = () => {
   }
   const handleApproveNft = async () => {
     await createNftAllowance(auction.nft)
-    await fetchAllowance(auction.nft, account)
+    await fetchAuctioneerNftAllowance({nft:auction.nft, id:auction.nftId})
   }
   const handleApproveToken = async () => {
     await createTokenAllowance(auction.token)
@@ -66,8 +66,8 @@ export const Auction = () => {
 
   useEffect(() => {
     if (account && auction) {
-      fetchAuctioneerNftAllowance(auction.nft, auction.auctioneer)
-      fetchAuctioneerNftBalance(auction.nft, auction.auctioneer, auction.nftId)
+      fetchAuctioneerNftAllowance({nft:auction.nft, owner:auction.auctioneer})
+      fetchAuctioneerNftBalance({nft:auction.nft, owner:auction.auctioneer, id:auction.nftId})
       fetchTokenAllowance(auction.token)
       fetchTokenBalance(auction.token)
 

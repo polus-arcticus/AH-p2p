@@ -54,7 +54,7 @@ import {ConfirmDetails} from './ConfirmDetails'
 
 export const CreateAuctionForm = () => {
   const navigate = useNavigate()
-  const { auctionData, networkParams, createAuction, defineNetwork, publishAuction } = useCreateAuction()
+  const { auctionData, connection, createAuction, defineNetwork, publishAuction } = useCreateAuction()
   const [auctionId, setAuctionId] = useState(null)
   const toast = useToast();
   const [step, setStep] = useState(1);
@@ -65,8 +65,8 @@ export const CreateAuctionForm = () => {
     setStep(step+stepDiff)
     setProgress(progress+progressDiff)
   }
-  const handleDefineNetwork = async (host, storage) => {
-    defineNetwork(host, storage)
+  const handleDefineNetwork = async (connection) => {
+    defineNetwork(connection)
     setStep(step+1)
     setProgress(progress+33.33)
   }
@@ -75,7 +75,7 @@ export const CreateAuctionForm = () => {
     navigate(`/auctions/${roomKey}`)
   }
 
-  const handleBack = async (auctionData, networkParams) => {
+  const handleBack = async (auctionData, connection) => {
     setStep(step-1)
     setProgress(progress - 33.33)
   }
@@ -103,13 +103,13 @@ export const CreateAuctionForm = () => {
                 handleBack={handleBack}
                 handleDefineNetwork={handleDefineNetwork}
                 auctionData={auctionData}
-                networkParams={networkParams}
+                connection={connection}
               /> :
                 <ConfirmDetails
                   handleBack={handleBack}
                   handlePublish={handlePublish}
                   auctionData={auctionData} 
-                  networkParams={networkParams}
+                  connection={connection}
                 />
         }
         <ButtonGroup mt="5%" w="100%">

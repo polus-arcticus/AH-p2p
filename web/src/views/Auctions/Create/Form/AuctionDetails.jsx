@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useState, useEffect} from 'react'
 import {useGetTokenBalance, useTokenAllowance, useFetchNftBalance, useFetchNftAllowance} from '@/hooks/useExamples'
 import { useWeb3React } from '@web3-react/core'
 
@@ -17,18 +17,21 @@ import {
 
 import {SingleDatepicker} from 'chakra-dayzed-datepicker'
 export const AuctionDetails = ({initialData, handleCreateAuction}) => {
+  const [nftConfirmed, setNftConfirmed] = useState(false)
+  const [tokenConfirmed, setTokenConfirmed] = useState(false)
+  const [show, setShow] = useState(false);
+  const [date, setDate] = useState(new Date());
+  
   const { account } = useWeb3React()
   const {allowance:tokenAllowance, fetchAllowance:fetchAccountTokenAllowance} = useTokenAllowance()
   const {balance:tokenBalance, fetchBalance:fetchTokenBalance} = useGetTokenBalance()
-  const {balances:nftBalances, fetchBalance:fetchNftBalance} = useFetchNftBalance()
+  const {nftBalance, fetchNftBalance} = useFetchNftBalance()
+  useEffect(() => {
+    
+  }, [])
 
-  const [show, setShow] = useState(false);
   const handleClick = () => setShow(!show);
 
-  const [nftConfirmed, setNftConfirmed] = useState(false)
-  const [tokenConfirmed, setTokenConfirmed] = useState(false)
-
-  const [date, setDate] = useState(new Date());
   const validateNftId = (value) => {
     let error
     if (value.length == 0) {error = 'cannot auction thin air'}
@@ -73,9 +76,8 @@ export const AuctionDetails = ({initialData, handleCreateAuction}) => {
 
         if (values.nftId && values.nft && !nftConfirmed) {
           try {
-            const res = await fetchNftBalance(values.nft, values.nftId)
-            console.log(nftBalances)
-            if (nftBalances[values.nftId] > 0) {
+            const res = await fetchNftBalance({nft:values.nft,id:values.nftId})
+            if (res > 0) {
               setNftConfirmed(true)
             } else {
               setNftConfirmed(false)

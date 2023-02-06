@@ -57,52 +57,53 @@ export const useTokenAllowance = () => {
 	return {allowance, fetchAllowance, createAllowance}
 }
 
-export const useFetchNftBalance = (defaultNftAddress=null, defaultOwnerAddress=null, defaultId=null) => {
-  const [balance,setBalance] =useState(0)
+export const useFetchNftBalance = ({defaultNft=null, defaultId=null} = {}) => {
+  const [nftBalance,setNftBalance] =useState(0)
 	const {account, provider } = useWeb3React()
 
-  const fetchNftBalance = useCallback(async (addressNft=defaultNftAddress, ownerAddress=defaultOwnerAddress, _id=defaultId) => {
-		const contract = getExampleNft(provider, addressNft)
+  const fetchNftBalance = useCallback(async ({nft=defaultNft, owner=account, id=defaultId} = {}) => {
+		const contract = getExampleNft(provider, nft)
     try {
-      const response = await contract.balanceOf(ownerAddress, _id)
-      setBalance(ethers.utils.formatUnits(response, 18))
-      return
+      const response = await contract.balanceOf(owner, id)
+      console.log('response', ethers.utils.formatUnits(response, 18))
+      setNftBalance(ethers.utils.formatUnits(response, 18))
+      return ethers.utils.formatUnits(response, 18)
     } catch (e) {
 			console.log(e)
 			return false
     }
   },[account, provider])
 
-  return {balance, fetchNftBalance}
+  return {nftBalance, fetchNftBalance}
 }
 
 export const useFetchNftAllowance = (
-  defaultNft=null,
-  defaultOwner=null,
-  defaultOperator=Static.englishAuctionAddr
+  {
+    defaultNft=null,
+    defaultOperator=Static.englishAuctionAddr
+  } = {}
 ) => {
 	const {account, provider } = useWeb3React()
-  const [allowance, setAllowance] = useState(null)
+  const [nftAllowance, setNftAllowance] = useState(null)
   
-  const fetchAllowance = useCallback(async (
-    nft=defaultNft,
-    owner=defaultOwner,
-    operator=defaultOperator
+  const fetchNftAllowance = useCallback(async (
+    {
+      nft=defaultNft,
+      owner=account,
+      operator=defaultOperator
+    } = {}
   ) => {
-    console.log('fetching allowance')
-    console.log('owner', owner)
-    console.log('operator', operator)
-		const contract = getExampleNft(provider, nft )
+		const contract = getExampleNft(provider, nft)
     try {
       const response = await contract.isApprovedForAll(owner, operator)
-      console.log('allowance response', response)
-      setAllowance(response)
+      setNftAllowance(response)
+      return response
     } catch (e) {
       console.log(e)
       return false
     }
   }, [account, provider])
-  return { allowance, fetchAllowance }
+  return { nftAllowance, fetchNftAllowance }
 }
 
 export const useNft = () => {

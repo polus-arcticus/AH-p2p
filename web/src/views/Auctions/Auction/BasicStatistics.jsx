@@ -124,7 +124,6 @@ function StatsCard({
         title={title}
         description={description}
         info={activeInfo}
-        status={status}
       />
     </Stat>
   </>

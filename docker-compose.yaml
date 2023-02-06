@@ -115,6 +115,22 @@ services:
       - "5173:5173"
     environment:
       - PORT=5173 
+
+  web-user-2:
+    depends_on:
+      - ganache-cli
+      - hardhat-deploy
+    build:
+      context: ./web
+      dockerfile: ./Dockerfile.dev
+    command: npm run dev
+    volumes:
+      - ./web/:/app:rw
+      - /app/node_modules
+    ports:
+      - "5174:5174"
+    environment:
+      - PORT=5174
 #
 #  web-user-2:
 #    build:
