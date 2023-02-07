@@ -32,9 +32,15 @@ export const Active = () => {
     setAuctions(old => [...old, ...ipfsAuctions])
     console.log(auctions, 'auctions active')
   }, [ipfsAuctions])
-  useEffect(() => {
-    broadcastExistence()
-  }, [])
+    useEffect(() => {
+
+      const interval = setInterval(() => {
+        console.log('This will be called every 10 seconds');
+        broadcastExistence()
+          
+      }, 10000);
+      return () => clearInterval(interval)
+    }, [])
   return (
     <Container maxW={'6xl'}>
         <Heading my="2.5%">

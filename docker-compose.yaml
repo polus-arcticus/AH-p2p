@@ -75,6 +75,8 @@ services:
       - VIRTUAL_HOST=${DOMAIN}
       - LETSENCRYPT_HOST=${DOMAIN}
       - VIRTUAL_PORT=9090
+    env_file:
+      - .env
 
   nginx-proxy:
     image: jwilder/nginx-proxy
@@ -107,6 +109,8 @@ services:
     build:
       context: ./web
       dockerfile: ./Dockerfile.dev
+    env_file:
+      - .env
     command: npm run dev
     volumes:
       - ./web/:/app:rw
@@ -114,7 +118,8 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - PORT=5173 
+      - PORT=5173
+      - VITE_DOMAIN=${DOMAIN}
 
   web-user-2:
     depends_on:
@@ -123,6 +128,8 @@ services:
     build:
       context: ./web
       dockerfile: ./Dockerfile.dev
+    env_file:
+      - .env
     command: npm run dev
     volumes:
       - ./web/:/app:rw
@@ -131,6 +138,7 @@ services:
       - "5174:5174"
     environment:
       - PORT=5174
+      - VITE_DOMAIN=${DOMAIN}
 #
 #  web-user-2:
 #    build:

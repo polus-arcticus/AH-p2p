@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 
 import { Container } from '@chakra-ui/react'
 
-import { useAuctionRoom } from '@/hooks/useEnglishAuction'
+import { useIpfsAuctionsRoom } from '@/hooks/useEnglishAuction'
+import { useAuctionRoom } from '@/hooks/EnglishAuction/useAuctionRoom'
 import {useWeb3React} from '@web3-react/core'
 import {useNft, useFetchNftBalance,useGetTokenBalance,  useFetchNftAllowance, useTokenAllowance} from '@/hooks/useExamples'
 
@@ -14,6 +15,9 @@ export const Auction = () => {
   const {account} = useWeb3React()
   const navigate = useNavigate()
 
+  const {
+    broadcastExistence
+  } = useIpfsAuctionsRoom()
   const {
     createAllowance: createNftAllowance
   } = useNft()
@@ -47,7 +51,7 @@ export const Auction = () => {
     peerCount,
     submitBid,
     submitAuction,
-  } = useAuctionRoom(params.roomKey)
+  } = useAuctionRoom({defaultRoomKey: params.roomKey})
 
   const handleSubmitBid = async (value) => {
     await submitBid(value)

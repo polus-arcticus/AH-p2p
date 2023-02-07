@@ -22,11 +22,9 @@ const connectors = [
 ]
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
     <Web3ReactProvider connectors={connectors}>
       <ChakraProvider theme={theme}>
         <App />
       </ChakraProvider>
     </Web3ReactProvider>
-  </React.StrictMode>,
 )
