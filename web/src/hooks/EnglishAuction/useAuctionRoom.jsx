@@ -92,7 +92,13 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           setBids(auct.auctionData.bids)
           setBidSigs(auct.auctionData.bidSigs)
           setBidCount(auct.auctionData.bids.length)
-          const highest = auct.auctionData.bids.sort((a,b) => Number(b.amount) - Number(a.amount))[0].amount
+          let highest
+          if (auct.auctionData.bids.length > 1) {
+            highest = auct.auctionData.bids.sort((a,b) => Number(b.amount) - Number(a.amount))[0].amount
+          } else {
+            highest = auct.auctionData.bids[0].amount
+          }
+          console.log('highest', highest)
           setHighBid(highest)
           break
         case 'auction-complete':

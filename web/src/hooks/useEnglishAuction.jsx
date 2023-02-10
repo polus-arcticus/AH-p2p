@@ -98,6 +98,7 @@ export const useIpfsAuctionsRoom = () => {
         console.log(e)
       }
     })
+    console.log('setting room instance')
     setRoom(roomInstance)
   }, [ipfs])
 
@@ -114,11 +115,12 @@ export const useIpfsAuctionsRoom = () => {
       }))
       
     }
-  }, [room])
+  }, [ipfs, room])
 
   useEffect(() => {
-    console.log('init')
+    console.log('init, ipfs', ipfs)
     if (ipfs) {
+      console.log('fetching ipfs auctions room')
       fetchIpfsAuctions()
     }
   }, [ipfs])
