@@ -7,9 +7,9 @@ import {
 import { Heading  } from '@chakra-ui/react'
 import { Table } from '@/views/Auctions/Table'
 import {
-  useAuctions,
   useIpfsAuctionsRoom
 } from '@/hooks/useEnglishAuction'
+import {useAuctions} from '@/hooks/EnglishAuction/useAuctions'
 import { PeersCard } from '@/components/Cards/PeersCard'
 
 
@@ -17,9 +17,17 @@ export const Active = () => {
   const {
     auctions:localAuctions,
     fetchAuctions:fetchLocalAuctions
-  } = useAuctions({defaultFilter:{filterKey:'completed',filterValue:false}})
+  } = useAuctions(
+    { 
+      defaultFilter: {
+        filterKey: ((item) => item.auctionData.deadline),
+        filterValue: ((item, now=(new Date()).getTime()) => {
+          return now <= (new Date(item)).getTime()})
+      }
+    }
+  )
 
-  const [auctions, setAuctions] = useState(localAuctions)
+  const [auctions, setAuctions] = useState([])
   const [roomStatus, setRoomStatus] = useState('warning')
   const {
     ipfsAuctions,
@@ -28,14 +36,14 @@ export const Active = () => {
     broadcastExistence
   } = useIpfsAuctionsRoom()
   useEffect(() => {
-    console.log('delta ipfsAuctions')
     setAuctions(old => [...old, ...ipfsAuctions])
-    console.log(auctions, 'auctions active')
   }, [ipfsAuctions])
+  useEffect(() => {
+    setAuctions(localAuctions)
+  }, [localAuctions])
     useEffect(() => {
 
       const interval = setInterval(() => {
-        console.log('This will be called every 10 seconds');
         broadcastExistence()
           
       }, 10000);

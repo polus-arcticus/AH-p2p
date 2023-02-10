@@ -6,6 +6,9 @@ import { MetaMask  } from '@web3-react/metamask'
 import { hooks as metaMaskHooks, metaMask  } from './connectors/metaMask'
 import { extendTheme, ChakraProvider } from '@chakra-ui/react'
 
+
+import { IpfsProvider } from '@/hooks/useIpfs'
+
 const colors = {
   brand: {
     900: '#1a365d',
@@ -23,8 +26,10 @@ const connectors = [
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <Web3ReactProvider connectors={connectors}>
+      <IpfsProvider>
       <ChakraProvider theme={theme}>
         <App />
       </ChakraProvider>
+      </IpfsProvider>
     </Web3ReactProvider>
 )

@@ -10,8 +10,15 @@ export const getExampleNft = (provider, address) => {
   return new ethers.Contract(address, Static.exampleNftAbi, provider )
 }
 export const AUCTIONS_KEY_MAP = 'AuctionsKeyMap'; // this semi colon was important to stringify
-export const getKeyMap = () => {
+export const ARCHIVES_KEY_MAP = 'ArchivesKeyMap'; // this semi colon was important to stringify
+export const getKeyMap = (km) => {
+  return JSON.parse(localStorage.getItem(km)) || []; 
+}
+export const getAuctionsKeyMap = () => {
   return JSON.parse(localStorage.getItem(AUCTIONS_KEY_MAP)) || []; 
+}
+export const getArchivesKeyMap = () => {
+  return JSON.parse(localStorage.getItem(ARCHIVES_KEY_MAP)) || []; 
 }
 export const getAuctions = (keyMap) => {
   const auct = keyMap.map((key, i) => {

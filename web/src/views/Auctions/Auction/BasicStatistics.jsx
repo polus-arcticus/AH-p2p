@@ -254,7 +254,8 @@ export const  BasicStatistics = ({
   const {seconds,minutes,hours,days, restart} = useTimer({expiryTimestamp: new Date()})
   useEffect(() => {
     if (auction) {
-      restart(auction.deadline)
+      console.log('hmmm', auction.deadline)
+      restart(new Date(auction.deadline))
     }
   }, [auction])
   return (

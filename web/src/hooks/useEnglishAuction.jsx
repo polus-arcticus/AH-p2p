@@ -9,147 +9,29 @@ import * as IPFS from 'ipfs-core'
 import Room from '@/pubsub/index'
 import decoding from '@/pubsub/decoding'
 import {
+  AUCTIONS_KEY_MAP,
   getEnglishAuction,
   getAuction,
   getAuctions,
-  getKeyMap,
+  getAuctionsKeyMap,
   setAuctionCompleted,
   parseAuctionForSig,
   parseBidForSig,
   parseConsumeForSig,
 } from '@/hooks/utils'
-
-export const useCreateAuction = (auction)=> {
-  const [auctionData, setAuctionData] = useState({
-    auctioneer: '',
-    auctioneerNonce: '',
-    nft: '',
-    nftId: '0',
-    token: '',
-    bidStart: '0',
-    deadline: new Date(),
-    bids: [],
-    bidSigs: []
-  })
-  const [connection, setConnection] = useState({connection: 'ipfs-localstorage'})
-  const [roomKey, setRoomKey] = useState(null)
-
-  //const [chain, setChain] = useState(null)
-  const [contract, setContract] = useState(null)
-  const { account, provider, chainId } = useWeb3React()
-
-  const fetchEnglishAuction = useCallback(() =>{
-    const englishAuction = getEnglishAuction(provider)
-    setContract(englishAuction)
-  }, [])
-
-  const createAuction = useCallback(async (data) => {
-    const englishAuction = getEnglishAuction(provider)
-
-    let domain = {
-      name:  'EnglishAuction',
-      version: '1',
-      chainId: chainId,
-      verifyingContract: englishAuction.address
-    }
-    let initAuction = {
-      auctioneer: data.auctioneer,
-      auctioneerNonce: (await englishAuction.usedNonces(account)).toString(),
-      nft: data.nft,
-      nftId: data.nftId,
-      token: data.token,
-      bidStart: data.bidStart,
-      deadline: data.deadline
-    }
-    const parsedInitAuction = parseAuctionForSig(initAuction)
-    const signer = provider.getSigner()
-    const auctionSigHash = ethers.utils.keccak256(await signer._signTypedData(
-      domain,
-      { AuctionAuthSig },
-      parsedInitAuction
-    ))
-    let auction ={
-      ...initAuction,
-      auctionSigHash: auctionSigHash,
-      bids: [],
-      bidSigs: []
-    }
-    setAuctionData(auction)
-
-
-  }, [account, provider])
-
-  const defineNetwork = useCallback((connectionChoice) => {
-    setConnection({connection: connectionChoice})
-  }, [])
-
-  const publishAuction = useCallback(() => {
-    // roomkey = auctioneer-nft-nftid-token-startBid-deadline-authSig
-
-    const roomKey = `${auctionData.auctionSigHash}`
-    const keyMap = JSON.parse(localStorage.getItem(AUCTIONS_KEY_MAP)) || []
-    keyMap.push(roomKey)
-    localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(keyMap))
-    localStorage.setItem(roomKey, JSON.stringify({auctionData, connection, completed: false}))
-    setRoomKey(roomKey)
-    return roomKey
-
-  }, [auctionData])
-
-  return { auctionData, connection, roomKey, createAuction, defineNetwork, publishAuction }
-}
-
-export const useAuctions = ({defaultRoomKey=null,defaultFilter=null}={}) => {
-  const [keyMap, setKeyMap] = useState(getKeyMap())
-  const [auctions, setAuctions] = useState(getAuctions(getKeyMap()))
-  const [auction, setAuction] = useState(defaultRoomKey ? getAuction(defaultRoomKey): {})
-
-
-  const fetchAuctions = useCallback((filter=defaultFilter,sort=null) => {
-    const storage = getAuctions(getKeyMap())
-    if (filter) {
-      const {filterKey, filterValue} = filter
-      setAuctions(storage.filter((item) => {
-        return item[filterKey] == filterValue
-      }))
-    } else {
-      setAuctions(getAuctions(getKeyMap()))
-    }
-
-  },[])
-  useEffect(() => {
-    fetchAuctions()
-  },[])
-  return {auctions, keyMap, fetchAuctions}
-}
-
-
-
+import {useIpfs} from '@/hooks/useIpfs'
 export const useIpfsAuctionsRoom = () => {
+  const {ipfs, error} = useIpfs()
   const [ipfsAuctions, setIpfsAuctions] = useState([])
   const [ipfsAuctionsKeyMap, setIpfsAuctionsKeyMap] = useState([])
   const [ipfsAuctionsPeerCount, setIpfsAuctionsPeerCount] =useState(0)
-  const [room, setRoom] = useState({
-    leave: () => null,
-    broadcast: () => null
-  })
+  const [room, setRoom] = useState(null)
   const [peers ,setPeers] = useState({})
 
 
   const fetchIpfsAuctions = useCallback(async () => {
-    const instance = await IPFS.create({
-      repo: '/ipfs/repos/'+ Math.random()+'ok',
-      EXPERIMENTAL: { pubsub: true },
-      config: {
-        Addresses: {
-          Swarm: [
-            '/ip4/192.168.1.69/tcp/80/ws/p2p-webrtc-star'
-          ]
-        }
-      }
-    })
-    const roomInstance = new Room(instance, 'active-auctions-room')
-
+    const roomInstance = new Room(ipfs, 'active-auctions-room')
+    console.log('roomInstance', roomInstance)
     roomInstance.on('peer joined', (peer) => {
       console.log('Peer joined the room', peer, ipfsAuctionsPeerCount)
       if (!peers[peer]) {
@@ -171,22 +53,21 @@ export const useIpfsAuctionsRoom = () => {
       console.log('payload', payload)
       switch (payload.message) {
         case 'new-peer-auctions':
-          const localKeyMap = getKeyMap()
+          const localKeyMap = getAuctionsKeyMap()
           const remoteKeyMap = payload.keyMap
           remoteKeyMap.forEach((remoteRoomKey, i) => {
             console.log(remoteRoomKey)
             const localAuction = localStorage.getItem(remoteRoomKey) || false
             console.log('local auction', localAuction)
-            // i
             if (!localAuction) {
               console.log('!localAuction == true')
-              localStorage.setItem(remoteRoomKey, JSON.stringify(payload.auctions[i]))
               localKeyMap.push(remoteRoomKey)
-              localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(localKeyMap))
+              localStorage.setItem(remoteRoomKey, JSON.stringify(payload.auctions[i]))
               setIpfsAuctionsKeyMap(old => [...old, remoteRoomKey])
               setIpfsAuctions(old => [...old, payload.auctions[i]])
             } 
           })
+          localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(localKeyMap))
       }
     })
 
@@ -206,7 +87,7 @@ export const useIpfsAuctionsRoom = () => {
     roomInstance.on('subscribed', async () => {
       console.log('Now connected!')
       try {
-        const localKeyMap = getKeyMap()
+        const localKeyMap = getAuctionsKeyMap()
         const localAuctions = getAuctions(localKeyMap).filter((auction) => auction.completed == false)
         console.log('localAuctions', localAuc)
         if (localAuctions) {
@@ -218,21 +99,29 @@ export const useIpfsAuctionsRoom = () => {
       }
     })
     setRoom(roomInstance)
-  }, [])
+  }, [ipfs])
 
-  const broadcastExistence = useCallback(() => {
-      const localKeyMap = getKeyMap()
+  const broadcastExistence = useCallback(async () => {
+    console.log('room', room)
+    if (room) {
+      console.log('Attempting to broadcast existence: This will be called every 10 seconds');
+      const localKeyMap = getAuctionsKeyMap()
       const localAuctions = getAuctions(localKeyMap).filter((auction) => auction.completed == false)
-      room.broadcast(JSON.stringify({
+      await room.broadcast(JSON.stringify({
         message: 'new-peer-auctions',
         auctions: localAuctions,
         keyMap:localKeyMap
       }))
+      
+    }
   }, [room])
 
   useEffect(() => {
-    fetchIpfsAuctions()
-  }, [])
+    console.log('init')
+    if (ipfs) {
+      fetchIpfsAuctions()
+    }
+  }, [ipfs])
 
   return {
     ipfsAuctions,

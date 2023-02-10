@@ -1,22 +1,26 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useIpfsAuctionsRoom } from '@/hooks/useEnglishAuction'
 import { useWeb3React } from '@web3-react/core'
-import * as IPFS from 'ipfs-core'
 import Room from '@/pubsub/index'
 import decoding from '@/pubsub/decoding'
 import {
+  AUCTIONS_KEY_MAP,
+  ARCHIVES_KEY_MAP,
   getEnglishAuction,
   getAuction,
   getAuctions,
-  getKeyMap,
+  getAuctionsKeyMap,
+  getArchivesKeyMap,
   setAuctionCompleted,
   parseAuctionForSig,
   parseBidForSig,
   parseConsumeForSig,
 } from '@/hooks/utils'
 import { EIP712DOMAIN, AuctionAuthSig, Auction, Bid } from '@/hooks/type-hashes'
-
+import { useIpfs } from '@/hooks/useIpfs'
 export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
+  const {ipfs, errors} = useIpfs()
+  const [isComplete, setIsComplete] = useState(false)
   const { broadcastExistence } = useIpfsAuctionsRoom()
   const { account, provider, chainId } = useWeb3React()
   const [auction, setAuction] = useState(null)
@@ -28,31 +32,21 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
 
   const [roomKey, setRoomKey] = useState(defaultRoomKey)
   const [room, setRoom] = useState({leave: () => null, broadcast: () => null})
-  const [ipfs, setIpfs] = useState({})
   const [peers ,setPeers] = useState({})
   const [peerCount, setPeerCount] = useState(0)
 
   const fetchAuction = useCallback((roomKey) => {
     const auctionData = getAuction(roomKey)
+    setIsComplete(auctionData.completed)
+    console.log('completed', auctionData.completed)
     setAuction(auctionData.auctionData)
     setNetwork(auctionData.connection)
   },[auction])
 
   const fetchRoom = useCallback(async (newRoomKey=null) => {
     const key = newRoomKey ? newRoomKey: roomKey
-    const instance = await IPFS.create({
-      repo: '/ipfs/repos/'+ Math.random()+'ok',
-      EXPERIMENTAL: { pubsub: true },
-      config: {
-        Addresses: {
-          Swarm: [
-            `/ip4/${import.meta.env.VITE_DOMAIN}/tcp/80/ws/p2p-webrtc-star`
-          ]
-        }
-      }
-    })
-
-    const roomInstance = new Room(instance, key)
+    console.log('ipfs::fetchroom', ipfs)
+    const roomInstance = new Room(ipfs, key)
     roomInstance.on('peer joined', (peer) => {
       console.log('Peer joined the room', peer, peerCount)
       if (!peers[peer]) {
@@ -101,6 +95,15 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           const highest = auct.auctionData.bids.sort((a,b) => Number(b.amount) - Number(a.amount))[0].amount
           setHighBid(highest)
           break
+        case 'auction-complete':
+          let auctionsKeyMap =  getKeyMap(AUCTIONS_KEY_MAP)
+          let archivesKeyMap =  getKeyMap(ARCHIVES_KEY_MAP)
+          auctionsKeyMap = auctionsKeyMap.filter(key => key !== payload.roomKey)
+          archivesKeyMap.push(payload.roomKey)
+
+          localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(auctionsKeyMap))
+          localStorage.setItem(ARCHIVES_KEY_MAP, JSON.stringify(archivesKeyMap))
+
       }
 
 
@@ -125,8 +128,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
     })
     setRoom(roomInstance)
     setRoomKey(key)
-    setIpfs(instance)
-  },[auction])
+  },[auction, ipfs])
 
   const leaveRoom = useCallback(async() => {
     console.log('called leaveroom', room)
@@ -192,6 +194,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       const receipt = await tx.wait(1)
       console.log('receipt', receipt)
       setAuctionCompleted(roomKey)
+      room.broadcast(JSON.stringify({message:'auction-complete', roomKey: roomKey}))
     } catch (e) {
       console.log(e)
       return
@@ -212,6 +215,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
     let initBidSigs = []
     if (defaultRoomKey) {
       const {
+        completed: initCompleted,
         auctionData:initAuct,
         connection: initNetwork
       } = getAuction(defaultRoomKey)
@@ -223,6 +227,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
         initAuct.bidStart
       initBids = initAuct.bids
       initBidSigs = initAuct.bidSigs
+      setIsComplete(initCompleted)
       setAuction(initAuct)
       setNetwork(initNetwork)
       setBidCount(initBidCount)
@@ -230,11 +235,18 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       setBids(initBids)
       setBidSigs(initBidSigs)
     }
-    fetchRoom(defaultRoomKey)
     return function cleanup() {
-      //leaveRoom()
     }
   }, [])
+  useEffect(() => {
+    if (ipfs) {
+      console.log('b4fetchroom', ipfs)
+      fetchRoom(defaultRoomKey)
+    }
+    return () => {
+      leaveRoom()
+    }
+  },[ipfs])
   useEffect(() => {
     //broadcast auction to active auctions room
     const interval = setInterval(() => {
@@ -256,6 +268,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
     return () => clearInterval(interval)
   }, [])
   return {
+    isComplete:isComplete,
     fetchRoom:fetchRoom,
     auction:auction,
     room:room,

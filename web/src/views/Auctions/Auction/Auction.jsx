@@ -10,7 +10,7 @@ import {useNft, useFetchNftBalance,useGetTokenBalance,  useFetchNftAllowance, us
 import {useParams, useNavigate} from 'react-router-dom'
 
 import  {BasicStatistics} from './BasicStatistics'
-
+import { Completed } from './Completed/Completed'
 export const Auction = () => {
   const {account} = useWeb3React()
   const navigate = useNavigate()
@@ -46,6 +46,7 @@ export const Auction = () => {
   const {
     bidCount,
     auction,
+    isComplete,
     highBid,
     room,
     peerCount,
@@ -80,21 +81,23 @@ export const Auction = () => {
 
   return (
     <Container maxW={"6xl"}>
-      <BasicStatistics
-        account={account}
-        auctioneerNftBalance={auctioneerNftBalance}
-        auctioneerNftAllowance={auctioneerNftAllowance}
-        tokenBalance={tokenBalance}
-        tokenAllowance={tokenAllowance}
-        highBid={highBid}
-        bidCount={bidCount}
-        handleSubmitBid={handleSubmitBid}
-        handleSubmitAuction ={handleSubmitAuction}
-        handleApproveNft={handleApproveNft}
-        handleApproveToken={handleApproveToken}
-        auction={auction}
-        peerCount={peerCount}
-      />
+      {isComplete ? (<Completed />) :
+        (<BasicStatistics
+          account={account}
+          auctioneerNftBalance={auctioneerNftBalance}
+          auctioneerNftAllowance={auctioneerNftAllowance}
+          tokenBalance={tokenBalance}
+          tokenAllowance={tokenAllowance}
+          highBid={highBid}
+          bidCount={bidCount}
+          handleSubmitBid={handleSubmitBid}
+          handleSubmitAuction ={handleSubmitAuction}
+          handleApproveNft={handleApproveNft}
+          handleApproveToken={handleApproveToken}
+          auction={auction}
+          peerCount={peerCount}
+        />)
+      }
     </Container>
   )
 }
