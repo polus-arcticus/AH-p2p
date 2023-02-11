@@ -32,10 +32,10 @@ import {
   StatNumber,
   StatHelpText,
   StatArrow,
-  StatGroup
+  StatGroup,
+  useToast
 } from '@chakra-ui/react';
 
-import { useToast } from '@chakra-ui/react';
 import { Field, Form, Formik  } from 'formik';
 
 import {useNavigate, generatePath, createSearchParams, useParams} from 'react-router-dom'
@@ -53,15 +53,22 @@ import {ConfirmDetails} from './ConfirmDetails'
 
 
 export const CreateAuctionForm = () => {
+  const toast = useToast()
   const navigate = useNavigate()
   const { auctionData, connection, createAuction, defineNetwork, publishAuction } = useCreateAuction()
   const [auctionId, setAuctionId] = useState(null)
-  const toast = useToast();
   const [step, setStep] = useState(1);
   const [progress, setProgress] = useState(0);
 
   const handleCreateAuction = async (data, stepDiff, progressDiff) => {
     await createAuction(data)
+    toast({
+      status: 'success',
+      title: 'Auction Signed',
+      description: 'Auction params are signed with your ethereum private key so other users know its you',
+      duration: 9000,
+      isClosable: true
+    })
     setStep(step+stepDiff)
     setProgress(progress+progressDiff)
   }
@@ -72,6 +79,13 @@ export const CreateAuctionForm = () => {
   }
   const handlePublish = (roomKey) => {
     publishAuction()
+    toast({
+      status: 'success',
+      title: 'Auction Published',
+      description: 'Your Auctions existence is being broadcast in the open auctions pubsub room',
+      duration: 9000,
+      isClosable: true
+    })
     navigate(`/auctions/${roomKey}`)
   }
 

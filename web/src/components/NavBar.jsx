@@ -1,5 +1,8 @@
 import {useState,useEffect} from 'react'
 import {useWeb3React} from '@web3-react/core'
+import { useIpfs } from '@/hooks/useIpfs'
+import { SiIpfs } from 'react-icons/si'
+
 import {
   Container,
   Box,
@@ -27,7 +30,6 @@ import {
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@chakra-ui/icons';
-
 import { Link as RouterLink} from 'react-router-dom'
 import { ConnectWallet } from './ConnectWallet'
 import { substringAddr } from './Utils'
@@ -45,6 +47,7 @@ const chainIdToName = (id) => {
 }
 
 export const NavBar = () => {
+  const {ipfs, error:ipfsError, starting:ipfsStarting} = useIpfs()
   const {networkName, setNetworkName} = useState('')
   const { accounts, chainId } = useWeb3React()
   const [showWalletModal, setShowWalletModal] = useState(false)
@@ -115,6 +118,18 @@ export const NavBar = () => {
               onClick={() => { setShowWalletModal(!showWalletModal) }}
             >
                 {accounts ? substringAddr(accounts[0]) : 'Connect Wallet'}
+            </Button>
+            <Button
+              sx={{
+                border: `1px solid ${
+                  ipfsError ? 'red':
+                  ipfsStarting ? 'yellow':'green'
+
+              }`
+              }}
+              variant="outlined"
+              onClick={() => {}}>
+              <Icon as={SiIpfs}/>
             </Button>
             <Button onClick={toggleColorMode}>
               {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-import { Container } from '@chakra-ui/react'
+import { Container, useToast } from '@chakra-ui/react'
 
 import { useIpfsAuctionsRoom } from '@/hooks/useEnglishAuction'
 import { useAuctionRoom } from '@/hooks/EnglishAuction/useAuctionRoom'
@@ -11,13 +11,13 @@ import {useParams, useNavigate} from 'react-router-dom'
 
 import  {BasicStatistics} from './BasicStatistics'
 import { Completed } from './Completed/Completed'
+
 export const Auction = () => {
+  const toast = useToast()
   const {account} = useWeb3React()
   const navigate = useNavigate()
 
-  const {
-    broadcastExistence
-  } = useIpfsAuctionsRoom()
+  const { roomStatus:activeAuctionsStatus } = useIpfsAuctionsRoom()
   const {
     createAllowance: createNftAllowance
   } = useNft()
@@ -55,7 +55,27 @@ export const Auction = () => {
   } = useAuctionRoom({defaultRoomKey: params.roomKey})
 
   const handleSubmitBid = async (value) => {
-    await submitBid(value)
+    const res = await submitBid(value)
+    console.log('res', res)
+    if (res) {
+      toast({
+        status: 'success',
+        title: 'Bid signed',
+        description: 'Your Bid is being broadcast on the network',
+        duration: 9000,
+        isClosable: true
+      })
+    } else {
+      toast({
+        status: 'error',
+        title: 'Bid Error',
+        description: 'Not sure what happened, no bids are being broadcast',
+        duration: 9000,
+        isClosable: true
+      })
+
+    }
+
   }
   const handleSubmitAuction = async () => {
     await submitAuction()
@@ -77,10 +97,11 @@ export const Auction = () => {
       fetchTokenBalance(auction.token)
 
     }
-  }, [account])
+  }, [account, auction])
 
   return (
     <Container maxW={"6xl"}>
+      <p>{activeAuctionsStatus ? 'true':'false'}</p>
       {isComplete ? (<Completed />) :
         (<BasicStatistics
           account={account}

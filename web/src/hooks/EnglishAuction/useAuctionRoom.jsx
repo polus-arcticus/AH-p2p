@@ -19,7 +19,7 @@ import {
 import { EIP712DOMAIN, AuctionAuthSig, Auction, Bid } from '@/hooks/type-hashes'
 import { useIpfs } from '@/hooks/useIpfs'
 export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
-  const {ipfs, errors} = useIpfs()
+  const {ipfs, errors, starting} = useIpfs()
   const [isComplete, setIsComplete] = useState(false)
   const { broadcastExistence } = useIpfsAuctionsRoom()
   const { account, provider, chainId } = useWeb3React()
@@ -96,7 +96,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           if (auct.auctionData.bids.length > 1) {
             highest = auct.auctionData.bids.sort((a,b) => Number(b.amount) - Number(a.amount))[0].amount
           } else {
-            highest = auct.auctionData.bids[0].amount
+            highest = auct.auctionData.bidStart
           }
           console.log('highest', highest)
           setHighBid(highest)
@@ -142,6 +142,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
   }, [room])
 
   const submitBid = useCallback(async (amount) => {
+    const auct = getAuction(roomKey)
     const englishAuction = getEnglishAuction(provider)
     try {
       const latestNonce = (await englishAuction.usedNonces(account)).toString()
@@ -164,11 +165,16 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
         { Bid },
         parsedInitBid
       )
+      auct.auctionData.bids.push(initBid)
+      auct.auctionData.bidSigs.push(bidSig)
+      localStorage.setItem(roomKey, JSON.stringifg(auct))
       await room.broadcast(JSON.stringify({message: 'new-bid', bid: initBid, bidSig: bidSig}))
       // Makes more sense for auction to do a sendTo(peer, message)
+      return true
     } catch (e) {
       console.log(e)
       console.log('failed to retreive usedNonces')
+      return false
     }
   }, [provider, account, room, chainId])
 
@@ -211,7 +217,8 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
     const auction = getAuction(roomKey)
     console.log(auction)
     await room.broadcast(JSON.stringify({message: 'bids', bids: auction.auctionData.bids, bidSigs:auction.auctionData.bidSigs }))
-  }, [])
+  }, [room])
+
   useEffect(() => {
     let initAuct = {}
     let initNetwork = {}
@@ -242,37 +249,37 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       setBidSigs(initBidSigs)
     }
     return function cleanup() {
+      room.leave()
     }
   }, [])
+
   useEffect(() => {
-    if (ipfs) {
-      console.log('b4fetchroom', ipfs)
-      fetchRoom(defaultRoomKey)
+    if (room) {
+      const interval = setInterval(() => {
+        console.log('Broadcasting auctiondata: This will be called every 100 seconds');
+        broadcastBids()
+        
+      }, 100*1000);
+      return () => {
+        clearInterval(interval)
+        if (room) room.leave()
+      }
+    }
+  }, [room])
+
+  useEffect(() => {
+    console.log('starting', starting)
+    console.log('fetching ipfs auctions room-ipfs')
+    if (starting) {
+      console.log('ipfs not yet started')
+    } else {
+      fetchRoom()
     }
     return () => {
-      leaveRoom()
+      console.log('trying to leave room')
+      if (room) room.leave()
     }
-  },[ipfs])
-  useEffect(() => {
-    //broadcast auction to active auctions room
-    const interval = setInterval(() => {
-      console.log('Broadcasting auctiondata: This will be called every 100 seconds');
-      
-      broadcastExistence()
-        
-    }, 100 * 1000);
-    return () => clearInterval(interval)
-  }, [])
-  useEffect(() => {
-    //broadcast auction to active auctions room
-    const interval = setInterval(() => {
-      console.log('Broadcasting Bids: This will be called every 30 seconds');
-      
-      broadcastBids()
-        
-    }, 30 * 1000);
-    return () => clearInterval(interval)
-  }, [])
+  }, [starting])
   return {
     isComplete:isComplete,
     fetchRoom:fetchRoom,

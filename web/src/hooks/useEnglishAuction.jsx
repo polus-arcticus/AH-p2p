@@ -21,13 +21,13 @@ import {
 } from '@/hooks/utils'
 import {useIpfs} from '@/hooks/useIpfs'
 export const useIpfsAuctionsRoom = () => {
-  const {ipfs, error} = useIpfs()
+  const {ipfs, error, starting} = useIpfs()
+  const [roomStatus, setRoomStatus] = useState(false)
   const [ipfsAuctions, setIpfsAuctions] = useState([])
   const [ipfsAuctionsKeyMap, setIpfsAuctionsKeyMap] = useState([])
   const [ipfsAuctionsPeerCount, setIpfsAuctionsPeerCount] =useState(0)
   const [room, setRoom] = useState(null)
   const [peers ,setPeers] = useState({})
-
 
   const fetchIpfsAuctions = useCallback(async () => {
     const roomInstance = new Room(ipfs, 'active-auctions-room')
@@ -100,36 +100,53 @@ export const useIpfsAuctionsRoom = () => {
     })
     console.log('setting room instance')
     setRoom(roomInstance)
+    setRoomStatus(true)
   }, [ipfs])
 
   const broadcastExistence = useCallback(async () => {
-    console.log('room', room)
+    console.log('insidebroadcast exist')
     if (room) {
-      console.log('Attempting to broadcast existence: This will be called every 10 seconds');
       const localKeyMap = getAuctionsKeyMap()
       const localAuctions = getAuctions(localKeyMap).filter((auction) => auction.completed == false)
+      console.log('b4 broadcast')
       await room.broadcast(JSON.stringify({
         message: 'new-peer-auctions',
         auctions: localAuctions,
         keyMap:localKeyMap
       }))
-      
     }
-  }, [ipfs, room])
+  }, [room])
 
   useEffect(() => {
-    console.log('init, ipfs', ipfs)
-    if (ipfs) {
-      console.log('fetching ipfs auctions room')
+    if (room) {
+      const interval = setInterval(() => {
+        console.log('Broadcasting auctiondata: This will be called every 5 seconds');
+        broadcastExistence()
+        
+      }, 5*1000);
+      return () => {
+        clearInterval(interval)
+        if (room) room.leave()
+      }
+    }
+  }, [room])
+
+  useEffect(() => {
+    console.log('starting', starting)
+    console.log('fetching ipfs auctions room-ipfs')
+    if (starting) {
+      console.log('ipfs not yet started')
+    } else {
       fetchIpfsAuctions()
     }
-  }, [ipfs])
+  }, [starting])
 
   return {
     ipfsAuctions,
     ipfsAuctionsKeyMap,
     ipfsAuctionsPeerCount,
     fetchIpfsAuctions,
-    broadcastExistence
+    broadcastExistence,
+    roomStatus
   }
 }

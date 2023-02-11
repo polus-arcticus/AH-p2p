@@ -7,10 +7,11 @@ import {
   useContext
 } from 'react'
 
-const Context = createContext({ ipfs: null, error: null })
+const Context = createContext({ ipfs: null, error: null, starting:true })
 
 export const IpfsProvider = ({children}) => {
   const [ipfs, setIpfs] =  useState(null)
+  const [starting, setStarting] = useState(true)
   const [error, setError] =  useState(null)
   
   const startIpfs = useCallback(async () => {
@@ -35,9 +36,11 @@ export const IpfsProvider = ({children}) => {
           }
         }))
         console.timeEnd('IPFS Started')
+        setStarting(false)
       } catch (error) {
         console.error('IPFS init error:', error)
-        ipfs = null
+        setStarting(false)
+        setIpfs(null)
         setError(error)
       }
     }
@@ -48,11 +51,16 @@ export const IpfsProvider = ({children}) => {
   }, [])
   return (
   <Context.Provider
-    value={{ipfs, error}}
+    value={{
+      ipfs,
+      error,
+      starting
+    }}
     >{children}</Context.Provider>
   )
 }
 export const useIpfs = () => {
-  const ipfs = useContext(Context)
-  return ipfs
+  const {ipfs, error, starting}  = useContext(Context)
+  console.log(ipfs,error, starting)
+  return {ipfs, error, starting}
 }

@@ -35,20 +35,16 @@ export const Active = () => {
     fetchIpfsAuctions,
     broadcastExistence
   } = useIpfsAuctionsRoom()
+
   useEffect(() => {
+    console.log('ipfsAuctions', ipfsAuctions)
     setAuctions(old => [...old, ...ipfsAuctions])
   }, [ipfsAuctions])
+
   useEffect(() => {
     setAuctions(localAuctions)
   }, [localAuctions])
-    useEffect(() => {
 
-      const interval = setInterval(() => {
-        broadcastExistence()
-          
-      }, 10000);
-      return () => clearInterval(interval)
-    }, [])
   return (
     <Container maxW={'6xl'}>
         <Heading my="2.5%">
