@@ -78,15 +78,71 @@ export const Auction = () => {
 
   }
   const handleSubmitAuction = async () => {
-    await submitAuction()
-    navigate('completed')
+    const res = await submitAuction()
+    console.log('submit auction res', res)
+    if (res) {
+      toast({
+        status: 'success',
+        title: 'Auction Cleared!',
+        description: 'The auctioneer managed a price for your Nft',
+        duration: 9000,
+        isClosable: true
+      })
+    } else {
+      toast({
+        status: 'error',
+        title: 'Auction Consumption Error',
+        description: 'Not sure what happened',
+        duration: 9000,
+        isClosable: true
+      })
+
+    }
+    //navigate('completed')
   }
   const handleApproveNft = async () => {
     await createNftAllowance(auction.nft)
-    await fetchAuctioneerNftAllowance({nft:auction.nft, id:auction.nftId})
+    const res = await fetchAuctioneerNftAllowance({nft:auction.nft, id:auction.nftId})
+    if (res) {
+      toast({
+        status: 'success',
+        title: 'Auction Contract Nft Approval',
+        description: 'You have successfully approved the auction house contract for moving your nft',
+        duration: 9000,
+        isClosable: true
+      })
+    } else {
+      toast({
+        status: 'error',
+        title: 'Nft Approval Error',
+        description: 'Not sure what happened',
+        duration: 9000,
+        isClosable: true
+      })
+
+    }
+
   }
   const handleApproveToken = async () => {
-    await createTokenAllowance(auction.token)
+    const res = await createTokenAllowance(auction.token)
+    if (res) {
+      toast({
+        status: 'success',
+        title: 'Auction Contract Token Approval',
+        description: 'You have successfully approved the auction house contract for moving your tokens if you win the auction',
+        duration: 9000,
+        isClosable: true
+      })
+    } else {
+      toast({
+        status: 'error',
+        title: 'Token Approval Error',
+        description: 'Not sure what happened',
+        duration: 9000,
+        isClosable: true
+      })
+
+    }
   }
 
   useEffect(() => {
@@ -98,6 +154,21 @@ export const Auction = () => {
 
     }
   }, [account, auction])
+
+  useEffect(() => {
+    console.log('iscomplete trigger')
+    if (isComplete) {
+      toast({
+        status: 'success',
+        title: 'Auction Completed',
+        description: 'This auction is over',
+        duration: 9000,
+        isClosable: true
+      })
+    } else {
+
+    }
+  }, [isComplete])
 
   return (
     <Container maxW={"6xl"}>

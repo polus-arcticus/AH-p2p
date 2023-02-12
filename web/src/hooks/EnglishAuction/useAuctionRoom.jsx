@@ -6,6 +6,7 @@ import decoding from '@/pubsub/decoding'
 import {
   AUCTIONS_KEY_MAP,
   ARCHIVES_KEY_MAP,
+  getKeyMap,
   getEnglishAuction,
   getAuction,
   getAuctions,
@@ -36,11 +37,11 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
   const [peerCount, setPeerCount] = useState(0)
 
   const fetchAuction = useCallback((roomKey) => {
-    const auctionData = getAuction(roomKey)
-    setIsComplete(auctionData.completed)
-    console.log('completed', auctionData.completed)
-    setAuction(auctionData.auctionData)
-    setNetwork(auctionData.connection)
+    const auct = getAuction(roomKey)
+    setIsComplete(auct.completed)
+    console.log('completed', auct.completed)
+    setAuction(auct.auctionData)
+    setNetwork(auct.connection)
   },[auction])
 
   const fetchRoom = useCallback(async (newRoomKey=null) => {
@@ -102,6 +103,8 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           setHighBid(highest)
           break
         case 'auction-complete':
+          auct.completed = true
+          localStorage.setItem(roomKey, JSON.stringify(auct))
           let auctionsKeyMap =  getKeyMap(AUCTIONS_KEY_MAP)
           let archivesKeyMap =  getKeyMap(ARCHIVES_KEY_MAP)
           auctionsKeyMap = auctionsKeyMap.filter(key => key !== payload.roomKey)
@@ -109,6 +112,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
 
           localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(auctionsKeyMap))
           localStorage.setItem(ARCHIVES_KEY_MAP, JSON.stringify(archivesKeyMap))
+          setIsComplete(true)
 
       }
 
@@ -167,15 +171,15 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       )
       auct.auctionData.bids.push(initBid)
       auct.auctionData.bidSigs.push(bidSig)
-      localStorage.setItem(roomKey, JSON.stringifg(auct))
+      localStorage.setItem(roomKey, JSON.stringify(auct))
       await room.broadcast(JSON.stringify({message: 'new-bid', bid: initBid, bidSig: bidSig}))
       // Makes more sense for auction to do a sendTo(peer, message)
-      return true
     } catch (e) {
       console.log(e)
       console.log('failed to retreive usedNonces')
       return false
     }
+      return true
   }, [provider, account, room, chainId])
 
   const submitAuction = useCallback(async () => {
@@ -207,10 +211,23 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       console.log('receipt', receipt)
       setAuctionCompleted(roomKey)
       room.broadcast(JSON.stringify({message:'auction-complete', roomKey: roomKey}))
+      /*
+      const auct = getAuction(roomKey)
+      auct.completed = true
+      localStorage.setItem(roomKey, JSON.stringify(auct))
+      let auctionsKeyMap =  getKeyMap(AUCTIONS_KEY_MAP)
+      let archivesKeyMap =  getKeyMap(ARCHIVES_KEY_MAP)
+      auctionsKeyMap = auctionsKeyMap.filter(key => key !== roomKey)
+      archivesKeyMap.push(roomKey)
+
+      localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(auctionsKeyMap))
+      localStorage.setItem(ARCHIVES_KEY_MAP, JSON.stringify(archivesKeyMap))
+      */
     } catch (e) {
       console.log(e)
-      return
+      return false
     }
+      return true
   }, [account,provider,room])
 
   const broadcastBids = useCallback(async() => {

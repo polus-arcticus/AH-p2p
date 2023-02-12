@@ -38,7 +38,12 @@ export const Active = () => {
 
   useEffect(() => {
     console.log('ipfsAuctions', ipfsAuctions)
-    setAuctions(old => [...old, ...ipfsAuctions])
+    setAuctions(old =>{
+      const updated = [...old, ...ipfsAuctions]
+      console.log('updated', updated)
+      return updated
+
+    } )
   }, [ipfsAuctions])
 
   useEffect(() => {

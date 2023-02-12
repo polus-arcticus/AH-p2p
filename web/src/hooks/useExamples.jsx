@@ -47,6 +47,7 @@ export const useTokenAllowance = () => {
       const receipt = await tx.wait(1)
       console.log(receipt)
       await fetchAllowance(address)
+      return true
 		} catch (e) {
 			console.log(e)
 			return false

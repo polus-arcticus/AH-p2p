@@ -62,6 +62,7 @@ export const useIpfsAuctionsRoom = () => {
             if (!localAuction) {
               console.log('!localAuction == true')
               localKeyMap.push(remoteRoomKey)
+              console.log('payload.auctions[i]', payload.auctions[i])
               localStorage.setItem(remoteRoomKey, JSON.stringify(payload.auctions[i]))
               setIpfsAuctionsKeyMap(old => [...old, remoteRoomKey])
               setIpfsAuctions(old => [...old, payload.auctions[i]])
