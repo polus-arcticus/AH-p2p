@@ -1,23 +1,19 @@
 import { useState, useEffect } from 'react'
-
-import { Container, useToast } from '@chakra-ui/react'
-
-import { useIpfsAuctionsRoom } from '@/hooks/useEnglishAuction'
-import { useAuctionRoom } from '@/hooks/EnglishAuction/useAuctionRoom'
+import {useParams} from 'react-router-dom'
+import { Container, useToast, chakra,
+} from '@chakra-ui/react'
 import {useWeb3React} from '@web3-react/core'
+
+import {substringAddr} from '@/components/Utils'
+import { useAuctionRoom } from '@/hooks/EnglishAuction/useAuctionRoom'
 import {useNft, useFetchNftBalance,useGetTokenBalance,  useFetchNftAllowance, useTokenAllowance} from '@/hooks/useExamples'
-
-import {useParams, useNavigate} from 'react-router-dom'
-
 import  {BasicStatistics} from './BasicStatistics'
-import { Completed } from './Completed/Completed'
 
 export const Auction = () => {
   const toast = useToast()
   const {account} = useWeb3React()
-  const navigate = useNavigate()
+  const params = useParams()
 
-  const { roomStatus:activeAuctionsStatus } = useIpfsAuctionsRoom()
   const {
     createAllowance: createNftAllowance
   } = useNft()
@@ -37,11 +33,11 @@ export const Auction = () => {
     fetchAllowance:fetchTokenAllowance,
     createAllowance: createTokenAllowance
   } = useTokenAllowance()
+
   const {
     balance:tokenBalance,
     fetchBalance:fetchTokenBalance
   } = useGetTokenBalance()
-  const params = useParams()
 
   const {
     bidCount,
@@ -98,7 +94,6 @@ export const Auction = () => {
       })
 
     }
-    //navigate('completed')
   }
   const handleApproveNft = async () => {
     await createNftAllowance(auction.nft)
@@ -165,6 +160,7 @@ export const Auction = () => {
         duration: 9000,
         isClosable: true
       })
+      fetchAuctioneerNftBalance({nft:auction.nft, owner:auction.auctioneer, id:auction.nftId})
     } else {
 
     }
@@ -172,9 +168,23 @@ export const Auction = () => {
 
   return (
     <Container maxW={"6xl"}>
-      <p>{activeAuctionsStatus ? 'true':'false'}</p>
-      {isComplete ? (<Completed />) :
-        (<BasicStatistics
+      <chakra.h1
+        textAlign={'center'}
+        fontSize={'4xl'}
+        py={5}
+        fontWeight={'bold'}>
+        Auction {auction ? substringAddr(auction.auctionSigHash): ''}
+      </chakra.h1>
+      <chakra.h3
+        textAlign={'center'}
+        fontSize={'1xl'}
+        color={isComplete ? 'green': 'teal'}
+        pb={2.5}
+        fontWeight={'bold'}>
+        Status: {isComplete ? 'completed': 'active'}
+      </chakra.h3>
+        <BasicStatistics
+          isComplete={isComplete}
           account={account}
           auctioneerNftBalance={auctioneerNftBalance}
           auctioneerNftAllowance={auctioneerNftAllowance}
@@ -188,8 +198,7 @@ export const Auction = () => {
           handleApproveToken={handleApproveToken}
           auction={auction}
           peerCount={peerCount}
-        />)
-      }
+        />
     </Container>
   )
 }

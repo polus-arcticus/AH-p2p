@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useToast } from '@chakra-ui/react'
 import { useIpfsAuctionsRoom } from '@/hooks/useEnglishAuction'
 import { useWeb3React } from '@web3-react/core'
 import Room from '@/pubsub/index'
@@ -20,6 +21,7 @@ import {
 import { EIP712DOMAIN, AuctionAuthSig, Auction, Bid } from '@/hooks/type-hashes'
 import { useIpfs } from '@/hooks/useIpfs'
 export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
+  const toast = useToast()
   const {ipfs, errors, starting} = useIpfs()
   const [isComplete, setIsComplete] = useState(false)
   const { broadcastExistence } = useIpfsAuctionsRoom()
@@ -77,6 +79,14 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           if (payload.bid.amount > highBid) {
             setHighBid(payload.bid.amount)
           }
+          
+          toast({
+            status: 'success',
+            title: 'New Bid Detected!',
+            description: 'Adding new bid to the permit chain',
+            duration: 9000,
+            isClosable: true
+          })
           break
         case 'bids':
           const localBidSigs = auct.auctionData.bidSigs
@@ -101,8 +111,17 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           }
           console.log('highest', highest)
           setHighBid(highest)
+          toast({
+            status: 'success',
+            title: 'Bids!',
+            description: 'New Auctions Detected',
+            duration: 9000,
+            isClosable: true
+          })
           break
         case 'auction-complete':
+          console.log('payload.receipt', payload.receipt)
+          auct.receipt = payload.receipt
           auct.completed = true
           localStorage.setItem(roomKey, JSON.stringify(auct))
           let auctionsKeyMap =  getKeyMap(AUCTIONS_KEY_MAP)
@@ -113,7 +132,6 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
           localStorage.setItem(AUCTIONS_KEY_MAP, JSON.stringify(auctionsKeyMap))
           localStorage.setItem(ARCHIVES_KEY_MAP, JSON.stringify(archivesKeyMap))
           setIsComplete(true)
-
       }
 
 
@@ -210,7 +228,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
       const receipt = await tx.wait(1)
       console.log('receipt', receipt)
       setAuctionCompleted(roomKey)
-      room.broadcast(JSON.stringify({message:'auction-complete', roomKey: roomKey}))
+      room.broadcast(JSON.stringify({message:'auction-complete', roomKey: roomKey, receipt: receipt}))
       /*
       const auct = getAuction(roomKey)
       auct.completed = true
@@ -271,7 +289,7 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
   }, [])
 
   useEffect(() => {
-    if (room) {
+    if (room && !isComplete) {
       const interval = setInterval(() => {
         console.log('Broadcasting auctiondata: This will be called every 100 seconds');
         broadcastBids()
@@ -282,12 +300,10 @@ export const useAuctionRoom = ({defaultRoomKey=null}= {}) => {
         if (room) room.leave()
       }
     }
-  }, [room])
+  }, [isComplete, room])
 
   useEffect(() => {
-    console.log('starting', starting)
-    console.log('fetching ipfs auctions room-ipfs')
-    if (starting) {
+    if (starting && !isComplete) {
       console.log('ipfs not yet started')
     } else {
       fetchRoom()

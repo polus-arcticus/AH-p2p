@@ -44,7 +44,7 @@ const HoverMessage = ({
     <Popover
       isOpen={hovered ? hovered: false}
       onClose={handleClose}
-      >
+    >
       <PopoverContent>
         <PopoverArrow />
         <PopoverHeader>{title}</PopoverHeader>
@@ -55,7 +55,7 @@ const HoverMessage = ({
       </PopoverContent>
     </Popover>
   )
-  
+
 }
 function StatsCard({
   title,
@@ -236,6 +236,7 @@ function StatsCardTokenAllowanceCard({handleApproveToken}) {
   );
 }
 export const  BasicStatistics = ({
+  isComplete,
   account,
   bidCount,
   highBid,
@@ -260,13 +261,6 @@ export const  BasicStatistics = ({
   }, [auction])
   return (
     <Box maxW="7xl" mx={'auto'} pt={5} px={{ base: 2, sm: 12, md: 17 }}>
-      <chakra.h1
-        textAlign={'center'}
-        fontSize={'4xl'}
-        py={10}
-        fontWeight={'bold'}>
-        Auction {auction ? substringAddr(auction.auctionSigHash): ''}
-      </chakra.h1>
       <SimpleGrid columns={{ base: 1, sm: 1, md: 2, lg: 3 }} spacing={{ base: 5, lg: 8 }}>
         <StatsCard
           title={'Auctioneer'}
@@ -304,34 +298,36 @@ export const  BasicStatistics = ({
           title={'Bids'}
           stat={bidCount}
           icon={<FaEnvelopeOpenText size={'3em'} />}
-        />
-        <StatsCard
-          title={'Deadline'}
-          stat={`${days}:${hours}:${minutes}:${seconds}`}
-          icon={<GiEmptyHourglass size={'3em'} />}
-        />
-        <StatsCard
-          title={'Peers'}
-          stat={peerCount}
-          icon={<BsPerson size={'3em'} />}
-        />
-        {(auction && auction.auctioneer == account) ?
-            ((auctioneerNftAllowance) ?
-              (<StatsCardConsumeAuctionButton
-                handleSubmitAuction={handleSubmitAuction}
-              />) :
-              (<StatsCardNftAllowanceButton
-                handleApproveNft={handleApproveNft}
-              />)) :
-            ((tokenAllowance > highBid) ? 
-              (<StatsCardBidButton
-                title={'Create Bid'}
-                handleSubmitBid={handleSubmitBid}
-                tokenBalance={tokenBalance}
-                icon={<BsPerson size={'3em'} />} />):
-              (<StatsCardTokenAllowanceCard
-                handleApproveToken={handleApproveToken} />
-              ))
+        />{!isComplete && (
+          <StatsCard
+            title={'Deadline'}
+            stat={`${days}:${hours}:${minutes}:${seconds}`}
+            icon={<GiEmptyHourglass size={'3em'} />}
+          />)}
+        {!isComplete &&
+            (<StatsCard
+              title={'Peers'}
+              stat={peerCount}
+              icon={<BsPerson size={'3em'} />}
+            />)}
+        { isComplete ? (<></>) : ((auction && auction.auctioneer == account) ?
+          ((auctioneerNftAllowance) ?
+            (<StatsCardConsumeAuctionButton
+              handleSubmitAuction={handleSubmitAuction}
+            />) :
+            (<StatsCardNftAllowanceButton
+              handleApproveNft={handleApproveNft}
+            />)) :
+          ((tokenAllowance > highBid) ? 
+            (<StatsCardBidButton
+              title={'Create Bid'}
+              handleSubmitBid={handleSubmitBid}
+              tokenBalance={tokenBalance}
+              icon={<BsPerson size={'3em'} />} />):
+            (<StatsCardTokenAllowanceCard
+              handleApproveToken={handleApproveToken} />
+            ))
+        )
         }
       </SimpleGrid>
     </Box>

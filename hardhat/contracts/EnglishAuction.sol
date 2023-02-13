@@ -5,6 +5,7 @@ import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 contract EnglishAuction {
+  event AuctionConsumed(address indexed nft, address indexed token, uint256 nftid, uint256 amount, address indexed auctioneer, address winner);
   uint256 chainId;
   bytes32 DOMAIN_SEPARATOR;
   bytes BID_TYPE = "Bid(address bidder,uint256 amount,uint256 bidderNonce,bytes32 auctionSigHash)";
@@ -84,6 +85,8 @@ contract EnglishAuction {
     }
     uint256 iter = 0;
     bool swapMade = false;
+    uint256 highBid;
+    address highBidder;
     while (!swapMade) {
       if (
         auction.bids[iter].bidderNonce == usedNonces[auction.bids[iter].bidder] &&
@@ -108,6 +111,8 @@ contract EnglishAuction {
           usedNonces[auction.bids[iter].bidder] += 1;
           usedNonces[auction.auctioneer] += 1;
           swapMade = true;
+          highBid = auction.bids[iter].amount;
+          highBidder = auction.bids[iter].bidder;
         } else {
         console.log("bidder didn't seem to actually sign bid");
           iter++;
@@ -117,6 +122,8 @@ contract EnglishAuction {
         iter++;
       }
     }
+
+  emit AuctionConsumed(auction.nft, auction.token, auction.nftId, highBid, msg.sender, highBidder );
 }
 
 

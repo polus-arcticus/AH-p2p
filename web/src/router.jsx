@@ -24,12 +24,11 @@ export const Router = () => {
     <Routes>
       <Route path="/" element={<Home />}/>
       <Route path="/auctions" element={<Auctions />}>
-        <Route path=":roomKey" element={<Auction />}>
-        </Route>
-        <Route path=":roomKey/completed" element={<Completed />} />
-        <Route path="create" element={<Create />}/>
         <Route path="active" element={<Active />}/>
         <Route path="archived" element={<Archived />}/>
+        <Route path=":roomKey" element={<Auction />}>
+        </Route>
+        <Route path="create" element={<Create />}/>
       </Route>
       <Route path="docs" element={<Docs />}>
       </Route>
