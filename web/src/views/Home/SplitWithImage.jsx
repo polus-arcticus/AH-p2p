@@ -48,12 +48,11 @@ export default function SplitWithImage() {
             p={2}
             alignSelf={'flex-start'}
             rounded={'md'}>
-            Our Story
+            This Story
           </Text>
-          <Heading>A digital Product design agency</Heading>
+          <Heading>P2P Auctioneering System for Virtual Assets</Heading>
           <Text color={'gray.500'} fontSize={'lg'}>
-            Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam
-            nonumy eirmod tempor invidunt ut labore
+            List your NFT, collect bids live in bidding rooms, submit them onchain.
           </Text>
           <Stack
             spacing={4}
@@ -67,19 +66,19 @@ export default function SplitWithImage() {
                 <Icon as={IoAnalyticsSharp} color={'yellow.500'} w={5} h={5} />
               }
               iconBg={useColorModeValue('yellow.100', 'yellow.900')}
-              text={'Business Planning'}
+              text={'Middleless'}
             />
             <Feature
               icon={<Icon as={IoLogoBitcoin} color={'green.500'} w={5} h={5} />}
               iconBg={useColorModeValue('green.100', 'green.900')}
-              text={'Financial Planning'}
+              text={'Gassless for Buyers'}
             />
             <Feature
               icon={
                 <Icon as={IoSearchSharp} color={'purple.500'} w={5} h={5} />
               }
               iconBg={useColorModeValue('purple.100', 'purple.900')}
-              text={'Market Analysis'}
+              text={'Cryptographically Authenticated'}
             />
           </Stack>
         </Stack>

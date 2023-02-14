@@ -9,7 +9,7 @@ import {
 	GridItem,
 	Container,
 } from '@chakra-ui/react';
-
+import {useNavigate} from 'react-router-dom'
 const Feature = ({ heading, text }) => {
 	return (
 		<GridItem>
@@ -22,6 +22,7 @@ const Feature = ({ heading, text }) => {
 };
 
 export default function GridListWithCTA() {
+  const navigate = useNavigate()
 	return (
 		<Box as={Container} maxW="7xl" mt={14} pb={16}>
 			<Grid
@@ -34,19 +35,23 @@ export default function GridListWithCTA() {
 				<GridItem colSpan={1}>
 					<VStack alignItems="flex-start" spacing="20px">
 						<chakra.h2 fontSize="3xl" fontWeight="700">
-							Medium length title
+							Auctions Centre
 						</chakra.h2>
-						<Button colorScheme="green" size="md">
-							Call To Action
+						<Button
+              colorScheme="green"
+              size="md"
+              onClick={() => {
+              navigate('create')
+              }}
+            >
+							Create Auction
 						</Button>
 					</VStack>
 				</GridItem>
 				<GridItem>
 					<Flex>
 						<chakra.p>
-							Provide your customers a story they would enjoy keeping in mind
-							the objectives of your website. Pay special attention to the tone
-							of voice.
+              Create a new Auction or browse items currently on sale
 						</chakra.p>
 					</Flex>
 				</GridItem>
@@ -60,20 +65,20 @@ export default function GridListWithCTA() {
 				}}
 				gap={{ base: '8', sm: '12', md: '16' }}>
 				<Feature
-					heading={'First Feature'}
-					text={'Short text describing one of you features/service'}
+					heading={'Create Auction'}
+					text={'Choose an Nft and a starting price in your prefered token'}
 				/>
 				<Feature
-					heading={'Second Feature'}
-					text={'Short text describing one of you features/service'}
+					heading={'Choose Connection'}
+					text={'Broadcast your Auction through an open browser window, or delegate an IPFS node on your behalf so people can find it'}
 				/>
 				<Feature
-					heading={'Third Feature'}
-					text={'Short text describing one of you features/service'}
+					heading={'Sign Bids'}
+					text={'Give the auction house contract permission to move your tokens if you win an auction'}
 				/>
 				<Feature
-					heading={'Fourth Feature'}
-					text={'Short text describing one of you features/service'}
+					heading={'Consume Auction onchain'}
+					text={'Provide a stack of bids for the smart contract to parse, and have it swap the nft and tokens for you'}
 				/>
 			</Grid>
 		</Box>

@@ -88,7 +88,7 @@ export const NavBar = () => {
               textAlign={useBreakpointValue({ base: 'center', md: 'left' })}
               fontFamily={'heading'}
               color={useColorModeValue('gray.800', 'white')}>
-              <RouterLink to="">Auction House</RouterLink>
+              <RouterLink to="">AH-p2p</RouterLink>
             </Text>
 
             <Flex display={{ base: 'none', md: 'flex' }} ml={10}>
@@ -114,7 +114,6 @@ export const NavBar = () => {
               display={{ base: 'none', md: 'inline-flex' }}
               fontSize={'sm'}
               fontWeight={600}
-              color={'white'}
               onClick={() => { setShowWalletModal(!showWalletModal) }}
             >
                 {accounts ? substringAddr(accounts[0]) : 'Connect Wallet'}
