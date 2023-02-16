@@ -1,35 +1,4 @@
-# ipfs clients
-# port map npm run to inner containers
-# pin service, open lobby thing
-#
-#
 version: '3.9'
-
-# This is an example docker-compose file to quickly test an IPFS Cluster
-# with multiple peers on a contained environment.
-
-# It runs 3 cluster peers (cluster0, cluster1...) attached to go-ipfs daemons
-# (ipfs0, ipfs1...) using the CRDT consensus component. Cluster peers
-# autodiscover themselves using mDNS on the docker internal network.
-#
-# To interact with the cluster use "ipfs-cluster-ctl" (the cluster0 API port is
-# exposed to the locahost. You can also "docker exec -ti cluster0 sh" and run
-# it from the container. "ipfs-cluster-ctl peers ls" should show all 3 peers a few
-# seconds after start.
-#
-# For persistence, a "compose" folder is created and used to store configurations
-# and states. This can be used to edit configurations in subsequent runs. It looks
-# as follows:
-#
-# compose/
-# |-- cluster0
-# |-- cluster1
-# |-- ...
-# |-- ipfs0
-# |-- ipfs1
-# |-- ...
-#
-# During the first start, default configurations are created for all peers.
 
 services:
   ganache-cli:
@@ -139,20 +108,6 @@ services:
     environment:
       - PORT=5174
       - VITE_DOMAIN=${DOMAIN}
-#
-#  web-user-2:
-#    build:
-#      context: ./ipfs-webrtc
-#      dockerfile: ./Dockerfile.dev
-#    command: npm run dev
-#    volumes:
-#      - ./ipfs-webrtc:/app/
-#      - ignore:/app/node_modules
-#    ports:
-#      - "5174:5174"
-#    environment:
-#      - PORT=5174
-
 volumes:
   nginx-certs:
   nginx-vhost:
