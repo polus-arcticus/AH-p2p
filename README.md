@@ -3,7 +3,7 @@ Exploring the decentralized auctioning of Evm based assets over Ipfs pubsub with
 ![Flow Diagram](./docs/static/img/ah-p2p-flow-diagram.jpg)
 
 ## [EIP-712](https://eips.ethereum.org/EIPS/eip-712) Chains
-If one is familiar with signing a permit message before an erc20, they are familiar with the usage. This project explores placing ones permit messages inside others' permit messages and, naturally, so on and so forth into some pre-determined onchain consumable.
+If one is familiar with signing a permit message before an erc20, they are familiar with the usage. This project explores the properties, possibilities and game theories of  placing ones permit messages inside others' permit messages to be consumed on chain at a later date
 
 ## Ipfs libp2p webrtc
 Beyond an initial ping to a signalling server, agents can communicate many to many in network time with libp2p-webrtc and ipfs pubsub. Agents can express 'forward commitments' by chaining EIP-712 together with other agents in real time prior to some end date.  This permit chain is than consumed by a transaction on the network and simply attempts to execute the prescribed logic.
@@ -27,3 +27,14 @@ Docker bootstraps an instance of ganache-cli, runs the `/hardhat/scripts/deploy.
 `cd hardhat && npm install`
 `npx hardhat test ./test/EnglishAuction.js`
 
+
+## Tech Stack
+- [Solidity](https://github.com/ethereum/solidity)
+- [Hardhat](https://github.com/NomicFoundation/hardhat)
+- [React](https://github.com/facebook/react)
+- [web3-react](https://github.com/Uniswap/web3-react)
+- [Chakra-ui](https://github.com/chakra-ui/chakra-ui)
+- [js-ipfs](https://github.com/ipfs/js-ipfs)
+- [ipfs-pubsub-room](https://github.com/ipfs-shipyard/ipfs-pubsub-room)
+- [js-libp2p-webrtc-star](https://github.com/libp2p/js-libp2p-webrtc-star)
+- [docusaurus](https://github.com/facebook/docusaurus)
