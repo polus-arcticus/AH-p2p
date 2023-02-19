@@ -1,6 +1,6 @@
 # Auction House Peer 2 Peer
 Exploring the decentralized auctioning of Evm based assets over Ipfs pubsub with nested EIP-712 permits
-![Flow Diagram](https://gitlab.com/polusarcticus/ipfs-pubsub-webrtc/-/blob/master/docs/static/img/ah-p2p-flow-diagram.jpg)
+![Flow Diagram](./blob/master/docs/static/img/ah-p2p-flow-diagram.jpg)
 
 ## [EIP-712](https://eips.ethereum.org/EIPS/eip-712) Chains
 If one is familiar with signing a permit message before an erc20, they are familiar with the usage. This project explores placing ones permit messages inside others' permit messages and, naturally, so on and so forth into some pre-determined onchain consumable.
