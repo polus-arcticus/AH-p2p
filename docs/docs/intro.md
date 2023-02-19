@@ -2,15 +2,14 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# Introduction
 
-Let's discover **Docusaurus in less than 5 minutes**.
+Auction House Peer to Peer (AH p2p) enables the decentralized auctioning of ethereum based assets over IPFS pubsub through the use of a technique called permit chaining. An Auctioneer signs a message with the auction details, broadcasts it to the network, to which bidders than sign another message with their bid details and appends it to the auctioneers original message.  At some point the Auctioneer than submits this blob of permits to the Smart Contract, which verifies the signatures in coincidince with the data, and executes the swap with the highest bidder.
 
+![flow diagram](../static/img/ah-p2p-flow-diagram.jpg)
 ## Getting Started
 
-Get started by **creating a new site**.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
 
 ### What you'll need
 
