@@ -38,14 +38,16 @@ services:
     #ports:
       #- 8545:8545
 
-  js-libp2p-webrtc-star:
-    image: libp2p/js-libp2p-webrtc-star
-    environment:
-      - VIRTUAL_HOST=${DOMAIN}
-      - LETSENCRYPT_HOST=${DOMAIN}
-      - VIRTUAL_PORT=9090
-    env_file:
-      - .env
+#  js-libp2p-webrtc-star:
+#    image: libp2p/js-libp2p-webrtc-star
+#    environment:
+#      - VIRTUAL_HOST=${DOMAIN}
+#      - LETSENCRYPT_HOST=${DOMAIN}
+#      - VIRTUAL_PORT=9090
+#    env_file:
+#      - .env
+#
+
 
   nginx-proxy:
     image: jwilder/nginx-proxy
