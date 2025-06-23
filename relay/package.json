@@ -5,13 +5,13 @@
     "@chainsafe/libp2p-yamux": "^7.0.2",
     "@libp2p/circuit-relay-v2": "^3.2.19",
     "@libp2p/identify": "^3.0.36",
+    "@libp2p/peer-id-factory": "^4.2.4",
     "@libp2p/websockets": "^9.2.16",
     "libp2p": "^2.8.11"
   },
   "name": "relay",
   "version": "1.0.0",
   "main": "index.js",
-  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
