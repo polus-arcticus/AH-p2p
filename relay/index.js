@@ -4,7 +4,7 @@ import { circuitRelayServer } from '@libp2p/circuit-relay-v2'
 import { identify } from '@libp2p/identify'
 import { webSockets } from '@libp2p/websockets'
 import { createLibp2p } from 'libp2p'
-
+import { loadOrCreatePeerId } from './loadOrCreatePeerId'
 const node = await createLibp2p({
   addresses: {
     listen: ['/ip4/0.0.0.0/tcp/0/ws']
