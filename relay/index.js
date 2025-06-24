@@ -86,16 +86,14 @@ const TOPICS = {
   PEER_REQUEST: 'ah-p2p.market/peer-request', 
   PEER_LIST: 'ah-p2p.market/peer-list'
 }
-
-Object.values(TOPICS).forEach(topic => {
-  node.services.pubsub.subscribe(topic)
-})
-
+node.services.pubsub.subscribe(TOPICS.PEER_ANNOUNCE)
 node.services.pubsub.addEventListener('message', (evt) => {
+  console.log('Received message pubsub')
   const {topic, data} = evt.detail
   console.log('topic', topic)
   switch (topic) {
     case TOPICS.PEER_ANNOUNCE:
+      console.log('Received peer announce')
       const json = JSON.parse(new TextDecoder().decode(data))
       // Store or update peer info
       peerRegistry.set(json.peerId, {
@@ -106,6 +104,7 @@ node.services.pubsub.addEventListener('message', (evt) => {
       break
     case TOPICS.PEER_REQUEST:
       // Send back all known peers
+      console.log('Received peer request')
       const peers = Array.from(peerRegistry.values())
       node.services.pubsub.publish(TOPICS.PEER_LIST, 
         new TextEncoder().encode(JSON.stringify(peers))
