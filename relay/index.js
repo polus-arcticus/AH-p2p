@@ -11,6 +11,7 @@ const privateKey = await loadOrCreatePrivateKey()
 
 // Topics definition
   const TOPICS = {
+    PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
     PING: 'ah-p2p.market/ping',
     PONG: 'ah-p2p.market/pong',
     PEER_REQUEST: 'ah-p2p.market/peer-request', 
@@ -40,25 +41,27 @@ const node = await createLibp2p({
     })
   }
 })
-
+const peerList = []
 
 node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
+node.services.pubsub.subscribe(TOPICS.PEER_ANNOUNCE)
 node.services.pubsub.subscribe(TOPICS.PING)
 node.services.pubsub.addEventListener('message', (evt) => {
   console.log('Received message pubsub')
   const {topic, data} = evt.detail
   console.log('topic', topic)
   switch (topic) {
+    case TOPICS.PEER_ANNOUNCE:
+      console.log('Received peer announce')
+      const peerAnnounce = JSON.parse(new TextDecoder().decode(data))
+      console.log('Peer announce', peerAnnounce)
+      peerList.push(peerAnnounce)
+      break
     case TOPICS.PEER_REQUEST:
       // Send back all connected peers
       console.log('Received peer request')
-      const connectedPeers = node.getConnections().map(conn => ({
-        peerId: conn.remotePeer.toString(),
-        multiaddrs: conn.remoteAddr.toString(),
-        timestamp: Date.now()
-      }))
       node.services.pubsub.publish(TOPICS.PEER_LIST, 
-        new TextEncoder().encode(JSON.stringify(connectedPeers))
+        new TextEncoder().encode(JSON.stringify(peerList))
       )
       console.log(`Sent ${connectedPeers.length} connected peers`)
       break
