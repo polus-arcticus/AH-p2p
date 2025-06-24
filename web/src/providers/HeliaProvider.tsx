@@ -98,7 +98,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             // Create a promise that resolves when we get a pong
             const waitForStableConnection = new Promise<void>((resolve) => {
                 let pingInterval: NodeJS.Timeout | null = null
-
+                helia.libp2p.services.pubsub.subscribe(TOPICS.PONG)
                 const pongListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
                     const {topic, data} = evt.detail
                     if (topic === TOPICS.PONG) {
