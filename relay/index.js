@@ -10,9 +10,8 @@ const privateKey = await loadOrCreatePrivateKey()
 const node = await createLibp2p({
   privateKey,
   addresses: {
-    listen: ['/ip4/0.0.0.0/tcp/0/ws']
-    // TODO check "What is next?" section
-    // announce: ['/dns4/auto-relay.libp2p.io/tcp/443/wss/p2p/QmWDn2LY8nannvSWJzruUYoLZ4vV83vfCBwd8DipvdgQc3']
+    listen: ['/ip4/0.0.0.0/tcp/9001/ws'],
+    announce: ['/dns4/ah-p2p.market/tcp/443/wss']
   },
   transports: [
     webSockets()
