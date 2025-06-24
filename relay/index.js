@@ -9,40 +9,12 @@ import { loadOrCreatePrivateKey } from './loadOrCreatePeerId.js'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 const privateKey = await loadOrCreatePrivateKey()
 
-// Simple peer registry with TTL
-const peerRegistry = new Map()
-const PEER_TTL = 5 * 60 * 1000 // 5 minutes
-const HEARTBEAT_INTERVAL = 60 * 1000 // 1 minute
-
-// Cleanup stale peers and broadcast relay info
-const heartbeat = () => {
-  const now = Date.now()
-  
-  // Cleanup stale peers
-  for (const [peerId, data] of peerRegistry.entries()) {
-    if (now - data.timestamp > PEER_TTL) {
-      peerRegistry.delete(peerId)
-      console.log('Peer removed (stale):', peerId)
-    }
-  }
-
-  // Announce relay status
-  const relayInfo = {
-    peerId: node.peerId.toString(),
-    multiaddrs: node.getMultiaddrs().map(ma => ma.toString()),
-    connectedPeers: peerRegistry.size,
-    timestamp: now
-  }
-  node.services.pubsub.publish(TOPICS.PEER_ANNOUNCE, 
-    new TextEncoder().encode(JSON.stringify(relayInfo))
-  )
+// Topics definition
+const TOPICS = {
+  PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
+  PEER_REQUEST: 'ah-p2p.market/peer-request', 
+  PEER_LIST: 'ah-p2p.market/peer-list'
 }
-
-// Start heartbeat after node is ready
-setTimeout(() => {
-  heartbeat()
-  setInterval(heartbeat, HEARTBEAT_INTERVAL)
-}, 1000)
 
 const node = await createLibp2p({
   privateKey,
@@ -74,41 +46,33 @@ node.getMultiaddrs().forEach((ma) => console.log(ma.toString()))
 
 node.addEventListener('connection:open', (evt) => {
   console.log('New connection from:', evt.detail.remoteAddr.toString())
+
 })
 
 node.addEventListener('connection:close', (evt) => {
   console.log('Connection closed to:', evt.detail.remoteAddr.toString())
 })
 
-// Subscribe to all required topics
-const TOPICS = {
-  PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
-  PEER_REQUEST: 'ah-p2p.market/peer-request', 
-  PEER_LIST: 'ah-p2p.market/peer-list'
-}
-node.services.pubsub.subscribe(TOPICS.PEER_ANNOUNCE)
+// Subscribe to peer requests only
+node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
+
 node.services.pubsub.addEventListener('message', (evt) => {
   console.log('Received message pubsub')
   const {topic, data} = evt.detail
   console.log('topic', topic)
   switch (topic) {
-    case TOPICS.PEER_ANNOUNCE:
-      console.log('Received peer announce')
-      const json = JSON.parse(new TextDecoder().decode(data))
-      // Store or update peer info
-      peerRegistry.set(json.peerId, {
-        ...json,
-        timestamp: Date.now()
-      })
-      console.log('Peer announced:', json.peerId)
-      break
     case TOPICS.PEER_REQUEST:
-      // Send back all known peers
+      // Send back all connected peers
       console.log('Received peer request')
-      const peers = Array.from(peerRegistry.values())
+      const connectedPeers = node.getPeers().map(peerId => ({
+        peerId: peerId.toString(),
+        multiaddrs: node.getConnectionManager().getConnections(peerId).map(conn => conn.remoteAddr.toString()),
+        timestamp: Date.now()
+      }))
       node.services.pubsub.publish(TOPICS.PEER_LIST, 
-        new TextEncoder().encode(JSON.stringify(peers))
+        new TextEncoder().encode(JSON.stringify(connectedPeers))
       )
+      console.log(`Sent ${connectedPeers.length} connected peers`)
       break
     default:
       console.log('unknown topic', topic)

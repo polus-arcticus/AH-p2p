@@ -90,43 +90,12 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 console.log('Connection closed to:', evt.detail.remoteAddr.toString())
             })
 
-            const ANNOUNCE_INTERVAL = 2 * 60 * 1000 // 2 minutes
-
-            const announcePresence = () => {
-                helia.libp2p.services.pubsub.publish(TOPICS.PEER_ANNOUNCE, new TextEncoder().encode(JSON.stringify({
-                    peerId: helia.libp2p.peerId.toString(),
-                    multiaddrs: helia.libp2p.getMultiaddrs().map(ma => ma.toString()),
-                    timestamp: Date.now()
-                })))
-            }
-
-            // Initial announce
-            announcePresence()
-            
-            // Setup periodic announcements
-            const announceInterval = setInterval(announcePresence, ANNOUNCE_INTERVAL)
-            
-            // Store cleanup function
-            const cleanup = () => clearInterval(announceInterval)
-
-            helia.libp2p.services.pubsub.addEventListener('message', (evt) => {
-                const {topic, data} = evt.detail
-                console.log('Received message:', topic, data)
-                switch (topic) {
-                    case TOPICS.PEER_LIST:
-                        const peers = JSON.parse(new TextDecoder().decode(data))
-                        console.log('Received peers:', peers)
-                        break
-                    default:
-                        console.log('unknown topic', topic)
-                }
-            })
-
             /*The creation and deployment of a circuit relay is not covered in this documentation. However, you can use the one bundled with the OrbitDB unit tests by cloning the OrbitDB repository, installing the dependencies and then running `npm run webrtc` from the OrbitDB project's root dir. Once running, the webrtc relay server will print a number of addresses it is listening on. Use the address /ip4/127.0.0.1/tcp/12345/ws/p2p when specifying the relay for browser 1.
             */
             const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
 
-            await helia.libp2p.dial(multiaddr(relay))
+            const dial = await helia.libp2p.dial(multiaddr(relay))
+            console.log('Dialed to relay', dial)
 
             /*
             const a1 = await pRetry(async () => {
@@ -141,6 +110,21 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             })
                 */
 
+            helia.libp2p.services.pubsub.addEventListener('message', (evt) => {
+                const {topic, data} = evt.detail
+                console.log('Received message:', topic, data)
+                switch (topic) {
+                    case TOPICS.PEER_LIST:
+                        const peers = JSON.parse(new TextDecoder().decode(data))
+                        console.log('Received peers:', peers)
+                        break
+                    default:
+                        console.log('unknown topic', topic)
+                }
+            })
+
+            helia.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
+            helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
              
              // Log discovered peers periodically
              setInterval(() => {
