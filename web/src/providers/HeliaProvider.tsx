@@ -24,11 +24,11 @@ import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { pipe } from 'it-pipe'
 
 const TOPICS = {
-  PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
-  PEER_REQUEST: 'ah-p2p.market/peer-request', 
-  PEER_LIST: 'ah-p2p.market/peer-list',
-  PING: 'ah-p2p.market/ping',
-  PONG: 'ah-p2p.market/pong'
+    PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
+    PEER_REQUEST: 'ah-p2p.market/peer-request',
+    PEER_LIST: 'ah-p2p.market/peer-list',
+    PING: 'ah-p2p.market/ping',
+    PONG: 'ah-p2p.market/pong'
 }
 
 export const HeliaContext = createContext({
@@ -46,6 +46,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const [helia, setHelia] = useState<Helia | null>(null)
     const [error, setError] = useState(false)
     const [starting, setStarting] = useState(true)
+    const [peerList, setPeerList] = useState<{ [peerId: string]: string }>({})
 
     const startHelia = async (): Promise<void> => {
         const datastoreName = 'ah-p2p-datastore'
@@ -108,7 +109,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 let pingInterval: NodeJS.Timeout | null = null
                 helia.libp2p.services.pubsub.subscribe(TOPICS.PONG)
                 const pongListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
-                    const {topic, data} = evt.detail
+                    const { topic, data } = evt.detail
                     if (topic === TOPICS.PONG) {
                         console.log('Received pong - connection is stable')
                         // Clear the ping interval
@@ -123,7 +124,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 }
                 // Subscribe to pong messages
                 helia.libp2p.services.pubsub.addEventListener('message', pongListener)
-                
+
                 // Start sending pings
                 pingInterval = setInterval(() => {
                     console.log('Sending ping')
@@ -152,39 +153,13 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 multiaddrs: webRTCMultiaddr.toString()
             })))
 
-
-            
             const peerListListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
-                const {topic, data} = evt.detail
+                const { topic, data } = evt.detail
                 if (topic === TOPICS.PEER_LIST) {
                     const peerList = JSON.parse(new TextDecoder().decode(data))
                     console.log('Peer list', peerList)
-                    // peerList: {[peerId]: multiaddr}
-                    Object.entries(peerList).forEach(async ([peerId, webtrcMultiaddr]) => {
-                        console.log('personal peerid', helia.libp2p.peerId.toString())
-                        console.log('peer id', peerId)
-                        console.log('is peerId the same?', peerId === helia.libp2p.peerId.toString())
-                        if (peerId !== helia.libp2p.peerId.toString()) {
-                            console.log('dialing peer', multiaddr)
-                            const stream = await helia.libp2p.dialProtocol(
-                                multiaddr(webtrcMultiaddr as string),
-                                helia.libp2p.services.echo.protocol, {
-                                    signal: AbortSignal.timeout(5000)
-                                }
-                            )
-                            await pipe(
-                                [new TextEncoder().encode('hello world')],
-                                stream,
-                                async source => {
-                                  for await (const buf of source) {
-                                    console.info(new TextDecoder().decode(buf.subarray()))
-                                  }
-                                }
-                              )
-                        }
-                    })
-                    // TODO: Add peers to the peer list
-                    // TODO: Add peers to the peer list
+                    delete peerList[helia.libp2p.peerId.toString()]
+                    setPeerList(peerList)
                 }
             }
             helia.libp2p.services.pubsub.addEventListener('message', peerListListener)
@@ -198,14 +173,15 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
 
-             
+
             // Log discovered peers periodically
             setInterval(() => {
                 console.log('Logging peers')
                 const peers = helia.libp2p.getPeers()
                 console.log(`Connected to ${peers.length} peers:`, peers.map(p => p.toString()))
             }, 5000)
-             
+
+
             setLibp2p(libp2p)
             setHelia(helia)
             setStarting(false)
@@ -222,6 +198,33 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             startHelia()
         }
     }, [isInitialized])
+
+    useEffect(() => {
+        if (helia) {
+        Object.entries(peerList).forEach(async ([peerId, webtrcMultiaddr]) => {
+            console.log('dialing peer', multiaddr)
+            const stream = await helia.libp2p.dialProtocol(
+                multiaddr(webtrcMultiaddr as string),
+                helia.libp2p.services.echo.protocol, {
+                signal: AbortSignal.timeout(5000)
+            }
+            )
+
+            setInterval(async () => {
+                await pipe(
+                    [new TextEncoder().encode('hello world from ' + helia.libp2p.peerId.toString())],
+                    stream,
+                    async source => {
+                        for await (const buf of source) {
+                            console.info(new TextDecoder().decode(buf.subarray()))
+                        }
+                    }
+                )
+
+                }, 10000)
+            })
+        }
+    }, [peerList, helia])
 
     return (
         <HeliaContext.Provider value={{
