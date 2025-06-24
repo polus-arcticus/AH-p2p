@@ -96,7 +96,6 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             const dial = await helia.libp2p.dial(multiaddr(relay))
             console.log('Dialed to relay', dial)
-
             /*
             const a1 = await pRetry(async () => {
                 const addr = helia.libp2p.getMultiaddrs().filter(ma => WebRTCMatcher.matches(ma)).pop()
@@ -122,8 +121,9 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                         console.log('unknown topic', topic)
                 }
             })
-
             helia.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
+            console.log('Subscribed to peer list')
+            console.log('Publishing peer request')
             helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
              
              // Log discovered peers periodically

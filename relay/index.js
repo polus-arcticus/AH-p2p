@@ -40,6 +40,32 @@ const node = await createLibp2p({
   }
 })
 
+
+node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
+
+node.services.pubsub.addEventListener('message', (evt) => {
+  console.log('Received message pubsub')
+  const {topic, data} = evt.detail
+  console.log('topic', topic)
+  switch (topic) {
+    case TOPICS.PEER_REQUEST:
+      // Send back all connected peers
+      console.log('Received peer request')
+      const connectedPeers = node.getConnections().map(conn => ({
+        peerId: conn.remotePeer.toString(),
+        multiaddrs: conn.remoteAddr.toString(),
+        timestamp: Date.now()
+      }))
+      node.services.pubsub.publish(TOPICS.PEER_LIST, 
+        new TextEncoder().encode(JSON.stringify(connectedPeers))
+      )
+      console.log(`Sent ${connectedPeers.length} connected peers`)
+      break
+    default:
+      console.log('unknown topic', topic)
+  }
+})
+
 console.log(`Node started with id ${node.peerId.toString()}`)
 console.log('Listening on:')
 node.getMultiaddrs().forEach((ma) => console.log(ma.toString()))
@@ -51,30 +77,4 @@ node.addEventListener('connection:open', (evt) => {
 
 node.addEventListener('connection:close', (evt) => {
   console.log('Connection closed to:', evt.detail.remoteAddr.toString())
-})
-
-// Subscribe to peer requests only
-node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
-
-node.services.pubsub.addEventListener('message', (evt) => {
-  console.log('Received message pubsub')
-  const {topic, data} = evt.detail
-  console.log('topic', topic)
-  switch (topic) {
-    case TOPICS.PEER_REQUEST:
-      // Send back all connected peers
-      console.log('Received peer request')
-      const connectedPeers = node.getPeers().map(peerId => ({
-        peerId: peerId.toString(),
-        multiaddrs: node.getConnectionManager().getConnections(peerId).map(conn => conn.remoteAddr.toString()),
-        timestamp: Date.now()
-      }))
-      node.services.pubsub.publish(TOPICS.PEER_LIST, 
-        new TextEncoder().encode(JSON.stringify(connectedPeers))
-      )
-      console.log(`Sent ${connectedPeers.length} connected peers`)
-      break
-    default:
-      console.log('unknown topic', topic)
-  }
 })
