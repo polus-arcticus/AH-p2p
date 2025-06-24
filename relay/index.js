@@ -10,11 +10,12 @@ import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 const privateKey = await loadOrCreatePrivateKey()
 
 // Topics definition
-const TOPICS = {
-  PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
-  PEER_REQUEST: 'ah-p2p.market/peer-request', 
-  PEER_LIST: 'ah-p2p.market/peer-list'
-}
+  const TOPICS = {
+    PING: 'ah-p2p.market/ping',
+    PONG: 'ah-p2p.market/pong',
+    PEER_REQUEST: 'ah-p2p.market/peer-request', 
+    PEER_LIST: 'ah-p2p.market/peer-list'
+  }
 
 const node = await createLibp2p({
   privateKey,
@@ -60,6 +61,10 @@ node.services.pubsub.addEventListener('message', (evt) => {
         new TextEncoder().encode(JSON.stringify(connectedPeers))
       )
       console.log(`Sent ${connectedPeers.length} connected peers`)
+      break
+    case TOPICS.PING:
+      console.log('Received ping')
+      node.services.pubsub.publish(TOPICS.PONG, new Uint8Array())
       break
     default:
       console.log('unknown topic', topic)

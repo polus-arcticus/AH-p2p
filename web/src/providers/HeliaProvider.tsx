@@ -20,9 +20,10 @@ import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 
 
 const TOPICS = {
-  PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
   PEER_REQUEST: 'ah-p2p.market/peer-request', 
-  PEER_LIST: 'ah-p2p.market/peer-list'
+  PEER_LIST: 'ah-p2p.market/peer-list',
+  PING: 'ah-p2p.market/ping',
+  PONG: 'ah-p2p.market/pong'
 }
 
 export const HeliaContext = createContext({
@@ -41,7 +42,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const [error, setError] = useState(false)
     const [starting, setStarting] = useState(true)
 
-    const startHelia = async () => {
+    const startHelia = async (): Promise<void> => {
         const datastoreName = 'ah-p2p-datastore'
         const blockstoreName = 'ah-p2p-blockstore'
 
@@ -90,53 +91,59 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 console.log('Connection closed to:', evt.detail.remoteAddr.toString())
             })
 
-            /*The creation and deployment of a circuit relay is not covered in this documentation. However, you can use the one bundled with the OrbitDB unit tests by cloning the OrbitDB repository, installing the dependencies and then running `npm run webrtc` from the OrbitDB project's root dir. Once running, the webrtc relay server will print a number of addresses it is listening on. Use the address /ip4/127.0.0.1/tcp/12345/ws/p2p when specifying the relay for browser 1.
-            */
             const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
+            await helia.libp2p.dial(multiaddr(relay))
+            console.log('Dialed to relay, checking connection stability...')
 
-            const dial = await helia.libp2p.dial(multiaddr(relay))
-            console.log('Dialed to relay', dial)
-            /*
-            const a1 = await pRetry(async () => {
-                const addr = helia.libp2p.getMultiaddrs().filter(ma => WebRTCMatcher.matches(ma)).pop()
+            // Create a promise that resolves when we get a pong
+            const waitForStableConnection = new Promise<void>((resolve) => {
+                let pingInterval: NodeJS.Timeout | null = null
 
-                if (addr == null) {
-                    await delay(10)
-                    throw new Error('No WebRTC address found')
+                const pongListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
+                    const {topic, data} = evt.detail
+                    if (topic === TOPICS.PONG) {
+                        console.log('Received pong - connection is stable')
+                        // Clear the ping interval
+                        if (pingInterval) {
+                            clearInterval(pingInterval)
+                            pingInterval = null
+                        }
+                        // Remove this pong listener
+                        helia.libp2p.services.pubsub.removeEventListener('message', pongListener)
+                        resolve()
+                    }
                 }
-
-                return addr
+                // Subscribe to pong messages
+                helia.libp2p.services.pubsub.addEventListener('message', pongListener)
+                
+                // Start sending pings
+                pingInterval = setInterval(() => {
+                    console.log('Sending ping')
+                    helia.libp2p.services.pubsub.publish(TOPICS.PING, new Uint8Array())
+                }, 1000)
             })
-                */
 
-            helia.libp2p.services.pubsub.addEventListener('message', (evt) => {
-                const {topic, data} = evt.detail
-                console.log('Received message:', topic, data)
-                switch (topic) {
-                    case TOPICS.PEER_LIST:
-                        const peers = JSON.parse(new TextDecoder().decode(data))
-                        console.log('Received peers:', peers)
-                        break
-                    default:
-                        console.log('unknown topic', topic)
-                }
-            })
+            // Wait for stable connection before proceeding
+            await waitForStableConnection
+            console.log('Connection is stable, subscribing to peer list')
+
+            // Now that we have a stable connection, subscribe to peer list and request peers
             helia.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
             console.log('Subscribed to peer list')
             console.log('Publishing peer request')
             helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
              
-             // Log discovered peers periodically
-             setInterval(() => {
+            // Log discovered peers periodically
+            setInterval(() => {
                 console.log('Logging peers')
-                 const peers = helia.libp2p.getPeers()
-                 console.log(`Connected to ${peers.length} peers:`, peers.map(p => p.toString()))
-             }, 5000)
+                const peers = helia.libp2p.getPeers()
+                console.log(`Connected to ${peers.length} peers:`, peers.map(p => p.toString()))
+            }, 5000)
              
-             setLibp2p(libp2p)
-             setHelia(helia)
-             setStarting(false)
-             setIsInitialized(true)
+            setLibp2p(libp2p)
+            setHelia(helia)
+            setStarting(false)
+            setIsInitialized(true)
 
         } catch (error) {
             setError(true)
