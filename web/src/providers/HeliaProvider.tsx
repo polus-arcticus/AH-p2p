@@ -12,7 +12,6 @@ import { identify } from "@libp2p/identify"
 import { webTransport } from '@libp2p/webtransport'
 import { echo } from '@libp2p/echo'
 import { WebRTC } from '@multiformats/multiaddr-matcher'
-
 import * as filters from '@libp2p/websockets/filters'
 import type { Libp2p } from 'libp2p'
 import type { Helia } from 'helia'
@@ -22,6 +21,7 @@ import pRetry from 'p-retry'
 import { WebRTC as WebRTCMatcher } from '@multiformats/multiaddr-matcher'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 
+import { pipe } from 'it-pipe'
 
 const TOPICS = {
   PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
@@ -147,14 +147,10 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             })
             const webRTCMultiaddr = await waitForWebRTCAddress
             console.log('WebRTC Multiaddr', webRTCMultiaddr.toString())
-
-            const announceAddressListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
-                const {topic, data} = evt.detail
-                if (topic === TOPICS.PEER_ANNOUNCE) {
-                    const address = JSON.parse(new TextDecoder().decode(data))
-                    console.log('Announced address', address)
-                }
-            }
+            helia.libp2p.services.pubsub.publish(TOPICS.PEER_ANNOUNCE, new TextEncoder().encode(JSON.stringify({
+                peerId: helia.libp2p.peerId.toString(),
+                multiaddrs: webRTCMultiaddr.toString()
+            })))
 
 
             
@@ -163,12 +159,28 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 if (topic === TOPICS.PEER_LIST) {
                     const peerList = JSON.parse(new TextDecoder().decode(data))
                     console.log('Peer list', peerList)
-                    peerList.forEach((peer: { peerId: string, multiaddrs: string }) => {
+                    // peerList: {[peerId]: multiaddr}
+                    Object.entries(peerList).forEach(async ([peerId, webtrcMultiaddr]) => {
                         console.log('personal peerid', helia.libp2p.peerId.toString())
-                        console.log('peer id', peer.peerId)
-                        if (peer.peerId !== helia.libp2p.peerId.toString()) {
-                            console.log('dialing peer', peer.multiaddrs)
-                            helia.libp2p.dial(multiaddr(peer.multiaddrs))
+                        console.log('peer id', peerId)
+                        console.log('is peerId the same?', peerId === helia.libp2p.peerId.toString())
+                        if (peerId !== helia.libp2p.peerId.toString()) {
+                            console.log('dialing peer', multiaddr)
+                            const stream = await helia.libp2p.dialProtocol(
+                                multiaddr(webtrcMultiaddr as string),
+                                helia.libp2p.services.echo.protocol, {
+                                    signal: AbortSignal.timeout(5000)
+                                }
+                            )
+                            await pipe(
+                                [new TextEncoder().encode('hello world')],
+                                stream,
+                                async source => {
+                                  for await (const buf of source) {
+                                    console.info(new TextDecoder().decode(buf.subarray()))
+                                  }
+                                }
+                              )
                         }
                     })
                     // TODO: Add peers to the peer list
@@ -183,6 +195,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             console.log('Subscribed to peer list')
             console.log('Publishing peer request')
+
             helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
 
              
