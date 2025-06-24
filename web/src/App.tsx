@@ -42,9 +42,17 @@ const options = {
 const libp2p = await createLibp2p(options)
 const ipfs1 = await createHelia({ libp2p })
 
+ipfs1.libp2p.addEventListener('connection:open', (evt) => {
+  console.log('New connection to:', evt.detail.remoteAddr.toString())
+})
+
+ipfs1.libp2p.addEventListener('connection:close', (evt) => {
+  console.log('Connection closed to:', evt.detail.remoteAddr.toString())
+})
+
 /*The creation and deployment of a circuit relay is not covered in this documentation. However, you can use the one bundled with the OrbitDB unit tests by cloning the OrbitDB repository, installing the dependencies and then running `npm run webrtc` from the OrbitDB project's root dir. Once running, the webrtc relay server will print a number of addresses it is listening on. Use the address /ip4/127.0.0.1/tcp/12345/ws/p2p when specifying the relay for browser 1.
 */
-const relay = `/ip4/172.105.15.236/tcp/35445/ws/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
+const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
 
 await ipfs1.libp2p.dial(multiaddr(relay))
 
