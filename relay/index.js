@@ -41,7 +41,8 @@ const node = await createLibp2p({
     })
   }
 })
-const peerList = []
+
+const peerList =  {}
 
 node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
 node.services.pubsub.subscribe(TOPICS.PEER_ANNOUNCE)
@@ -55,7 +56,9 @@ node.services.pubsub.addEventListener('message', (evt) => {
       console.log('Received peer announce')
       const peerAnnounce = JSON.parse(new TextDecoder().decode(data))
       console.log('Peer announce', peerAnnounce)
-      peerList.push(peerAnnounce)
+      
+      peerList[peerAnnounce.peerId] = peerAnnounce.multiaddrs
+      console.log('peerlist', peerList)
       break
     case TOPICS.PEER_REQUEST:
       // Send back all connected peers
@@ -63,7 +66,7 @@ node.services.pubsub.addEventListener('message', (evt) => {
       node.services.pubsub.publish(TOPICS.PEER_LIST, 
         new TextEncoder().encode(JSON.stringify(peerList))
       )
-      console.log(`Sent ${connectedPeers.length} connected peers`)
+      console.log(`Sent ${peerList.length} connected peers`)
       break
     case TOPICS.PING:
       console.log('Received ping')
@@ -83,5 +86,8 @@ node.addEventListener('connection:open', (evt) => {
 })
 
 node.addEventListener('connection:close', (evt) => {
+  console.log('evt', evt.detail.remotePeer)
+  delete peerList[evt.detail.remotePeer.toString()]
+  console.log('peerList', peerList )
   console.log('Connection closed to:', evt.detail.remoteAddr.toString())
 })
