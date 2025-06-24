@@ -1,13 +1,14 @@
+import 'dotenv/config'
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
 import { circuitRelayServer } from '@libp2p/circuit-relay-v2'
 import { identify } from '@libp2p/identify'
 import { webSockets } from '@libp2p/websockets'
 import { createLibp2p } from 'libp2p'
-import { loadOrCreatePeerId } from './loadOrCreatePeerId.js'
-const peerId = await loadOrCreatePeerId()
+import { loadOrCreatePrivateKey } from './loadOrCreatePeerId.js'
+const privateKey = await loadOrCreatePrivateKey()
 const node = await createLibp2p({
-  peerId,
+  privateKey,
   addresses: {
     listen: ['/ip4/0.0.0.0/tcp/0/ws']
     // TODO check "What is next?" section
