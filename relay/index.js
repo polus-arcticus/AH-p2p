@@ -43,7 +43,7 @@ const node = await createLibp2p({
 
 
 node.services.pubsub.subscribe(TOPICS.PEER_REQUEST)
-node.services.pubsub.subscript(TOPICS.PING)
+node.services.pubsub.subscribe(TOPICS.PING)
 
 node.services.pubsub.addEventListener('message', (evt) => {
   console.log('Received message pubsub')
