@@ -10,44 +10,85 @@ import { webSockets } from "@libp2p/websockets"
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2"
 import { identify } from "@libp2p/identify"
 import { webTransport } from '@libp2p/webtransport'
-import { echo } from '@libp2p/echo'
+
 import { WebRTC } from '@multiformats/multiaddr-matcher'
 import * as filters from '@libp2p/websockets/filters'
 import type { Libp2p } from 'libp2p'
-import type { Helia } from 'helia'
+import type { Helia, HeliaLibp2p } from 'helia'
 import { multiaddr, type Multiaddr } from '@multiformats/multiaddr'
 import delay from 'delay'
 import pRetry from 'p-retry'
 import { WebRTC as WebRTCMatcher } from '@multiformats/multiaddr-matcher'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 
-import { pipe } from 'it-pipe'
+
 
 const TOPICS = {
     PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
     PEER_REQUEST: 'ah-p2p.market/peer-request',
     PEER_LIST: 'ah-p2p.market/peer-list',
     PING: 'ah-p2p.market/ping',
-    PONG: 'ah-p2p.market/pong'
+    PONG: 'ah-p2p.market/pong',
+    CHAT: 'ah-p2p.market/chat'
 }
 
 export const HeliaContext = createContext({
+    peerId: null as string | null,
     libp2p: null as Libp2p | null,
     helia: null as Helia | null,
     error: false,
     starting: true,
     startHelia: async () => { },
-
+    peerList: {} as { [peerId: string]: string },
+    chatMessages: [] as Array<{ id: string, peerId: string, message: string, timestamp: number }>,
+    sendChatMessage: (message: string) => { },
+    webrtcConnectionCount: 0,
 })
 
 export const HeliaProvider = ({ children }: { children: ReactNode }) => {
+    const [peerId, setPeerId] = useState<string | null>(null)
     const [isInitialized, setIsInitialized] = useState(false)
     const [libp2p, setLibp2p] = useState<Libp2p | null>(null)
     const [helia, setHelia] = useState<Helia | null>(null)
     const [error, setError] = useState(false)
     const [starting, setStarting] = useState(true)
     const [peerList, setPeerList] = useState<{ [peerId: string]: string }>({})
+    const [chatMessages, setChatMessages] = useState<Array<{ id: string, peerId: string, message: string, timestamp: number }>>([])
+    const [webrtcConnectionCount, setWebrtcConnectionCount] = useState(0)
 
+    const sendChatMessage = (message: string) => {
+        if (helia && message.trim()) {
+            // Check if we have direct WebRTC connections
+            const connections = (helia as any).libp2p.getConnections()
+            const webrtcConnections = connections.filter((conn: any) => 
+                conn.remoteAddr.toString().includes('/webrtc/')
+            )
+            
+            if (webrtcConnections.length === 0) {
+                console.warn('No direct WebRTC connections available for chat')
+                return
+            }
+            
+            const chatMessage = {
+                id: Date.now().toString(),
+                peerId: peerId || 'unknown',
+                message: message.trim(),
+                timestamp: Date.now()
+            }
+            
+            try {
+                console.log(`Sending chat message over ${webrtcConnections.length} WebRTC connections`)
+                ;(helia as any).libp2p.services.pubsub.publish(
+                    TOPICS.CHAT, 
+                    new TextEncoder().encode(JSON.stringify(chatMessage))
+                )
+                // Add our own message to the chat
+                setChatMessages(prev => [...prev, chatMessage])
+            } catch (error) {
+                console.error('Failed to send chat message:', error)
+            }
+        }
+    }
     const startHelia = async (): Promise<void> => {
         const datastoreName = 'ah-p2p-datastore'
         const blockstoreName = 'ah-p2p-blockstore'
@@ -68,8 +109,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                     ]
                 },
                 transports: [
-                    webSockets({
-                    }),
+                    webSockets({}),
                     webRTC(),
                     circuitRelayTransport()
                 ],
@@ -82,7 +122,6 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 },
                 services: {
                     identify: identify(),
-                    echo: echo(),
                     pubsub: gossipsub({
                         allowPublishToZeroTopicPeers: true,
                     })
@@ -91,13 +130,22 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             const libp2p = await createLibp2p(options)
             const helia = await createHelia({ libp2p, datastore, blockstore })
+            setPeerId(helia.libp2p.peerId.toString())
 
             helia.libp2p.addEventListener('connection:open', (evt) => {
-                console.log('New connection to:', evt.detail.remoteAddr.toString())
+                const addr = evt.detail.remoteAddr.toString()
+                console.log('New connection to:', addr)
+                if (addr.includes('/webrtc/')) {
+                    console.log('✅ Direct WebRTC connection established:', addr)
+                }
             })
 
             helia.libp2p.addEventListener('connection:close', (evt) => {
-                console.log('Connection closed to:', evt.detail.remoteAddr.toString())
+                const addr = evt.detail.remoteAddr.toString()
+                console.log('Connection closed to:', addr)
+                if (addr.includes('/webrtc/')) {
+                    console.log('❌ WebRTC connection lost:', addr)
+                }
             })
 
             const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
@@ -137,49 +185,84 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             // Wait for addresses to be generated (circuit relay + WebRTC)
             const waitForWebRTCAddress = new Promise<Multiaddr>((resolve) => {
                 const interval = setInterval(() => {
-                    const multiAddrs = helia.libp2p.getMultiaddrs()
-                    const webRTCMultiaddr = helia.libp2p.getMultiaddrs().find(ma => WebRTC.matches(ma))
-                    console.log('WebRTC Multiaddr', webRTCMultiaddr?.toString())
-                    if (webRTCMultiaddr) {
+                    const selfWebRTCMultiaddr = helia.libp2p.getMultiaddrs().find(ma => WebRTC.matches(ma))
+                    console.log('WebRTC Multiaddr', selfWebRTCMultiaddr?.toString())
+                    if (selfWebRTCMultiaddr) {
                         clearInterval(interval)
-                        resolve(webRTCMultiaddr)
+                        resolve(selfWebRTCMultiaddr)
                     }
                 }, 1000)
             })
-            const webRTCMultiaddr = await waitForWebRTCAddress
-            console.log('WebRTC Multiaddr', webRTCMultiaddr.toString())
+            const selfWebRTCMultiaddr = await waitForWebRTCAddress
+            console.log('WebRTC Multiaddr', selfWebRTCMultiaddr.toString())
             helia.libp2p.services.pubsub.publish(TOPICS.PEER_ANNOUNCE, new TextEncoder().encode(JSON.stringify({
                 peerId: helia.libp2p.peerId.toString(),
-                multiaddrs: webRTCMultiaddr.toString()
+                multiaddrs: selfWebRTCMultiaddr.toString()
             })))
 
-            const peerListListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
+            const subscribeToPeerList = new Promise<Record<string, string>>((resolve) => {
+                const peerListListener = async (evt: { detail: { topic: string, data: Uint8Array } }) => {
+                    const { topic, data } = evt.detail
+                    if (topic === TOPICS.PEER_LIST) {
+                        const peerListJson: Record<string, string> = JSON.parse(new TextDecoder().decode(data))
+                        console.log('Peer list', peerListJson)
+                        delete peerListJson[helia.libp2p.peerId.toString()]
+                        setPeerList(peerListJson)
+                        
+                        // Dial WebRTC connections to peers
+                        for (const [peerId, webrtcMultiaddr] of Object.entries(peerListJson)) {
+                            console.log('Dialing WebRTC connection to peer:', peerId)
+                            try {
+                                await helia.libp2p.dial(multiaddr(webrtcMultiaddr))
+                                console.log('Successfully established WebRTC connection to:', peerId)
+                            } catch (error) {
+                                console.error('Failed to dial WebRTC connection to', peerId, error)
+                            }
+                        }
+                        
+                        resolve(peerListJson)
+                    }
+                }
+                helia.libp2p.services.pubsub.addEventListener('message', peerListListener)
+                helia.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
+                helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
+            })
+
+            const peerListJson = await subscribeToPeerList
+
+            // Subscribe to chat messages
+            helia.libp2p.services.pubsub.subscribe(TOPICS.CHAT)
+            const chatListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
                 const { topic, data } = evt.detail
-                if (topic === TOPICS.PEER_LIST) {
-                    const peerList = JSON.parse(new TextDecoder().decode(data))
-                    console.log('Peer list', peerList)
-                    delete peerList[helia.libp2p.peerId.toString()]
-                    setPeerList(peerList)
+                if (topic === TOPICS.CHAT) {
+                    try {
+                        const chatMessage = JSON.parse(new TextDecoder().decode(data))
+                        // Only add messages from other peers (not our own)
+                        if (chatMessage.peerId !== helia.libp2p.peerId.toString()) {
+                            setChatMessages(prev => [...prev, chatMessage])
+                        }
+                    } catch (error) {
+                        console.error('Failed to parse chat message:', error)
+                    }
                 }
             }
-            helia.libp2p.services.pubsub.addEventListener('message', peerListListener)
-            console.log('Connection is stable, subscribing to peer list')
-
-            // Now that we have a stable connection, subscribe to peer list and request peers
-            helia.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
-
-            console.log('Subscribed to peer list')
-            console.log('Publishing peer request')
-
-            helia.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
-
+            helia.libp2p.services.pubsub.addEventListener('message', chatListener)
 
             // Log discovered peers periodically
             setInterval(() => {
                 console.log('Logging peers')
                 const peers = helia.libp2p.getPeers()
+                const connections = helia.libp2p.getConnections()
+                const webrtcConnections = connections.filter(conn => 
+                    conn.remoteAddr.toString().includes('/webrtc/')
+                )
                 console.log(`Connected to ${peers.length} peers:`, peers.map(p => p.toString()))
+                console.log(`Direct WebRTC connections: ${webrtcConnections.length}`)
+                webrtcConnections.forEach(conn => {
+                    console.log('  WebRTC:', conn.remoteAddr.toString())
+                })
             }, 5000)
+
 
 
             setLibp2p(libp2p)
@@ -189,7 +272,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
         } catch (error) {
             setError(true)
-            console.error(error)
+            console.error('Error starting Helia:', error)
         }
     }
 
@@ -199,40 +282,25 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
         }
     }, [isInitialized])
 
+    // Simple peer connection logging
     useEffect(() => {
-        if (helia) {
-        Object.entries(peerList).forEach(async ([peerId, webtrcMultiaddr]) => {
-            console.log('dialing peer', multiaddr)
-            const stream = await helia.libp2p.dialProtocol(
-                multiaddr(webtrcMultiaddr as string),
-                helia.libp2p.services.echo.protocol, {
-                signal: AbortSignal.timeout(5000)
-            }
-            )
-
-            setInterval(async () => {
-                await pipe(
-                    [new TextEncoder().encode('hello world from ' + helia.libp2p.peerId.toString())],
-                    stream,
-                    async source => {
-                        for await (const buf of source) {
-                            console.info(new TextDecoder().decode(buf.subarray()))
-                        }
-                    }
-                )
-
-                }, 10000)
-            })
+        if (helia && Object.keys(peerList).length > 0) {
+            console.log('Active peers for chat:', Object.keys(peerList))
         }
     }, [peerList, helia])
 
     return (
         <HeliaContext.Provider value={{
+            peerId,
             libp2p,
             helia,
             error,
             starting,
             startHelia,
+            peerList,
+            chatMessages,
+            sendChatMessage,
+            webrtcConnectionCount,
         }}>
             {children}
         </HeliaContext.Provider>
