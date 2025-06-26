@@ -29,7 +29,28 @@ const TOPICS = {
     PEER_LIST: 'ah-p2p.market/peer-list',
     PING: 'ah-p2p.market/ping',
     PONG: 'ah-p2p.market/pong',
-    CHAT: 'ah-p2p.market/chat'
+    CHAT: 'ah-p2p.market/chat',
+    AUCTION_ROOM_JOIN: 'ah-p2p.market/auction-room-join',
+    AUCTION_ROOM_LEAVE: 'ah-p2p.market/auction-room-leave',
+    ACTIVE_AUCTIONS: 'ah-p2p.market/active-auctions',
+    AUCTION_CREATE: 'ah-p2p.market/auction-create',
+    AUCTION_END: 'ah-p2p.market/auction-end'
+}
+
+const getChatTopic = (roomId: string) => `ah-p2p.market/chat-room/${roomId}`
+
+interface ActiveAuction {
+    id: string
+    creator: string
+    title: string
+    description: string
+    nftContract?: string
+    nftTokenId?: string
+    startingBid: string
+    currentHighBid: string
+    bidCount: number
+    endTime: number
+    createdAt: number
 }
 
 export const HeliaContext = createContext({
@@ -40,9 +61,16 @@ export const HeliaContext = createContext({
     starting: true,
     startHelia: async () => { },
     peerList: {} as { [peerId: string]: string },
-    chatMessages: [] as Array<{ id: string, peerId: string, message: string, timestamp: number }>,
-    sendChatMessage: (message: string) => { },
+    chatMessages: [] as Array<{ id: string, peerId: string, message: string, timestamp: number, roomId: string }>,
+    sendChatMessage: (message: string, roomId: string) => { },
     webrtcConnectionCount: 0,
+    currentRoom: null as string | null,
+    joinRoom: (roomId: string) => { },
+    leaveRoom: () => { },
+    roomPeers: {} as { [roomId: string]: string[] },
+    activeAuctions: [] as ActiveAuction[],
+    createAuction: (auction: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>) => '' as string | undefined,
+    refreshActiveAuctions: () => { },
 })
 
 export const HeliaProvider = ({ children }: { children: ReactNode }) => {
@@ -53,11 +81,14 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const [error, setError] = useState(false)
     const [starting, setStarting] = useState(true)
     const [peerList, setPeerList] = useState<{ [peerId: string]: string }>({})
-    const [chatMessages, setChatMessages] = useState<Array<{ id: string, peerId: string, message: string, timestamp: number }>>([])
+    const [chatMessages, setChatMessages] = useState<Array<{ id: string, peerId: string, message: string, timestamp: number, roomId: string }>>([])
     const [webrtcConnectionCount, setWebrtcConnectionCount] = useState(0)
+    const [currentRoom, setCurrentRoom] = useState<string | null>(null)
+    const [roomPeers, setRoomPeers] = useState<{ [roomId: string]: string[] }>({})
+    const [activeAuctions, setActiveAuctions] = useState<ActiveAuction[]>([])
 
-    const sendChatMessage = (message: string) => {
-        if (helia && message.trim()) {
+    const sendChatMessage = (message: string, roomId: string) => {
+        if (helia && message.trim() && roomId) {
             // Check if we have direct WebRTC connections
             const connections = (helia as any).libp2p.getConnections()
             const webrtcConnections = connections.filter((conn: any) => 
@@ -73,13 +104,14 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 id: Date.now().toString(),
                 peerId: peerId || 'unknown',
                 message: message.trim(),
-                timestamp: Date.now()
+                timestamp: Date.now(),
+                roomId: roomId
             }
             
             try {
-                console.log(`Sending chat message over ${webrtcConnections.length} WebRTC connections`)
+                console.log(`Sending chat message to room ${roomId} over ${webrtcConnections.length} WebRTC connections`)
                 ;(helia as any).libp2p.services.pubsub.publish(
-                    TOPICS.CHAT, 
+                    getChatTopic(roomId), 
                     new TextEncoder().encode(JSON.stringify(chatMessage))
                 )
                 // Add our own message to the chat
@@ -87,6 +119,84 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             } catch (error) {
                 console.error('Failed to send chat message:', error)
             }
+        }
+    }
+
+    const joinRoom = (roomId: string) => {
+        if (helia && roomId) {
+            setCurrentRoom(roomId)
+            // Subscribe to room chat
+            ;(helia as any).libp2p.services.pubsub.subscribe(getChatTopic(roomId))
+            console.log(`Joined room: ${roomId}`)
+            
+            // Announce joining
+            ;(helia as any).libp2p.services.pubsub.publish(
+                TOPICS.AUCTION_ROOM_JOIN,
+                new TextEncoder().encode(JSON.stringify({ peerId: peerId, roomId }))
+            )
+        }
+    }
+
+    const leaveRoom = () => {
+        if (helia && currentRoom) {
+            // Announce leaving
+            ;(helia as any).libp2p.services.pubsub.publish(
+                TOPICS.AUCTION_ROOM_LEAVE,
+                new TextEncoder().encode(JSON.stringify({ peerId: peerId, roomId: currentRoom }))
+            )
+            
+            // Unsubscribe from room chat
+            ;(helia as any).libp2p.services.pubsub.unsubscribe(getChatTopic(currentRoom))
+            console.log(`Left room: ${currentRoom}`)
+            setCurrentRoom(null)
+        }
+    }
+
+    const createAuction = (auctionData: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>) => {
+        if (helia && peerId) {
+            const auction: ActiveAuction = {
+                ...auctionData,
+                id: `auction-${Date.now()}`,
+                creator: peerId,
+                createdAt: Date.now(),
+                currentHighBid: auctionData.startingBid,
+                bidCount: 0
+            }
+            
+            console.log('Creating auction:', auction)
+            
+            // Broadcast auction on ACTIVE_AUCTIONS channel
+            ;(helia as any).libp2p.services.pubsub.publish(
+                TOPICS.ACTIVE_AUCTIONS,
+                new TextEncoder().encode(JSON.stringify(auction))
+            )
+            
+            // Add to our local list
+            setActiveAuctions(prev => [...prev, auction])
+            
+            // Set up periodic broadcasting for this auction (every 30 seconds)
+            const broadcastInterval = setInterval(() => {
+                if (helia && auction.endTime > Date.now()) {
+                    console.log('Periodic broadcast for auction:', auction.id)
+                    ;(helia as any).libp2p.services.pubsub.publish(
+                        TOPICS.ACTIVE_AUCTIONS,
+                        new TextEncoder().encode(JSON.stringify(auction))
+                    )
+                } else {
+                    // Auction ended, stop broadcasting
+                    clearInterval(broadcastInterval)
+                }
+            }, 30000) // 30 seconds
+            
+            return auction.id
+        }
+    }
+
+    const refreshActiveAuctions = () => {
+        if (helia) {
+            console.log('Refreshing active auctions - listening for broadcasts...')
+            // Just listen - auctions will be broadcast by their creators
+            // No need to actively request, creators will periodically broadcast
         }
     }
     const startHelia = async (): Promise<void> => {
@@ -230,11 +340,18 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             const peerListJson = await subscribeToPeerList
 
-            // Subscribe to chat messages
-            helia.libp2p.services.pubsub.subscribe(TOPICS.CHAT)
-            const chatListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
+            // Subscribe to room management and auction topics
+            helia.libp2p.services.pubsub.subscribe(TOPICS.AUCTION_ROOM_JOIN)
+            helia.libp2p.services.pubsub.subscribe(TOPICS.AUCTION_ROOM_LEAVE)
+            helia.libp2p.services.pubsub.subscribe(TOPICS.ACTIVE_AUCTIONS)
+            helia.libp2p.services.pubsub.subscribe(TOPICS.AUCTION_CREATE)
+            helia.libp2p.services.pubsub.subscribe(TOPICS.AUCTION_END)
+            
+            const roomAndChatListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
                 const { topic, data } = evt.detail
-                if (topic === TOPICS.CHAT) {
+                
+                // Handle room chat messages
+                if (topic.startsWith('ah-p2p.market/chat-room/')) {
                     try {
                         const chatMessage = JSON.parse(new TextDecoder().decode(data))
                         // Only add messages from other peers (not our own)
@@ -245,8 +362,62 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                         console.error('Failed to parse chat message:', error)
                     }
                 }
+                
+                // Handle room join/leave
+                if (topic === TOPICS.AUCTION_ROOM_JOIN) {
+                    try {
+                        const { peerId: joinedPeerId, roomId } = JSON.parse(new TextDecoder().decode(data))
+                        console.log(`Peer ${joinedPeerId} joined room ${roomId}`)
+                        setRoomPeers(prev => ({
+                            ...prev,
+                            [roomId]: [...(prev[roomId] || []), joinedPeerId].filter((p, i, arr) => arr.indexOf(p) === i)
+                        }))
+                    } catch (error) {
+                        console.error('Failed to parse room join:', error)
+                    }
+                }
+                
+                if (topic === TOPICS.AUCTION_ROOM_LEAVE) {
+                    try {
+                        const { peerId: leftPeerId, roomId } = JSON.parse(new TextDecoder().decode(data))
+                        console.log(`Peer ${leftPeerId} left room ${roomId}`)
+                        setRoomPeers(prev => ({
+                            ...prev,
+                            [roomId]: (prev[roomId] || []).filter(p => p !== leftPeerId)
+                        }))
+                    } catch (error) {
+                        console.error('Failed to parse room leave:', error)
+                    }
+                }
+                
+                // Handle active auction broadcasts
+                if (topic === TOPICS.ACTIVE_AUCTIONS) {
+                    try {
+                        const auction = JSON.parse(new TextDecoder().decode(data))
+                        console.log('Active auction broadcast received:', auction)
+                        
+                        // Validate it looks like an auction object
+                        if (auction.id && auction.title && auction.creator) {
+                            setActiveAuctions(prev => {
+                                // Upsert: update if exists, add if new
+                                const existingIndex = prev.findIndex(a => a.id === auction.id)
+                                if (existingIndex >= 0) {
+                                    // Update existing auction
+                                    const updated = [...prev]
+                                    updated[existingIndex] = auction
+                                    return updated
+                                } else {
+                                    // Add new auction
+                                    return [...prev, auction]
+                                }
+                            })
+                        }
+                    } catch (error) {
+                        console.error('Failed to parse active auction broadcast:', error)
+                    }
+                }
             }
-            helia.libp2p.services.pubsub.addEventListener('message', chatListener)
+            helia.libp2p.services.pubsub.addEventListener('message', roomAndChatListener)
 
             // Log discovered peers periodically
             setInterval(() => {
@@ -301,6 +472,13 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             chatMessages,
             sendChatMessage,
             webrtcConnectionCount,
+            currentRoom,
+            joinRoom,
+            leaveRoom,
+            roomPeers,
+            activeAuctions,
+            createAuction,
+            refreshActiveAuctions,
         }}>
             {children}
         </HeliaContext.Provider>

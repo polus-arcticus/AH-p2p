@@ -21,6 +21,7 @@
     "@libp2p/webtransport": "^5.0.46",
     "@multiformats/multiaddr": "^12.5.0",
     "@multiformats/multiaddr-matcher": "^1.7.2",
+    "@tailwindcss/vite": "^4.1.10",
     "blockstore-idb": "^2.0.3",
     "datastore-idb": "^3.0.3",
     "delay": "^6.0.0",
@@ -29,7 +30,9 @@
     "libp2p": "^2.8.11",
     "p-retry": "^6.2.1",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "react-router": "^7.6.2",
+    "tailwindcss": "^4.1.10"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
