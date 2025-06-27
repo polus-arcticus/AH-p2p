@@ -1,4 +1,4 @@
-pragma solidity 0.8.17;
+pragma solidity 0.8.30;
 import 'hardhat/console.sol';
 
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";

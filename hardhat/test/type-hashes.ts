@@ -1,12 +1,12 @@
 
-exports.EIP712DOMAIN = [
+export const EIP712DOMAIN = [
   { name: 'name', type: 'string' },
   { name: 'version', type: 'string' },
   { name: 'chainId', type: 'uint256' },
   { name: 'verifyingContract', type: 'address' },
 ]
 
-exports.Auction = [
+export const Auction = [
   { name: 'auctioneer', type:'address' },
   { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
@@ -18,7 +18,7 @@ exports.Auction = [
   { name: 'bids', type:'Bid[]' },
   { name: 'bidSigs', type:'bytes[]' },
 ]
-exports.AuctionAuthSig = [
+export const AuctionAuthSig = [
   { name: 'auctioneer', type:'address' },
   { name: 'auctioneerNonce', type:'uint256' },
   { name: 'nft', type:'address' },
@@ -27,7 +27,7 @@ exports.AuctionAuthSig = [
   { name: 'bidStart', type:'uint256' },
   { name: 'deadline', type:'uint256' },
 ]
-exports.Bid = [
+export const Bid = [
   { name: 'bidder', type:'address' },
   { name: 'amount', type:'uint256' },
   { name: 'bidderNonce', type:'uint256' },

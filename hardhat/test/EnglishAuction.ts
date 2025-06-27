@@ -1,32 +1,31 @@
-const hre = require('hardhat')
-const SignerWithAddress = require('@nomiclabs/hardhat-ethers/signers')
-const { expect,assert } = require('chai')
-const {
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
+import hre from 'hardhat'
+import {parseEther} from 'viem'
+import { expect, assert } from 'chai';
+import {
   encrypt,
   recoverPersonalSignature,
   recoverTypedSignature,
   TypedMessage,
   MessageTypes,
   SignTypedDataVersion
-} = require('@metamask/eth-sig-util');
+}  from '@metamask/eth-sig-util';
 
-const { deployEnglishAuction } = require('../scripts/deploy.js')
-const { Bid, Auction, AuctionAuthSig } = require('./type-hashes.js')
+import deployEnglishAuction  from '../deploy/deploy';
+import { Bid, Auction, AuctionAuthSig } from './type-hashes';
 function* idMaker() {
   var index = 0;
   while (true)
     yield index++;
 }
-
 describe("English Auction", async () => {
-  
   const genId = idMaker()
   const auctionedNFTId = 0
-  const million = hre.ethers.utils.parseEther('1000000')
-  const hundredThousand = hre.ethers.utils.parseEther('100000')
-  const tenThousand = hre.ethers.utils.parseEther('10000')
-  const thousand = hre.ethers.utils.parseEther('1000')
-  const hundred = hre.ethers.utils.parseEther('100')
+  const million = parseEther('1000000')
+  const hundredThousand = parseEther('100000')
+  const tenThousand = parseEther('10000')
+  const thousand = parseEther('1000')
+  const hundred = parseEther('100')
   const deadline = Math.floor(new Date().getTime() / 1000) + 3600
   let chainId
   let domain
@@ -39,22 +38,23 @@ describe("English Auction", async () => {
   let bidder1
   let bidder2
   let bidder3
+  let exampleToken
+  let exampleNFT
+  let englishAuction
   
   before(async () => {
-    chainId = (await hre.ethers.provider.getNetwork()).chainId
+    chainId = (await hre.getChainId())
     // Stage of Actors
-    accounts = await hre.ethers.getSigners();
-    deployer = accounts[0]
-    auctioneer = accounts[1]
-    bidder1 = accounts[2]
-    bidder2 = accounts[3]
-    bidder3 = accounts[4]
-
+    console.log('hre', hre.viem)
+    ;([deployer, auctioneer, bidder1, bidder2, bidder3] = await hre.viem.getWalletClients())
     // deploy, loaded contract instances
-    ;({englishAuctionAddr, exampleTokenAddr, exampleNftAddr} = await deployEnglishAuction())
-    exampleToken = await hre.ethers.getContractAt('ExampleToken', exampleTokenAddr)
-    exampleNFT = await hre.ethers.getContractAt('ExampleNFT', exampleNftAddr)
-    englishAuction = await hre.ethers.getContractAt('EnglishAuction', englishAuctionAddr)
+    ;({englishAuctionAddr, exampleTokenAddr, exampleNftAddr} = await deployEnglishAuction(hre))
+    console.log('englishAuctionAddr', englishAuctionAddr)
+    console.log('exampleTokenAddr', exampleTokenAddr)
+    console.log('exampleNftAddr', exampleNftAddr)
+    exampleToken = await hre.viem.getContractAt('ExampleToken', exampleTokenAddr)
+    exampleNFT = await hre.viem.getContractAt('ExampleNFT', exampleNftAddr)
+    englishAuction = await hre.viem.getContractAt('EnglishAuction', englishAuctionAddr)
     
     domain = {
       name:  'EnglishAuction',
@@ -62,18 +62,30 @@ describe("English Auction", async () => {
       chainId: chainId,
       verifyingContract: englishAuctionAddr
     }
-
+    
+    await exampleNFT.write.safeTransferFrom([
+      deployer.account.address,
+      auctioneer.account.address,
+      auctionedNFTId,
+      1,
+      ""
+    ])
     // nft for auctioneer to auction
-    await exampleNFT.connect(deployer).safeTransferFrom(deployer.address,auctioneer.address, auctionedNFTId, 1, 0xf18)
+    await exampleNFT.write.setApprovalForAll([englishAuctionAddr, true])
     // authorizes auction contract to move nft
-    await exampleNFT.connect(auctioneer).setApprovalForAll(englishAuctionAddr, true)
+    await exampleNFT.write.setApprovalForAll([englishAuctionAddr, true])
 
     //preloading example token for bidders
     await Promise.all(
-      [bidder1,bidder2,bidder3].map(async (account, i) => {
-        await exampleToken.connect(deployer).transfer(account.address,  million)
+      [bidder1,bidder2,bidder3].map(async (wallet, i) => {
+        await exampleToken.write.transfer([wallet.account.address,  '1000000'])
         // approves auction contract to move bidders funds
-        await exampleToken.connect(account).approve(englishAuctionAddr, hundredThousand)
+        await exampleToken.write.approve(
+          [englishAuctionAddr, 100000],
+          {
+            account: wallet.account
+          }
+        )
       })
     )
   })

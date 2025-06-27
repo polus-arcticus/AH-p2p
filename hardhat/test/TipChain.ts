@@ -1,11 +1,7 @@
-//import hre, { ethers } from "hardhat";
-const hre = require('hardhat')
-//import { SigningKey } from './utils/SigningKey'
-//import { BigNumber, Signer } from "ethers";
-const SignerWithAddress = require('@nomiclabs/hardhat-ethers/signers')
-//import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers'
-//import { signTypedData } from './utils/utils'
-const { expect,assert } = require('chai')
+import hre from 'hardhat';
+import { expect, assert } from 'chai';
+// @ts-ignore
+const { ethers } = hre;
 const {
   encrypt,
   recoverPersonalSignature,
@@ -15,7 +11,7 @@ const {
   SignTypedDataVersion
 } = require('@metamask/eth-sig-util');
 
-const { deployTipchain } = require('../scripts/deploy.js')
+import { deployTipChain } from '../deploy/deploy';
 
 function* idMaker() {
   var index = 0;
@@ -27,17 +23,20 @@ function* idMaker() {
 
 describe("Tipchain", async () => {
   let genId = idMaker()
-  let accounts 
-  let diamondAddress 
+  let accounts: any
+  let tipChainAddr: any
+  let exampleTokenAddr: any  
+  let exampleToken: any
+  let tipChain: any
   before(async () => {
-    accounts = await hre.ethers.getSigners();
+    accounts = await ethers.getSigners();
 
-    ;({tipChainAddr, exampleTokenAddr} = await deployTipchain())
+    ;({tipChainAddr, exampleTokenAddr} = await deployTipChain())
     
-    exampleToken = await hre.ethers.getContractAt('ExampleToken', tipChainAddr)
-    tipChain = await hre.ethers.getContractAt('Tipchain', tipChainAddr, accounts[0])
-    const trillionExample = hre.ethers.utils.parseEther('1000000000000')
-    const billionExample = hre.ethers.utils.parseEther('1000000000')
+    exampleToken = await ethers.getContractAt('ExampleToken', exampleTokenAddr)
+    tipChain = await ethers.getContractAt('TipChain', tipChainAddr)
+    const trillionExample = ethers.parseEther('1000000000000')
+    const billionExample = ethers.parseEther('1000000000')
     await Promise.all(
       accounts.map(async (account, i) => {
         await exampleToken.transfer(account.address,  trillionExample)
@@ -47,14 +46,14 @@ describe("Tipchain", async () => {
   })
 
   it("allows a user to deposit a token into the tipping pool", async () => {
-    const thousandExample = hre.ethers.utils.parseEther('1000')
+    const thousandExample = ethers.parseEther('1000')
     await tipChain.connect(accounts[1]).deposit(exampleTokenAddr, thousandExample )
     const addressBalances = await tipChain.getDepositsByToken(exampleTokenAddr)
     expect(senderAddress).to.equal(thousandExample)
   })
 
   it("a user cannot deposit into an nft they do not own", async () => {
-    const thousandExample = hre.ethers.utils.parseEther('1000')
+    const thousandExample = ethers.parseEther('1000')
     try {
       await tipChain.connect(accounts[2]).deposit(exampleTokenAddr, thousandExample)
       assert.fail('failed to prevent deposit ')
@@ -65,8 +64,8 @@ describe("Tipchain", async () => {
 
 
   it("two users chain tips to same message for user", async () => {
-    const thousandExample = hre.ethers.utils.parseEther('1000')
-    const hundredExample = hre.ethers.utils.parseEther('100')
+    const thousandExample = ethers.parseEther('1000')
+    const hundredExample = ethers.parseEther('100')
 
     //const acc5NFTId = await usernameFacet.getNFTIdByUsername('account5')
     //await tipChain.connect(accounts[5]).depositCaw(acc5NFTId, thousandExample)

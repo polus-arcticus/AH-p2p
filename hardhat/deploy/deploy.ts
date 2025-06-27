@@ -4,13 +4,37 @@
 // You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
 // will compile your contracts, add the Hardhat Runtime Environment's members to the
 // global scope, and execute the script.
-const hre = require("hardhat");
-const fs = require('fs')
-const EnglishAuctionJson = require('../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json')
-const ExampleNFTJson = require('../artifacts/contracts/mocks/ExampleNFT.sol/ExampleNFT.json')
-const ExampleTokenJson = require('../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json')
+import hre from "hardhat";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
+import * as fs from 'fs';
+// @ts-ignore
+const { ethers } = hre;
+import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
+import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleNFT.json'
+import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
 
 
+export default async (hre: HardhatRuntimeEnvironment) => {
+  const viem = hre.viem;
+  const [deployer, auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
+  const exampleNFT = await viem.deployContract('ExampleNFT')
+  const exampleToken = await viem.deployContract('ExampleToken', [1*10**18])
+  const englishAuction = await viem.deployContract('EnglishAuction')
+  fs.writeFileSync('./export/Static.json', JSON.stringify({
+    englishAuctionAddr: englishAuction.address,
+    exampleTokenAddr: exampleToken.address,
+    exampleNftAddr: exampleNFT.address,
+    englishAuctionAbi: EnglishAuctionJson.abi,
+    exampleTokenAbi: ExampleTokenJson.abi,
+    exampleNftAbi: ExampleNFTJson.abi,
+  }));
+  return {
+    englishAuctionAddr: englishAuction.address,
+    exampleTokenAddr: exampleToken.address,
+    exampleNftAddr: exampleNFT.address,
+  }
+}
+/*
 async function deployTipChain() {
   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
   const ONE_YEAR_IN_SECS = 365 * 24 * 60 * 60;
@@ -31,7 +55,7 @@ async function deployTipChain() {
   return { 'tipChainAddr':tipChain.address, 'exampleTokenAddr':exampleToken.address, 'exampleNFTAddr': exampleNFT.address }
 }
 
-async function deployEnglishAuction(withSeed) {
+async function deployEnglishAuction(withSeed?: boolean) {
   const [deployer] = await ethers.getSigners()
   const weiAmount = (await deployer.getBalance()).toString()
 
@@ -75,13 +99,7 @@ async function deployEnglishAuction(withSeed) {
     englishAuctionAbi: EnglishAuctionJson.abi,
     exampleTokenAbi: ExampleTokenJson.abi,
     exampleNftAbi: ExampleNFTJson.abi,
-  }), (err) => {
-    if (err) {
-      throw err
-    } else {
-      console.log('Diamond Address Written to orbitdb directory')
-    }
-  })
+  }));
 
 
   return { 'englishAuctionAddr':englishAuction.address, 'exampleTokenAddr':exampleToken.address, 'exampleNftAddr': exampleNFT.address }
@@ -98,5 +116,5 @@ deploy().catch((error) => {
   process.exitCode = 1;
 });
 
-exports.deployTipChain = deployTipChain
-exports.deployEnglishAuction = deployEnglishAuction
+export { deployTipChain, deployEnglishAuction };
+*/
