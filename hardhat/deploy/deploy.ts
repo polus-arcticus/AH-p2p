@@ -7,6 +7,7 @@
 import hre from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as fs from 'fs';
+import { parseEther } from "viem";
 // @ts-ignore
 const { ethers } = hre;
 import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
@@ -14,24 +15,37 @@ import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleN
 import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
 
 
-export default async (hre: HardhatRuntimeEnvironment) => {
+export default async (
+  hre: HardhatRuntimeEnvironment,
+  isTestnet: boolean = false,
+) => {
   const viem = hre.viem;
   const [deployer, auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
-  const exampleNFT = await viem.deployContract('ExampleNFT')
-  const exampleToken = await viem.deployContract('ExampleToken', [1*10**18])
   const englishAuction = await viem.deployContract('EnglishAuction')
-  fs.writeFileSync('./export/Static.json', JSON.stringify({
-    englishAuctionAddr: englishAuction.address,
-    exampleTokenAddr: exampleToken.address,
-    exampleNftAddr: exampleNFT.address,
-    englishAuctionAbi: EnglishAuctionJson.abi,
-    exampleTokenAbi: ExampleTokenJson.abi,
-    exampleNftAbi: ExampleNFTJson.abi,
-  }));
-  return {
-    englishAuctionAddr: englishAuction.address,
-    exampleTokenAddr: exampleToken.address,
-    exampleNftAddr: exampleNFT.address,
+  if (isTestnet) {
+    const exampleNFT = await viem.deployContract('ExampleNFT')
+    const exampleToken = await viem.deployContract('ExampleToken', [parseEther('10000000000000')])
+    fs.writeFileSync('./export/StaticTestnet.json', JSON.stringify({
+      englishAuctionAddr: englishAuction.address,
+      exampleTokenAddr: exampleToken.address,
+      exampleNftAddr: exampleNFT.address,
+      englishAuctionAbi: EnglishAuctionJson.abi,
+      exampleTokenAbi: ExampleTokenJson.abi,
+      exampleNftAbi: ExampleNFTJson.abi,
+    }));
+    return {
+      englishAuctionAddr: englishAuction.address,
+      exampleTokenAddr: exampleToken.address,
+      exampleNftAddr: exampleNFT.address,
+    }
+  } else {
+    fs.writeFileSync('./export/Static.json', JSON.stringify({
+      englishAuctionAddr: englishAuction.address,
+      englishAuctionAbi: EnglishAuctionJson.abi,
+    }));
+    return {
+      englishAuctionAddr: englishAuction.address,
+    }
   }
 }
 /*
