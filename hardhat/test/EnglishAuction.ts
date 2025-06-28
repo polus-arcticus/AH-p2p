@@ -3,14 +3,6 @@ import hre from 'hardhat'
 import {parseEther, keccak256} from 'viem'
 import { type WalletClient } from 'viem';
 import { expect, assert } from 'chai';
-import {
-  encrypt,
-  recoverPersonalSignature,
-  recoverTypedSignature,
-  TypedMessage,
-  MessageTypes,
-  SignTypedDataVersion
-}  from '@metamask/eth-sig-util';
 
 import deployEnglishAuction  from '../deploy/deploy';
 import { Bid, Auction, AuctionAuthSig } from './type-hashes';

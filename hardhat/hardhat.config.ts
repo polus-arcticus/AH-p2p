@@ -2,6 +2,8 @@ import "dotenv/config";
 import type { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-deploy";
+import "./tasks/deploy-english-auction";
+
 
 if (!process.env.ALCHEMY_KEY) {
   throw new Error("ALCHEMY_KEY is not set");
@@ -14,6 +16,17 @@ const config: HardhatUserConfig = {
   solidity: "0.8.30",
   networks: {
     hardhat: {
+      saveDeployments: true,
+      chainId: 31337,
+      forking: {
+        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}` ,
+        blockNumber: 27624458,
+      },
+      accounts: {
+        mnemonic: process.env.MNEMONIC as string
+      }
+    },
+    localhost: {
       saveDeployments: true,
       chainId: 31337,
       forking: {

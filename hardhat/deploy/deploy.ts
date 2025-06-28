@@ -1,52 +1,29 @@
-// We require the Hardhat Runtime Environment explicitly here. This is optional
-// but useful for running the script in a standalone fashion through `node <script>`.
-//
-// You can also run a script with `npx hardhat run <script>`. If you do that, Hardhat
-// will compile your contracts, add the Hardhat Runtime Environment's members to the
-// global scope, and execute the script.
+import { task } from "hardhat/config";
 import hre from "hardhat";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as fs from 'fs';
 import { parseEther } from "viem";
-// @ts-ignore
-const { ethers } = hre;
-import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
-import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleNFT.json'
-import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
-
 
 export default async (
   hre: HardhatRuntimeEnvironment,
   isTestnet: boolean = false,
 ) => {
-  const viem = hre.viem;
-  const [deployer, auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
-  const englishAuction = await viem.deployContract('EnglishAuction')
-  if (isTestnet) {
-    const exampleNFT = await viem.deployContract('ExampleNFT')
-    const exampleToken = await viem.deployContract('ExampleToken', [parseEther('10000000000000')])
-    fs.writeFileSync('./export/StaticTestnet.json', JSON.stringify({
-      englishAuctionAddr: englishAuction.address,
-      exampleTokenAddr: exampleToken.address,
-      exampleNftAddr: exampleNFT.address,
-      englishAuctionAbi: EnglishAuctionJson.abi,
-      exampleTokenAbi: ExampleTokenJson.abi,
-      exampleNftAbi: ExampleNFTJson.abi,
-    }));
-    return {
-      englishAuctionAddr: englishAuction.address,
-      exampleTokenAddr: exampleToken.address,
-      exampleNftAddr: exampleNFT.address,
-    }
-  } else {
-    fs.writeFileSync('./export/Static.json', JSON.stringify({
-      englishAuctionAddr: englishAuction.address,
-      englishAuctionAbi: EnglishAuctionJson.abi,
-    }));
-    return {
-      englishAuctionAddr: englishAuction.address,
-    }
-  }
+  // Use the task for deployment
+  return await hre.run("deploy-contracts", { isTest: isTestnet });
+}
+
+// Main execution when run directly
+async function main() {
+  // Deploy with test contracts by default for development
+  await hre.run("deploy-contracts", { isTest: true });
+}
+
+// Only run main if this file is executed directly
+if (require.main === module) {
+  main().catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });
 }
 /*
 async function deployTipChain() {

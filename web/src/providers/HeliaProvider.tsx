@@ -44,8 +44,9 @@ interface ActiveAuction {
     creator: string
     title: string
     description: string
-    nftContract?: string
-    nftTokenId?: string
+    nftContract: string
+    nftTokenId: string
+    tokenContract: string
     startingBid: string
     currentHighBid: string
     bidCount: number
@@ -432,7 +433,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                 webrtcConnections.forEach(conn => {
                     console.log('  WebRTC:', conn.remoteAddr.toString())
                 })
-            }, 5000)
+            }, 30000)
 
 
 

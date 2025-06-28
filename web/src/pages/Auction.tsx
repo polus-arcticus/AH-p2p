@@ -1,9 +1,11 @@
 import { useParams, Link } from "react-router"
 import { useContext, useState, useRef, useEffect } from 'react'
+import { useAccount, useBalance } from 'wagmi'
 import { HeliaContext } from '../providers/HeliaProvider'
 
 export const Auction = () => {
     const { roomId } = useParams()
+    const { address, isConnected } = useAccount()
     const { 
         peerId,
         chatMessages, 
@@ -12,9 +14,24 @@ export const Auction = () => {
         joinRoom, 
         leaveRoom, 
         roomPeers,
+        activeAuctions,
         starting,
         error
     } = useContext(HeliaContext)
+    
+    // Find the auction details for this room
+    const auction = activeAuctions.find(a => a.id === roomId)
+    const isAuctioneer = auction && address && auction.creator === address.toLowerCase()
+    const isAuctionEnded = auction && auction.endTime <= Date.now()
+    
+    // Get ERC20 token balance for bidding
+    const { data: tokenBalance } = useBalance({
+        address: address,
+        token: auction?.tokenContract as `0x${string}` | undefined,
+        query: {
+            enabled: isConnected && !!auction?.tokenContract
+        }
+    })
     
     const [messageInput, setMessageInput] = useState('')
     const [bidAmount, setBidAmount] = useState('')
@@ -82,17 +99,57 @@ export const Auction = () => {
                 <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
                     {/* Auction Header */}
                     <div className="bg-black/30 p-6 border-b border-white/10">
-                        <div className="flex justify-between items-center">
-                            <div>
-                                <h2 className="text-2xl font-bold text-white">
-                                    Auction Room: {roomId}
-                                </h2>
+                        <div className="flex justify-between items-start">
+                            <div className="flex-1">
+                                <div className="flex items-center space-x-3 mb-3">
+                                    <h2 className="text-2xl font-bold text-white">
+                                        {auction?.title || `Auction Room: ${roomId}`}
+                                    </h2>
+                                    {isAuctioneer && (
+                                        <span className="bg-purple-600 text-white text-xs px-2 py-1 rounded-full">
+                                            AUCTIONEER
+                                        </span>
+                                    )}
+                                    {isAuctionEnded && (
+                                        <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full">
+                                            ENDED
+                                        </span>
+                                    )}
+                                </div>
+                                
+                                {auction && (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                                        <div className="bg-white/5 rounded-lg p-3">
+                                            <div className="text-sm text-gray-400 mb-1">NFT Details</div>
+                                            <div className="text-xs font-mono text-blue-400 mb-1">
+                                                {auction.nftContract.slice(0, 10)}...{auction.nftContract.slice(-8)}
+                                            </div>
+                                            <div className="text-xs text-green-400">Token ID: {auction.nftTokenId}</div>
+                                        </div>
+                                        
+                                        <div className="bg-white/5 rounded-lg p-3">
+                                            <div className="text-sm text-gray-400 mb-1">Payment Token</div>
+                                            <div className="text-xs font-mono text-yellow-400 mb-1">
+                                                {auction.tokenContract.slice(0, 10)}...{auction.tokenContract.slice(-8)}
+                                            </div>
+                                            <div className="text-xs text-gray-300">
+                                                Your Balance: {tokenBalance ? `${parseFloat(tokenBalance.formatted).toFixed(4)} ${tokenBalance.symbol}` : 'Loading...'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                
                                 <p className="text-gray-300">
                                     {roomPeers[currentRoom || '']?.length || 0} participants active
+                                    {auction && (
+                                        <span className="ml-4">
+                                            Starting bid: {auction.startingBid} • Ends: {new Date(auction.endTime).toLocaleString()}
+                                        </span>
+                                    )}
                                 </p>
                             </div>
                             <Link
-                                to="/"
+                                to="/auctions"
                                 onClick={() => leaveRoom()}
                                 className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
                             >
@@ -106,22 +163,51 @@ export const Auction = () => {
                         <div className="lg:col-span-1">
                             <div className="bg-white/5 rounded-lg p-4 border border-white/10">
                                 <h3 className="text-lg font-semibold text-white mb-4">Place Bid</h3>
-                                <form onSubmit={handlePlaceBid} className="space-y-4">
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={bidAmount}
-                                        onChange={(e) => setBidAmount(e.target.value)}
-                                        placeholder="Enter bid amount (ETH)"
-                                        className="w-full p-3 rounded-lg bg-black/30 border border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none"
-                                    />
-                                    <button
-                                        type="submit"
-                                        className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 text-white py-3 rounded-lg font-semibold transition-all duration-200"
-                                    >
-                                        🔨 Place Bid
-                                    </button>
-                                </form>
+                                
+                                {!isConnected ? (
+                                    <div className="text-center py-6">
+                                        <p className="text-gray-400 mb-4">Connect your wallet to place bids</p>
+                                        <div className="text-sm text-yellow-400">🔗 Use the Connect Wallet button above</div>
+                                    </div>
+                                ) : isAuctionEnded ? (
+                                    <div className="text-center py-6">
+                                        <p className="text-red-400 mb-2">🏁 Auction Ended</p>
+                                        <div className="text-sm text-gray-400">Bidding is now closed</div>
+                                    </div>
+                                ) : isAuctioneer ? (
+                                    <div className="text-center py-6">
+                                        <p className="text-gray-400 mb-2">You are the auctioneer</p>
+                                        <div className="text-sm text-purple-400">💼 You cannot bid on your own auction</div>
+                                    </div>
+                                ) : (
+                                    <form onSubmit={handlePlaceBid} className="space-y-4">
+                                        <div className="mb-2">
+                                            <div className="text-sm text-gray-400 mb-1">
+                                                Available: {tokenBalance ? `${parseFloat(tokenBalance.formatted).toFixed(4)} ${tokenBalance.symbol}` : 'Loading...'}
+                                            </div>
+                                            <div className="text-xs text-yellow-400">
+                                                Minimum bid: {auction?.startingBid || '0'}
+                                            </div>
+                                        </div>
+                                        
+                                        <input
+                                            type="number"
+                                            step="0.01"
+                                            value={bidAmount}
+                                            onChange={(e) => setBidAmount(e.target.value)}
+                                            placeholder={`Enter bid amount (${tokenBalance?.symbol || 'ERC20'})`}
+                                            className="w-full p-3 rounded-lg bg-black/30 border border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none"
+                                            min={auction?.startingBid || '0'}
+                                        />
+                                        <button
+                                            type="submit"
+                                            disabled={!bidAmount || parseFloat(bidAmount) < parseFloat(auction?.startingBid || '0')}
+                                            className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-all duration-200"
+                                        >
+                                            🔨 Place Bid
+                                        </button>
+                                    </form>
+                                )}
                             </div>
 
                             {/* Auction Stats */}
@@ -145,7 +231,7 @@ export const Auction = () => {
                                                 const bids = chatMessages
                                                     .filter(msg => msg.roomId === currentRoom && msg.message.startsWith('BID:'))
                                                     .map(msg => parseFloat(msg.message.slice(4)) || 0)
-                                                return bids.length > 0 ? `${Math.max(...bids)} ETH` : 'No bids yet'
+                                                return bids.length > 0 ? `${Math.max(...bids)} ${tokenBalance?.symbol || 'ERC20'}` : 'No bids yet'
                                             })()}
                                         </span>
                                     </div>
@@ -179,7 +265,7 @@ export const Auction = () => {
                                                     </div>
                                                     <div className={`text-white ${msg.message.startsWith('BID:') ? 'font-bold text-yellow-400' : ''}`}>
                                                         {msg.message.startsWith('BID:') ? 
-                                                            `🔨 Bid placed: ${msg.message.slice(4)} ETH` : 
+                                                            `🔨 Bid placed: ${msg.message.slice(4)} ${tokenBalance?.symbol || 'ERC20'}` : 
                                                             msg.message
                                                         }
                                                     </div>

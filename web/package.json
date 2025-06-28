@@ -22,6 +22,7 @@
     "@multiformats/multiaddr": "^12.5.0",
     "@multiformats/multiaddr-matcher": "^1.7.2",
     "@tailwindcss/vite": "^4.1.10",
+    "@tanstack/react-query": "^5.81.5",
     "blockstore-idb": "^2.0.3",
     "datastore-idb": "^3.0.3",
     "delay": "^6.0.0",
@@ -32,7 +33,9 @@
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router": "^7.6.2",
-    "tailwindcss": "^4.1.10"
+    "tailwindcss": "^4.1.10",
+    "viem": "^2.31.4",
+    "wagmi": "^2.15.6"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
