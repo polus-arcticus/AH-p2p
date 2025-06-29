@@ -21,6 +21,8 @@
     "@libp2p/webtransport": "^5.0.46",
     "@multiformats/multiaddr": "^12.5.0",
     "@multiformats/multiaddr-matcher": "^1.7.2",
+    "@orbitdb/core": "^3.0.2",
+    "@orbitdb/identity-provider-ethereum": "^1.0.3",
     "@tailwindcss/vite": "^4.1.10",
     "@tanstack/react-query": "^5.81.5",
     "blockstore-idb": "^2.0.3",

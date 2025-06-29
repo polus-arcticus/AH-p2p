@@ -1,4 +1,4 @@
-import { type ReactNode, createContext, useEffect, useState } from 'react'
+import { type ReactNode, createContext, useEffect, useState, useCallback } from 'react'
 import { IDBBlockstore } from 'blockstore-idb'
 import { IDBDatastore } from 'datastore-idb'
 import { createLibp2p } from 'libp2p'
@@ -9,20 +9,18 @@ import { webRTC } from "@libp2p/webrtc"
 import { webSockets } from "@libp2p/websockets"
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2"
 import { identify } from "@libp2p/identify"
-import { webTransport } from '@libp2p/webtransport'
-import { useAccount } from 'wagmi'
+import { useAccount, useWalletClient } from 'wagmi'
 
 import { WebRTC } from '@multiformats/multiaddr-matcher'
-import * as filters from '@libp2p/websockets/filters'
 import type { Libp2p } from 'libp2p'
 import type { Helia, HeliaLibp2p } from 'helia'
 import { multiaddr, type Multiaddr } from '@multiformats/multiaddr'
-import delay from 'delay'
-import pRetry from 'p-retry'
 import { WebRTC as WebRTCMatcher } from '@multiformats/multiaddr-matcher'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 
-
+import { createOrbitDB, useIdentityProvider } from '@orbitdb/core'
+import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
+import { getWalletInterface } from '../utils/blockchain'
 
 const TOPICS = {
     PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
@@ -75,10 +73,13 @@ export const HeliaContext = createContext({
     activeAuctions: [] as ActiveAuction[],
     createAuction: (auction: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>) => '' as string | undefined,
     refreshActiveAuctions: () => { },
+    orbit: null,
+    startOrbit: async () => { },
 })
 
 export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const { address } = useAccount()
+    const walletClient = useWalletClient()
     const [peerId, setPeerId] = useState<string | null>(null)
     const [isInitialized, setIsInitialized] = useState(false)
     const [libp2p, setLibp2p] = useState<Libp2p | null>(null)
@@ -91,6 +92,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const [currentRoom, setCurrentRoom] = useState<string | null>(null)
     const [roomPeers, setRoomPeers] = useState<{ [roomId: string]: string[] }>({})
     const [activeAuctions, setActiveAuctions] = useState<ActiveAuction[]>([])
+    const [orbit, setOrbit] = useState<any | null>(null)
 
     const sendChatMessage = (message: string, roomId: string) => {
         if (helia && message.trim() && roomId) {
@@ -452,6 +454,24 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
         }
     }
 
+    const startOrbit = useCallback(async () => {
+        if (!helia || !address) return
+
+        const identityProvider = new OrbitDBIdentityProviderEthereum.default({
+            wallet: getWalletInterface({
+                address,
+                walletClient: walletClient.data
+            })
+        })
+
+        const orbit =  await createOrbitDB({
+             identityProvider,
+             helia
+             })
+        setOrbit(orbit)
+
+    }, [helia, address])
+
     useEffect(() => {
         if (!isInitialized) {
             startHelia()
@@ -464,6 +484,12 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             console.log('Active peers for chat:', Object.keys(peerList))
         }
     }, [peerList, helia])
+
+    useEffect(() => {
+        if (helia && address) {
+            startOrbit()
+        }
+    }, [helia, address])
 
     return (
         <HeliaContext.Provider value={{
@@ -484,6 +510,8 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
             activeAuctions,
             createAuction,
             refreshActiveAuctions,
+            orbit,
+            startOrbit,
         }}>
             {children}
         </HeliaContext.Provider>
