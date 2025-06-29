@@ -8,7 +8,7 @@ import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleN
 import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
 
 // Hardhat task for deployment
-task("deploy-contracts", "Deploy English Auction and optionally mock contracts")
+task("deploy-english-auction", "Deploy English Auction and optionally mock contracts")
   .addFlag("isTest", "Deploy with mock ERC20 and ERC1155 contracts for testing")
   .setAction(async (taskArgs, hre) => {
     const { isTest } = taskArgs;

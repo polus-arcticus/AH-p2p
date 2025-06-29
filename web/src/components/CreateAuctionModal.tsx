@@ -1,10 +1,15 @@
 import { useState } from 'react'
+import { parseEther } from 'viem'
+import { useAccount } from 'wagmi'
+import { useAuctionSignature, type AuctionAuthSigMessage } from '../hooks/useAuctionSignature'
+import { useAuctionNonce } from '../hooks/useAuctionNonce'
 import staticContracts from '../assets/Static.json'
 
 // Mock contract addresses from deployment
 const MOCK_CONTRACTS = {
-    exampleNftAddr: (staticContracts as any).exampleNftAddr || "0x8825bdb4fc43139b1eaa29641b59fdca25e9da50",
-    exampleTokenAddr: (staticContracts as any).exampleTokenAddr || "0xa75c03c87398f485b22c52f5e1aa4bb4802824e7"
+    exampleNftAddr: (staticContracts as any).exampleNftAddr,
+    exampleTokenAddr: (staticContracts as any).exampleTokenAddr,
+    englishAuctionAddr: (staticContracts as any).englishAuctionAddr
 }
 
 interface CreateAuctionModalProps {
@@ -18,6 +23,8 @@ interface CreateAuctionModalProps {
         tokenContract: string
         startingBid: string
         endTime: number
+        signature?: string
+        sigHash?: string
     }) => string | undefined
 }
 
@@ -26,6 +33,9 @@ export const CreateAuctionModal = ({
     setShowCreateForm, 
     createAuction 
 }: CreateAuctionModalProps) => {
+    const { address, isConnected } = useAccount()
+    const { signAuctionAuth, isPending, error } = useAuctionSignature()
+    const { nonce, isLoading: nonceLoading } = useAuctionNonce(address)
     // Calculate default end time (1 hour from now)
     const getDefaultEndTime = () => {
         const now = new Date()
@@ -43,36 +53,61 @@ export const CreateAuctionModal = ({
         endTime: getDefaultEndTime()
     })
 
-    const handleCreateAuction = (e: React.FormEvent) => {
+    const handleCreateAuction = async (e: React.FormEvent) => {
         e.preventDefault()
         
+        if (!isConnected || !address) {
+            alert('Please connect your wallet first')
+            return
+        }
+
         const endTime = new Date(auctionForm.endTime).getTime()
         if (endTime <= Date.now()) {
             alert('End time must be in the future')
             return
         }
 
-        const auctionId = createAuction({
-            title: auctionForm.title,
-            description: auctionForm.description,
-            nftContract: auctionForm.nftContract,
-            nftTokenId: auctionForm.nftTokenId,
-            tokenContract: auctionForm.tokenContract,
-            startingBid: auctionForm.startingBid,
-            endTime
-        })
+        try {
+            // Use actual nonce from contract
+            const message: AuctionAuthSigMessage = {
+                auctioneer: address,
+                auctioneerNonce: nonce,
+                nft: auctionForm.nftContract,
+                nftId: auctionForm.nftTokenId,
+                token: auctionForm.tokenContract,
+                bidStart: parseEther(auctionForm.startingBid).toString(),
+                deadline: Math.floor(endTime / 1000) // Convert to seconds
+            }
 
-        if (auctionId) {
-            setShowCreateForm(false)
-            setAuctionForm({
-                title: 'Test Auction',
-                description: 'Testing ERC1155 to ERC20 auction',
-                nftContract: MOCK_CONTRACTS.exampleNftAddr,
-                nftTokenId: '0',
-                tokenContract: MOCK_CONTRACTS.exampleTokenAddr,
-                startingBid: '0.01',
-                endTime: getDefaultEndTime()
+            const { signature, sigHash } = await signAuctionAuth(message)
+
+            const auctionId = createAuction({
+                title: auctionForm.title,
+                description: auctionForm.description,
+                nftContract: auctionForm.nftContract,
+                nftTokenId: auctionForm.nftTokenId,
+                tokenContract: auctionForm.tokenContract,
+                startingBid: auctionForm.startingBid,
+                endTime,
+                signature,
+                sigHash
             })
+
+            if (auctionId) {
+                setShowCreateForm(false)
+                setAuctionForm({
+                    title: 'Test Auction',
+                    description: 'Testing ERC1155 to ERC20 auction',
+                    nftContract: MOCK_CONTRACTS.exampleNftAddr,
+                    nftTokenId: '0',
+                    tokenContract: MOCK_CONTRACTS.exampleTokenAddr,
+                    startingBid: '0.01',
+                    endTime: getDefaultEndTime()
+                })
+            }
+        } catch (error) {
+            console.error('Failed to sign auction:', error)
+            alert('Failed to sign auction. Please try again.')
         }
     }
 
@@ -138,6 +173,16 @@ export const CreateAuctionModal = ({
                         className="w-full p-3 rounded-lg bg-black/30 border border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none"
                         required
                     />
+                    {error && (
+                        <div className="text-red-400 text-sm">
+                            Error: {error.message}
+                        </div>
+                    )}
+                    {!isConnected && (
+                        <div className="text-yellow-400 text-sm">
+                            Please connect your wallet to create an auction
+                        </div>
+                    )}
                     <div className="flex space-x-3">
                         <button
                             type="button"
@@ -148,9 +193,10 @@ export const CreateAuctionModal = ({
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white py-3 rounded-lg font-semibold transition-all duration-200"
+                            disabled={isPending || !isConnected || nonceLoading}
+                            className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-all duration-200"
                         >
-                            Create
+                            {nonceLoading ? 'Loading...' : isPending ? 'Signing...' : 'Create'}
                         </button>
                     </div>
                 </form>

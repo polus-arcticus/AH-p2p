@@ -15,7 +15,7 @@ export default async (
 // Main execution when run directly
 async function main() {
   // Deploy with test contracts by default for development
-  await hre.run("deploy-contracts", { isTest: true });
+  await hre.run("deploy-english-auction", { isTest: true });
 }
 
 // Only run main if this file is executed directly

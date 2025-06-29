@@ -10,6 +10,7 @@ import { webSockets } from "@libp2p/websockets"
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2"
 import { identify } from "@libp2p/identify"
 import { webTransport } from '@libp2p/webtransport'
+import { useAccount } from 'wagmi'
 
 import { WebRTC } from '@multiformats/multiaddr-matcher'
 import * as filters from '@libp2p/websockets/filters'
@@ -52,6 +53,8 @@ interface ActiveAuction {
     bidCount: number
     endTime: number
     createdAt: number
+    signature?: string
+    sigHash?: string
 }
 
 export const HeliaContext = createContext({
@@ -75,6 +78,7 @@ export const HeliaContext = createContext({
 })
 
 export const HeliaProvider = ({ children }: { children: ReactNode }) => {
+    const { address } = useAccount()
     const [peerId, setPeerId] = useState<string | null>(null)
     const [isInitialized, setIsInitialized] = useState(false)
     const [libp2p, setLibp2p] = useState<Libp2p | null>(null)
@@ -154,11 +158,11 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const createAuction = (auctionData: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>) => {
-        if (helia && peerId) {
+        if (helia && peerId && address) {
             const auction: ActiveAuction = {
                 ...auctionData,
                 id: `auction-${Date.now()}`,
-                creator: peerId,
+                creator: address.toLowerCase(),
                 createdAt: Date.now(),
                 currentHighBid: auctionData.startingBid,
                 bidCount: 0

@@ -17,18 +17,7 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {
       saveDeployments: true,
-      chainId: 31337,
-      forking: {
-        url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}` ,
-        blockNumber: 27624458,
-      },
-      accounts: {
-        mnemonic: process.env.MNEMONIC as string
-      }
-    },
-    localhost: {
-      saveDeployments: true,
-      chainId: 31337,
+      chainId: 1337,
       forking: {
         url: `https://base-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}` ,
         blockNumber: 27624458,

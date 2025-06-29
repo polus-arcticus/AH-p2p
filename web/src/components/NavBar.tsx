@@ -1,7 +1,8 @@
-import { useContext } from 'react'
+import { useContext, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { HeliaContext } from '../providers/HeliaProvider'
+import { useSwitchChain } from 'wagmi'
 
 export const NavBar = () => {
     const { peerId, peerList } = useContext(HeliaContext)
@@ -9,7 +10,9 @@ export const NavBar = () => {
     const { address, isConnected } = useAccount()
     const { connect, connectors } = useConnect()
     const { disconnect } = useDisconnect()
-    
+    const { switchChain, chains } = useSwitchChain()
+    const [isChainDropdownOpen, setIsChainDropdownOpen] = useState(false)
+
     return (
         <nav className="bg-black/20 backdrop-blur-sm border-b border-white/10">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -62,7 +65,33 @@ export const NavBar = () => {
                             >
                                 Connect Wallet
                             </button>
+
                         )}
+                        <div className="relative">
+                            <button
+                                onClick={() => setIsChainDropdownOpen(!isChainDropdownOpen)}
+                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center space-x-1"
+                            >
+                                <span>Switch Chain</span>
+                                <span>{isChainDropdownOpen ? '▲' : '▼'}</span>
+                            </button>
+                            {isChainDropdownOpen && (
+                                <div className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
+                                    {chains.map((chain) => (
+                                        <button
+                                            key={chain.id}
+                                            onClick={() => {
+                                                switchChain({ chainId: chain.id })
+                                                setIsChainDropdownOpen(false)
+                                            }}
+                                            className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg"
+                                        >
+                                            {chain.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

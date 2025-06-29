@@ -3,7 +3,7 @@ import './index.css'
 import App from './App.tsx'
 import { HeliaProvider } from './providers/HeliaProvider.tsx'
 import { BrowserRouter, Routes, Route } from "react-router";
-import { Auction } from './pages/Auction';
+import { Auction } from './pages/Auction/Auction.tsx';
 import { ActiveAuctions } from './pages/ActiveAuctions';
 import { NavBar } from './components/NavBar.tsx';
 import { WagmiProvider } from 'wagmi'
@@ -13,11 +13,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
-  <HeliaProvider>
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-
-        <BrowserRouter>
+  <WagmiProvider config={config}>
+    <QueryClientProvider client={queryClient}>
+      <BrowserRouter>
+        <HeliaProvider>
           <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
             <NavBar />
             <Routes>
@@ -26,8 +25,8 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/room/:roomId" element={<Auction />} />
             </Routes>
           </div>
-        </BrowserRouter>
-      </QueryClientProvider>
-    </WagmiProvider>
-  </HeliaProvider>
+        </HeliaProvider>
+      </BrowserRouter>
+    </QueryClientProvider>
+  </WagmiProvider>
 )
