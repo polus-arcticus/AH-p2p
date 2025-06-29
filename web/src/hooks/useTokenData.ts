@@ -5,7 +5,7 @@ export const useTokenData = (auction: any) => {
     const { address, isConnected } = useAccount()
     
     // Get ERC20 token balance for bidding
-    const { data: tokenData } = useReadContracts({
+    const { data: tokenData, refetch: refetchTokenData } = useReadContracts({
         allowFailure: false,
         contracts: [
             {
@@ -30,7 +30,7 @@ export const useTokenData = (auction: any) => {
         }
     })
 
-    const { data: nftData } = useReadContracts({
+    const { data: nftData, refetch: refetchNftData } = useReadContracts({
         allowFailure: false,
         contracts: [
             {
@@ -62,8 +62,16 @@ export const useTokenData = (auction: any) => {
         uri: nftData[1] as string,
     } : null
 
+    const refetchBalances = () => {
+        refetchTokenData()
+        refetchNftData()
+    }
+
     return {
         tokenBalance,
-        nftBalance
+        nftBalance,
+        refetchTokenData,
+        refetchNftData,
+        refetchBalances
     }
 } 

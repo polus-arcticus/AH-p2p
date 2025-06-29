@@ -1,30 +1,18 @@
-import { task } from "hardhat/config";
-import hre from "hardhat";
-import { HardhatRuntimeEnvironment } from "hardhat/types";
-import * as fs from 'fs';
-import { parseEther } from "viem";
+import {HardhatRuntimeEnvironment} from 'hardhat/types';
+import {DeployFunction} from 'hardhat-deploy/types';
 
-export default async (
-  hre: HardhatRuntimeEnvironment,
-  isTestnet: boolean = false,
-) => {
-  // Use the task for deployment
-  return await hre.run("deploy-contracts", { isTest: isTestnet });
+const func: DeployFunction = async function (hre: HardhatRuntimeEnvironment) {
+  if (hre.network.name === 'hardhat') {
+    await hre.run("deploy-english-auction", { isTest: true });
+  } else {
+    await hre.run("deploy-english-auction", { isTest: false });
+  }
 }
 
-// Main execution when run directly
-async function main() {
-  // Deploy with test contracts by default for development
-  await hre.run("deploy-english-auction", { isTest: true });
-}
 
-// Only run main if this file is executed directly
-if (require.main === module) {
-  main().catch((error) => {
-    console.error(error);
-    process.exitCode = 1;
-  });
-}
+export default func;
+
+
 /*
 async function deployTipChain() {
   const currentTimestampInSeconds = Math.round(Date.now() / 1000);
@@ -98,14 +86,4 @@ async function deployEnglishAuction(withSeed?: boolean) {
 
 // We recommend this pattern to be able to use async/await everywhere
 // and properly handle errors.
-async function deploy() {
-  //await deployTipChain()
-  await deployEnglishAuction(true)
-}
-deploy().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
-
-export { deployTipChain, deployEnglishAuction };
 */

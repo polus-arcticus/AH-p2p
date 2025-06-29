@@ -13,7 +13,7 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
   .setAction(async (taskArgs, hre) => {
     const { isTest } = taskArgs;
     const viem = hre.viem;
-    const [deployer, auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
+    const [auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
     
     console.log(`Deploying contracts with isTest=${isTest}...`);
     
@@ -26,7 +26,11 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
       
       console.log(`ExampleNFT deployed to: ${exampleNFT.address}`);
       console.log(`ExampleToken deployed to: ${exampleToken.address}`);
-      
+
+      await exampleToken.write.transfer([bidderOne.account.address, parseEther('1000')])
+      await exampleToken.write.transfer([bidderTwo.account.address, parseEther('1000')])
+      await exampleToken.write.transfer([bidderThree.account.address, parseEther('1000')])
+
       const contractData = {
         englishAuctionAddr: englishAuction.address,
         exampleTokenAddr: exampleToken.address,
@@ -62,11 +66,3 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
       }
     }
   });
-
-export default async (
-  hre: HardhatRuntimeEnvironment,
-  isTestnet: boolean = false,
-) => {
-  // Use the task for deployment
-  return await hre.run("deploy-contracts", { isTest: isTestnet });
-}

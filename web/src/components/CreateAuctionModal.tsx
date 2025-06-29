@@ -5,12 +5,6 @@ import { useAuctionSignature, type AuctionAuthSigMessage } from '../hooks/useAuc
 import { useAuctionNonce } from '../hooks/useAuctionNonce'
 import staticContracts from '../assets/Static.json'
 
-// Mock contract addresses from deployment
-const MOCK_CONTRACTS = {
-    exampleNftAddr: (staticContracts as any).exampleNftAddr,
-    exampleTokenAddr: (staticContracts as any).exampleTokenAddr,
-    englishAuctionAddr: (staticContracts as any).englishAuctionAddr
-}
 
 interface CreateAuctionModalProps {
     showCreateForm: boolean
@@ -46,9 +40,9 @@ export const CreateAuctionModal = ({
     const [auctionForm, setAuctionForm] = useState({
         title: 'Test Auction',
         description: 'Testing ERC1155 to ERC20 auction',
-        nftContract: MOCK_CONTRACTS.exampleNftAddr,
+        nftContract: staticContracts.exampleNftAddr,
         nftTokenId: '0',
-        tokenContract: MOCK_CONTRACTS.exampleTokenAddr,
+        tokenContract: staticContracts.exampleTokenAddr,
         startingBid: '0.01',
         endTime: getDefaultEndTime()
     })
@@ -98,9 +92,9 @@ export const CreateAuctionModal = ({
                 setAuctionForm({
                     title: 'Test Auction',
                     description: 'Testing ERC1155 to ERC20 auction',
-                    nftContract: MOCK_CONTRACTS.exampleNftAddr,
+                    nftContract: staticContracts.exampleNftAddr,
                     nftTokenId: '0',
-                    tokenContract: MOCK_CONTRACTS.exampleTokenAddr,
+                    tokenContract: staticContracts.exampleTokenAddr,
                     startingBid: '0.01',
                     endTime: getDefaultEndTime()
                 })

@@ -41,7 +41,11 @@ describe("English Auction", async () => {
     console.log('hre', hre.viem)
     ;([deployer, auctioneer, bidder1, bidder2, bidder3] = await hre.viem.getWalletClients())
     // deploy, loaded contract instances
-    ;({englishAuctionAddr, exampleTokenAddr, exampleNftAddr} = await deployEnglishAuction(hre, true))
+    ;({
+      englishAuctionAddr,
+      exampleTokenAddr,
+      exampleNftAddr
+    } = await hre.run("deploy-english-auction", { isTest: true }))
     console.log('englishAuctionAddr', englishAuctionAddr)
     console.log('exampleTokenAddr', exampleTokenAddr)
     console.log('exampleNftAddr', exampleNftAddr)
@@ -259,7 +263,7 @@ describe("English Auction", async () => {
     auction.bids.push(bid2)
     auction.bidSigs.push(bidSig2)
 
-    const auctionSig = await auctioneer.signTypedData({
+    const auctionData = {
       account: auctioneer.account!,
       domain,
       types: {
@@ -268,7 +272,9 @@ describe("English Auction", async () => {
       },
       primaryType: 'Auction',
       message: auction
-    })
+    }
+    console.log('auctionData', auctionData)
+    const auctionSig = await auctioneer.signTypedData(auctionData)
     const auctionSigNo0x = auctionSig.substring(2)
     const r = '0x' + auctionSigNo0x.substring(0,64);
     const s = '0x' + auctionSigNo0x.substring(64,128);

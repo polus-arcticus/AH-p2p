@@ -9,7 +9,7 @@ const MOCK_CONTRACTS = {
 // Type definitions from the test file
 export const AuctionAuthSig = [
     { name: 'auctioneer', type: 'address' },
-    { name: 'auctioneerNonce', type: 'string' },
+    { name: 'auctioneerNonce', type: 'uint256' },
     { name: 'nft', type: 'address' },
     { name: 'nftId', type: 'uint256' },
     { name: 'token', type: 'address' },
@@ -20,13 +20,13 @@ export const AuctionAuthSig = [
 export const Bid = [
     { name: 'bidder', type: 'address' },
     { name: 'amount', type: 'uint256' },
-    { name: 'bidderNonce', type: 'string' },
+    { name: 'bidderNonce', type: 'uint256' },
     { name: 'auctionSigHash', type: 'bytes32' }
 ]
 
 export const Auction = [
     { name: 'auctioneer', type: 'address' },
-    { name: 'auctioneerNonce', type: 'string' },
+    { name: 'auctioneerNonce', type: 'uint256' },
     { name: 'nft', type: 'address' },
     { name: 'nftId', type: 'uint256' },
     { name: 'token', type: 'address' },
@@ -39,28 +39,28 @@ export const Auction = [
 
 export interface AuctionAuthSigMessage extends Record<string, unknown> {
     auctioneer: string
-    auctioneerNonce: string
+    auctioneerNonce: bigint
     nft: string
-    nftId: string
+    nftId: bigint
     token: string
-    bidStart: string
+    bidStart: bigint
     deadline: number
 }
 
 export interface BidMessage extends Record<string, unknown> {
     bidder: string
-    amount: string
-    bidderNonce: string
+    amount: bigint
+    bidderNonce: bigint
     auctionSigHash: string
 }
 
 export interface AuctionMessage extends Record<string, unknown> {
     auctioneer: string
-    auctioneerNonce: string
+    auctioneerNonce: bigint
     nft: string
-    nftId: string
+    nftId: bigint
     token: string
-    bidStart: string
+    bidStart: bigint
     deadline: number
     auctionSigHash: string
     bids: BidMessage[]

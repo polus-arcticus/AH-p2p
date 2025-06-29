@@ -42,7 +42,7 @@ export const BiddingSection = ({ roomId }: BiddingSectionProps) => {
             const bidMessage: BidMessage = {
                 bidder: address,
                 amount: parseEther(bidAmount).toString(),
-                bidderNonce: nonce,
+                bidderNonce: Number(nonce).toString(),
                 auctionSigHash: auction.sigHash // Assuming auction stores the sigHash
             }
 
