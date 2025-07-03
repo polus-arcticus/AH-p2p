@@ -72,6 +72,22 @@ export class PubsubService {
         this.setupMessageHandlers()
     }
 
+    async initialize() {
+        await this.waitForStableConnection()
+        const waitForWebRTCAddress = new Promise<Multiaddr>((resolve) => {
+            const interval = setInterval(() => {
+                const selfWebRTCMultiaddr = this.libp2p.getMultiaddrs().find(ma => WebRTC.matches(ma))
+                if (selfWebRTCMultiaddr) {
+                    clearInterval(interval)
+                    resolve(selfWebRTCMultiaddr)
+                }
+            }, 1000)
+        })
+        const selfWebRTCMultiaddr = await waitForWebRTCAddress
+        this.announcePeer(selfWebRTCMultiaddr.toString())
+        await this.waitForPeerList()
+    }
+
 
     private get libp2p(): Libp2p {
         return this.helia.libp2p
