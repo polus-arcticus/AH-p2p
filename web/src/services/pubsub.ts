@@ -1,5 +1,7 @@
-import type { Helia } from 'helia'
-import type { Libp2p } from 'libp2p'
+import type { Libp2p } from '@libp2p/interface'
+import type {GossipSub}  from '@chainsafe/libp2p-gossipsub'
+import type { AHP2PHelia } from '../types'
+import type { OrbitDB } from '@orbitdb/core'
 
 export const TOPICS = {
     PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
@@ -52,22 +54,31 @@ export interface PubsubCallbacks {
 }
 
 export class PubsubService {
-    private helia: Helia | null = null
+    private helia : AHP2PHelia
+    private orbit: OrbitDB
     private peerId: string | null = null
     private callbacks: PubsubCallbacks = {}
+    private relay: string = '/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV'
 
-    constructor(helia: Helia, peerId: string, callbacks: PubsubCallbacks = {}) {
+    constructor(
+        helia: AHP2PHelia,
+        orbit: OrbitDB
+    ) {
         this.helia = helia
-        this.peerId = peerId
-        this.callbacks = callbacks
+        this.orbit = orbit
+        this.peerId = helia.libp2p.peerId.toString()
+        this.callbacks = {}
+        this.subscribeToTopics()
+        this.setupMessageHandlers()
     }
+
 
     private get libp2p(): Libp2p {
-        return (this.helia as any).libp2p
+        return this.helia.libp2p
     }
 
-    private get pubsub() {
-        return this.libp2p.services.pubsub
+    private get pubsub(): GossipSub {
+        return this.libp2p.services.pubsub as GossipSub
     }
 
     sendChatMessage(message: string, roomId: string): boolean {
