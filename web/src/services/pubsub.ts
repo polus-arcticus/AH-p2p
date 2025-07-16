@@ -2,6 +2,8 @@ import type { Libp2p } from '@libp2p/interface'
 import type {GossipSub}  from '@chainsafe/libp2p-gossipsub'
 import type { AHP2PHelia } from '../types'
 import type { OrbitDB } from '@orbitdb/core'
+import { WebRTC } from '@multiformats/multiaddr-matcher'
+import { multiaddr, type Multiaddr } from '@multiformats/multiaddr'
 
 export const TOPICS = {
     PEER_ANNOUNCE: 'ah-p2p.market/peer-announce',
@@ -59,6 +61,8 @@ export class PubsubService {
     private peerId: string | null = null
     private callbacks: PubsubCallbacks = {}
     private relay: string = '/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV'
+    private chatDB: any = null
+    private auctionDB: any = null
 
     constructor(
         helia: AHP2PHelia,
@@ -68,12 +72,39 @@ export class PubsubService {
         this.orbit = orbit
         this.peerId = helia.libp2p.peerId.toString()
         this.callbacks = {}
-        this.subscribeToTopics()
-        this.setupMessageHandlers()
     }
 
     async initialize() {
+        // Create OrbitDB databases for persistent state with consistent addresses
+        this.chatDB = await this.orbit.open('ah-p2p-chat-global', { type: 'events' })
+        this.auctionDB = await this.orbit.open('ah-p2p-auctions-global', { type: 'documents' })
+        
+        console.log('OrbitDB databases opened:')
+        console.log('Chat DB address:', this.chatDB.address)
+        console.log('Auction DB address:', this.auctionDB.address)
+        
+        // Set up replication listeners
+        this.chatDB.events.on('join', (peerId: string, heads: any) => {
+            console.log('Chat DB: Peer joined', peerId)
+        })
+        
+        this.auctionDB.events.on('join', (peerId: string, heads: any) => {
+            console.log('Auction DB: Peer joined', peerId)
+        })
+        
+        // Add update listeners for real-time sync
+        this.auctionDB.events.on('update', (entry: any) => {
+            console.log('Auction DB updated:', entry)
+        })
+        
+        this.chatDB.events.on('update', (entry: any) => {
+            console.log('Chat DB updated:', entry)
+        })
+        
+        this.subscribeToTopics()
+        this.setupMessageHandlers()
         await this.waitForStableConnection()
+        
         const waitForWebRTCAddress = new Promise<Multiaddr>((resolve) => {
             const interval = setInterval(() => {
                 const selfWebRTCMultiaddr = this.libp2p.getMultiaddrs().find(ma => WebRTC.matches(ma))
@@ -86,8 +117,19 @@ export class PubsubService {
         const selfWebRTCMultiaddr = await waitForWebRTCAddress
         this.announcePeer(selfWebRTCMultiaddr.toString())
         await this.waitForPeerList()
+        
+        // Wait a bit for initial replication
+        await new Promise(resolve => setTimeout(resolve, 2000))
+        console.log('PubsubService initialized with OrbitDB replication')
+        
+        // Periodically broadcast database addresses for peer discovery
+        setInterval(() => {
+            this.broadcastDatabaseAddresses()
+        }, 30000) // Every 30 seconds
+        
+        // Initial broadcast
+        this.broadcastDatabaseAddresses()
     }
-
 
     private get libp2p(): Libp2p {
         return this.helia.libp2p
@@ -97,19 +139,9 @@ export class PubsubService {
         return this.libp2p.services.pubsub as GossipSub
     }
 
-    sendChatMessage(message: string, roomId: string): boolean {
-        if (!this.helia || !message.trim() || !roomId) return false
+    async sendChatMessage(message: string, roomId: string): Promise<boolean> {
+        if (!this.helia || !message.trim() || !roomId || !this.chatDB) return false
 
-        const connections = this.libp2p.getConnections()
-        const webrtcConnections = connections.filter((conn: any) => 
-            conn.remoteAddr.toString().includes('/webrtc/')
-        )
-        
-        if (webrtcConnections.length === 0) {
-            console.warn('No direct WebRTC connections available for chat')
-            return false
-        }
-        
         const chatMessage: ChatMessage = {
             id: Date.now().toString(),
             peerId: this.peerId || 'unknown',
@@ -119,12 +151,122 @@ export class PubsubService {
         }
         
         try {
-            console.log(`Sending chat message to room ${roomId} over ${webrtcConnections.length} WebRTC connections`)
+            // Store in OrbitDB for persistence
+            await this.chatDB.add(chatMessage)
+            
+            // Also broadcast via pubsub for real-time updates
             this.pubsub.publish(getChatTopic(roomId), new TextEncoder().encode(JSON.stringify(chatMessage)))
+            console.log(`Chat message stored in OrbitDB and broadcast to room ${roomId}`)
             return true
         } catch (error) {
             console.error('Failed to send chat message:', error)
             return false
+        }
+    }
+
+    async getChatMessages(roomId: string): Promise<ChatMessage[]> {
+        if (!this.chatDB) return []
+        
+        try {
+            const iterator = this.chatDB.iterator()
+            const messages: ChatMessage[] = []
+            
+            for await (const entry of iterator) {
+                const message = entry.value as ChatMessage
+                if (message.roomId === roomId) {
+                    messages.push(message)
+                }
+            }
+            
+            return messages.sort((a, b) => a.timestamp - b.timestamp)
+        } catch (error) {
+            console.error('Failed to get chat messages:', error)
+            return []
+        }
+    }
+
+    async createAuction(auctionData: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>, creatorAddress: string): Promise<string | undefined> {
+        if (!this.helia || !this.peerId || !this.auctionDB) return undefined
+
+        const auction: ActiveAuction = {
+            ...auctionData,
+            id: `auction-${Date.now()}`,
+            creator: creatorAddress.toLowerCase(),
+            createdAt: Date.now(),
+            currentHighBid: auctionData.startingBid,
+            bidCount: 0
+        }
+        
+        try {
+            // Store in OrbitDB for persistence - add _id field required by documents database
+            const docWithId = {
+                ...auction,
+                _id: auction.id
+            }
+            await this.auctionDB.put(docWithId)
+            
+            // Broadcast via pubsub for real-time updates
+            this.pubsub.publish(TOPICS.ACTIVE_AUCTIONS, new TextEncoder().encode(JSON.stringify(auction)))
+            
+            // Also broadcast database address for replication
+            this.broadcastDatabaseAddresses()
+            
+            console.log('Auction stored in OrbitDB and broadcast:', auction)
+            
+            return auction.id
+        } catch (error) {
+            console.error('Failed to create auction:', error)
+            return undefined
+        }
+    }
+
+    // Broadcast database addresses for peer discovery
+    broadcastDatabaseAddresses(): void {
+        if (!this.auctionDB || !this.chatDB) return
+        
+        const dbInfo = {
+            auctionDB: this.auctionDB.address,
+            chatDB: this.chatDB.address,
+            peerId: this.peerId
+        }
+        
+        this.pubsub.publish('ah-p2p.market/db-addresses', new TextEncoder().encode(JSON.stringify(dbInfo)))
+    }
+
+    // Replicate with discovered databases
+    async replicateWithPeer(dbAddresses: { auctionDB: string, chatDB: string, peerId: string }): Promise<void> {
+        try {
+            // Open the peer's databases for replication
+            const peerAuctionDB = await this.orbit.open(dbAddresses.auctionDB)
+            const peerChatDB = await this.orbit.open(dbAddresses.chatDB)
+            
+            console.log(`Replicating with peer ${dbAddresses.peerId}:`)
+            console.log('- Auction DB:', dbAddresses.auctionDB)
+            console.log('- Chat DB:', dbAddresses.chatDB)
+        } catch (error) {
+            console.error('Failed to replicate with peer:', error)
+        }
+    }
+
+    async getActiveAuctions(): Promise<ActiveAuction[]> {
+        if (!this.auctionDB) return []
+        
+        try {
+            const iterator = this.auctionDB.iterator()
+            const auctions: ActiveAuction[] = []
+            
+            for await (const entry of iterator) {
+                const auction = entry.value as ActiveAuction
+                // Only return auctions that haven't ended
+                if (auction.endTime > Date.now()) {
+                    auctions.push(auction)
+                }
+            }
+            
+            return auctions.sort((a, b) => b.createdAt - a.createdAt)
+        } catch (error) {
+            console.error('Failed to get active auctions:', error)
+            return []
         }
     }
 
@@ -150,28 +292,6 @@ export class PubsubService {
         
         this.pubsub.unsubscribe(getChatTopic(roomId))
         console.log(`Left room: ${roomId}`)
-    }
-
-    createAuction(auctionData: Omit<ActiveAuction, 'id' | 'creator' | 'createdAt' | 'currentHighBid' | 'bidCount'>, creatorAddress: string): string | undefined {
-        if (!this.helia || !this.peerId) return undefined
-
-        const auction: ActiveAuction = {
-            ...auctionData,
-            id: `auction-${Date.now()}`,
-            creator: creatorAddress.toLowerCase(),
-            createdAt: Date.now(),
-            currentHighBid: auctionData.startingBid,
-            bidCount: 0
-        }
-        
-        console.log('Creating auction:', auction)
-        
-        this.pubsub.publish(
-            TOPICS.ACTIVE_AUCTIONS,
-            new TextEncoder().encode(JSON.stringify(auction))
-        )
-        
-        return auction.id
     }
 
     broadcastAuction(auction: ActiveAuction): void {
@@ -214,6 +334,7 @@ export class PubsubService {
         this.pubsub.subscribe(TOPICS.ACTIVE_AUCTIONS)
         this.pubsub.subscribe(TOPICS.AUCTION_CREATE)
         this.pubsub.subscribe(TOPICS.AUCTION_END)
+        this.pubsub.subscribe('ah-p2p.market/db-addresses')
     }
 
     setupMessageHandlers(): void {
@@ -284,6 +405,19 @@ export class PubsubService {
             if (topic === TOPICS.PONG) {
                 console.log('Received pong - connection is stable')
                 this.callbacks.onPong?.()
+            }
+
+            // Handle database address broadcasts
+            if (topic === 'ah-p2p.market/db-addresses') {
+                try {
+                    const dbInfo = JSON.parse(new TextDecoder().decode(data))
+                    if (dbInfo.peerId !== this.peerId) {
+                        console.log('Received database addresses from peer:', dbInfo.peerId)
+                        this.replicateWithPeer(dbInfo)
+                    }
+                } catch (error) {
+                    console.error('Failed to parse database addresses:', error)
+                }
             }
         }
 

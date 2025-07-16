@@ -1,17 +1,25 @@
-import { useContext, useState } from 'react'
+import { useContext, useEffect, useState } from 'react'
 import { Link, useLocation } from 'react-router'
 import { useAccount, useConnect, useDisconnect } from 'wagmi'
 import { HeliaContext } from '../providers/HeliaProvider'
 import { useSwitchChain } from 'wagmi'
 
 export const NavBar = () => {
-    const { peerId, peerList } = useContext(HeliaContext)
+    const { AHP2P } = useContext(HeliaContext)
+    const [peerList, setPeerList] = useState<Record<string, string>>({})
+    const [peerId, setPeerId] = useState<string | null>(null)
     const location = useLocation()
     const { address, isConnected } = useAccount()
     const { connect, connectors } = useConnect()
     const { disconnect } = useDisconnect()
     const { switchChain, chains } = useSwitchChain()
     const [isChainDropdownOpen, setIsChainDropdownOpen] = useState(false)
+
+    useEffect(() => {
+        if (AHP2P) {
+            console.log(AHP2P)
+        }
+    }, [AHP2P])
 
     return (
         <nav className="bg-black/20 backdrop-blur-sm border-b border-white/10">

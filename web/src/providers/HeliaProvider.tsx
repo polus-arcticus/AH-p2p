@@ -22,10 +22,11 @@ import { getWalletInterface } from '../utils/blockchain'
 import { PubsubService } from '../services/pubsub'
 
 import type { AHP2PHelia } from '../types'
+
 export const HeliaContext = createContext({
     starting: true,
     error: false,
-    AHP2P: null as any
+    AHP2P: null as any,
 })
 
 export const HeliaProvider = ({ children }: { children: ReactNode }) => {
@@ -39,6 +40,8 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
     const { address } = useAccount()
 
     const startHelia = useCallback(async (): Promise<void> => {
+        console.log('starting Helia')
+        console.log(address, walletClient)
         if (!address || !walletClient.data) return
 
         const datastoreName = 'ah-p2p-datastore'
@@ -81,7 +84,8 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
 
             const libp2p = await createLibp2p(options)
             const helia = await createHelia({ libp2p, datastore, blockstore }) as AHP2PHelia
-
+            console.log('helia created')
+            
             const identityProvider = OrbitDBIdentityProviderEthereum.default({
                 wallet: getWalletInterface({
                     address,
@@ -148,7 +152,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
                     console.log('  WebRTC:', conn.remoteAddr.toString())
                 })
             }, 30000)
-
+            console.log('setting AHP2P')
             setAHP2P({ helia, orbit, pubsubService })
             setStarting(false)
             setIsInitialized(true)
@@ -163,7 +167,7 @@ export const HeliaProvider = ({ children }: { children: ReactNode }) => {
         if (!isInitialized) {
             startHelia()
         }
-    }, [isInitialized])
+    }, [isInitialized, startHelia])
 
     return (
         <HeliaContext.Provider value={{

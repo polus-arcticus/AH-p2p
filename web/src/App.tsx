@@ -1,19 +1,50 @@
-import { useContext, useState } from 'react'
+import { useContext, useState, useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { HeliaContext } from './providers/HeliaProvider'
+import type { ActiveAuction, ChatMessage } from './services/pubsub'
 import './App.css'
 
 function App() {
-  const { 
-    peerId, 
-    starting, 
-    error, 
-    peerList,
-    chatMessages
-  } = useContext(HeliaContext)
-
+  const { starting, error, AHP2P } = useContext(HeliaContext)
   const navigate = useNavigate()
   const [auctionInput, setAuctionInput] = useState('')
+  const [activeAuctions, setActiveAuctions] = useState<ActiveAuction[]>([])
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([])
+  const [peerCount, setPeerCount] = useState(0)
+
+  // Load data when AHP2P is available
+  useEffect(() => {
+    if (!AHP2P?.pubsubService) return
+
+    const loadData = async () => {
+      try {
+        // Load active auctions from OrbitDB
+        const auctions = await AHP2P.pubsubService.getActiveAuctions()
+        setActiveAuctions(auctions)
+
+        // Get peer count
+        const peers = AHP2P.helia.libp2p.getPeers()
+        setPeerCount(peers.length)
+
+        // Load chat messages for discovered rooms
+        const roomIds = [...new Set(auctions.map(auction => auction.id))]
+        const allMessages: ChatMessage[] = []
+        for (const roomId of roomIds) {
+          const messages = await AHP2P.pubsubService.getChatMessages(roomId)
+          allMessages.push(...messages)
+        }
+        setChatMessages(allMessages)
+      } catch (error) {
+        console.error('Failed to load data:', error)
+      }
+    }
+
+    loadData()
+    
+    // Refresh data periodically
+    const interval = setInterval(loadData, 10000)
+    return () => clearInterval(interval)
+  }, [AHP2P])
 
   const handleJoinAuction = (e: React.FormEvent) => {
     e.preventDefault()
@@ -46,7 +77,7 @@ function App() {
     )
   }
 
-  // Get unique auction rooms from chat messages
+  const peerId = AHP2P?.helia?.libp2p?.peerId?.toString()
   const activeRooms = [...new Set(chatMessages.map(msg => msg.roomId))].filter(room => room)
 
   return (
@@ -58,7 +89,7 @@ function App() {
             Decentralized NFT Auction House
           </h1>
           <p className="text-gray-300 text-lg">
-            P2P auctions with no central servers • WebRTC powered
+            P2P auctions with persistent OrbitDB storage • WebRTC powered
           </p>
         </div>
 
@@ -90,7 +121,7 @@ function App() {
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Connected Peers:</span>
-                <span className="text-green-400">{Object.keys(peerList).length}</span>
+                <span className="text-green-400">{peerCount}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Your ID:</span>
@@ -102,14 +133,14 @@ function App() {
           </div>
 
           <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-2">Active Rooms</h3>
+            <h3 className="text-lg font-semibold text-white mb-2">Active Auctions</h3>
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Discovered Rooms:</span>
-                <span className="text-blue-400">{activeRooms.length}</span>
+                <span className="text-gray-400">Live Auctions:</span>
+                <span className="text-blue-400">{activeAuctions.length}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Total Messages:</span>
+                <span className="text-gray-400">Chat Messages:</span>
                 <span className="text-green-400">{chatMessages.length}</span>
               </div>
             </div>
@@ -121,7 +152,7 @@ function App() {
               <div className="flex justify-between text-sm">
                 <span className="text-gray-400">Total Bids:</span>
                 <span className="text-yellow-400">
-                  {chatMessages.filter(msg => msg.message.startsWith('BID:')).length}
+                  {activeAuctions.reduce((sum, auction) => sum + auction.bidCount, 0)}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
@@ -137,46 +168,44 @@ function App() {
           </div>
         </div>
 
-        {/* Discovered Auction Rooms */}
-        {activeRooms.length > 0 && (
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h2 className="text-2xl font-bold text-white mb-6">Discovered Auction Rooms</h2>
+        {/* Active Auctions */}
+        {activeAuctions.length > 0 && (
+          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 mb-8">
+            <h2 className="text-2xl font-bold text-white mb-6">Active Auctions</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeRooms.map((roomId) => {
-                const roomMessages = chatMessages.filter(msg => msg.roomId === roomId)
-                const bidMessages = roomMessages.filter(msg => msg.message.startsWith('BID:'))
-                const uniqueParticipants = [...new Set(roomMessages.map(msg => msg.peerId))].length
-                const highestBid = bidMessages.length > 0 
-                  ? Math.max(...bidMessages.map(msg => parseFloat(msg.message.slice(4)) || 0))
-                  : 0
+              {activeAuctions.map((auction) => {
+                const timeLeft = Math.max(0, auction.endTime - Date.now())
+                const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60))
+                const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60))
 
                 return (
                   <div
-                    key={roomId}
+                    key={auction.id}
                     className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-400/50 transition-all duration-200"
                   >
-                    <h3 className="text-lg font-semibold text-white mb-2">{roomId}</h3>
+                    <h3 className="text-lg font-semibold text-white mb-2">{auction.title}</h3>
+                    <p className="text-gray-400 text-sm mb-3 line-clamp-2">{auction.description}</p>
                     <div className="space-y-1 mb-4">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Participants:</span>
-                        <span className="text-blue-400">{uniqueParticipants}</span>
+                        <span className="text-gray-400">Current Bid:</span>
+                        <span className="text-green-400">{auction.currentHighBid} ETH</span>
                       </div>
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-400">Bids:</span>
-                        <span className="text-green-400">{bidMessages.length}</span>
+                        <span className="text-blue-400">{auction.bidCount}</span>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">High Bid:</span>
+                        <span className="text-gray-400">Time Left:</span>
                         <span className="text-yellow-400">
-                          {highestBid > 0 ? `${highestBid} ETH` : 'No bids'}
+                          {timeLeft > 0 ? `${hoursLeft}h ${minutesLeft}m` : 'Ended'}
                         </span>
                       </div>
                     </div>
                     <button
-                      onClick={() => navigate(`/room/${roomId}`)}
+                      onClick={() => navigate(`/room/${auction.id}`)}
                       className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg font-semibold transition-all duration-200"
                     >
-                      Join Room
+                      Join Auction
                     </button>
                   </div>
                 )
@@ -196,9 +225,9 @@ function App() {
               </p>
             </div>
             <div>
-              <h3 className="font-semibold text-white mb-2">2. 💬 Real-time Bidding</h3>
+              <h3 className="font-semibold text-white mb-2">2. 💾 Persistent Storage</h3>
               <p className="text-gray-300">
-                Bids are shared instantly across all auction participants
+                Auction data stored in OrbitDB, replicated across all peers
               </p>
             </div>
             <div>

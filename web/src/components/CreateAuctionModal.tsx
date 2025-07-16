@@ -1,35 +1,25 @@
-import { useState } from 'react'
+import { useState, useContext } from 'react'
 import { parseEther } from 'viem'
 import { useAccount } from 'wagmi'
 import { useAuctionSignature, type AuctionAuthSigMessage } from '../hooks/useAuctionSignature'
 import { useAuctionNonce } from '../hooks/useAuctionNonce'
+import { HeliaContext } from '../providers/HeliaProvider'
 import staticContracts from '../assets/Static.json'
-
 
 interface CreateAuctionModalProps {
     showCreateForm: boolean
     setShowCreateForm: (show: boolean) => void
-    createAuction: (auction: {
-        title: string
-        description: string
-        nftContract: string
-        nftTokenId: string
-        tokenContract: string
-        startingBid: string
-        endTime: number
-        signature?: string
-        sigHash?: string
-    }) => string | undefined
 }
 
 export const CreateAuctionModal = ({ 
     showCreateForm, 
-    setShowCreateForm, 
-    createAuction 
+    setShowCreateForm
 }: CreateAuctionModalProps) => {
     const { address, isConnected } = useAccount()
     const { signAuctionAuth, isPending, error } = useAuctionSignature()
     const { nonce, isLoading: nonceLoading } = useAuctionNonce(address)
+    const { AHP2P } = useContext(HeliaContext)
+    
     // Calculate default end time (1 hour from now)
     const getDefaultEndTime = () => {
         const now = new Date()
@@ -55,6 +45,11 @@ export const CreateAuctionModal = ({
             return
         }
 
+        if (!AHP2P?.pubsubService) {
+            alert('P2P network not ready. Please wait and try again.')
+            return
+        }
+
         const endTime = new Date(auctionForm.endTime).getTime()
         if (endTime <= Date.now()) {
             alert('End time must be in the future')
@@ -75,7 +70,7 @@ export const CreateAuctionModal = ({
 
             const { signature, sigHash } = await signAuctionAuth(message)
 
-            const auctionId = createAuction({
+            const auctionId = await AHP2P.pubsubService.createAuction({
                 title: auctionForm.title,
                 description: auctionForm.description,
                 nftContract: auctionForm.nftContract,
@@ -85,7 +80,7 @@ export const CreateAuctionModal = ({
                 endTime,
                 signature,
                 sigHash
-            })
+            }, address)
 
             if (auctionId) {
                 setShowCreateForm(false)
@@ -98,10 +93,11 @@ export const CreateAuctionModal = ({
                     startingBid: '0.01',
                     endTime: getDefaultEndTime()
                 })
+                alert(`Auction created successfully! ID: ${auctionId}`)
             }
         } catch (error) {
-            console.error('Failed to sign auction:', error)
-            alert('Failed to sign auction. Please try again.')
+            console.error('Failed to create auction:', error)
+            alert('Failed to create auction. Please try again.')
         }
     }
 
@@ -177,6 +173,11 @@ export const CreateAuctionModal = ({
                             Please connect your wallet to create an auction
                         </div>
                     )}
+                    {!AHP2P?.pubsubService && (
+                        <div className="text-yellow-400 text-sm">
+                            P2P network not ready. Please wait...
+                        </div>
+                    )}
                     <div className="flex space-x-3">
                         <button
                             type="button"
@@ -187,7 +188,7 @@ export const CreateAuctionModal = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isPending || !isConnected || nonceLoading}
+                            disabled={isPending || !isConnected || nonceLoading || !AHP2P?.pubsubService}
                             className="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold transition-all duration-200"
                         >
                             {nonceLoading ? 'Loading...' : isPending ? 'Signing...' : 'Create'}

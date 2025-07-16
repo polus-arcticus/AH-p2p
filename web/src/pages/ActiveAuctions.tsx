@@ -2,26 +2,43 @@ import { useContext, useEffect, useState } from 'react'
 import { Link } from 'react-router'
 import { HeliaContext } from '../providers/HeliaProvider'
 import { CreateAuctionModal } from '../components/CreateAuctionModal'
+import type { ActiveAuction } from '../services/pubsub'
 
 export const ActiveAuctions = () => {
-    const {
-        activeAuctions,
-        refreshActiveAuctions,
-        starting,
-        error,
-        createAuction
-    } = useContext(HeliaContext)
-
+    const { starting, error, AHP2P } = useContext(HeliaContext)
     const [showCreateForm, setShowCreateForm] = useState(false)
+    const [activeAuctions, setActiveAuctions] = useState<ActiveAuction[]>([])
+    const [loading, setLoading] = useState(false)
 
-    // Auto-refresh auctions when page loads
-    useEffect(() => {
-        if (!starting && !error) {
-            refreshActiveAuctions()
+    // Load auctions from OrbitDB
+    const loadAuctions = async () => {
+        if (!AHP2P?.pubsubService) return
+        
+        setLoading(true)
+        try {
+            const auctions = await AHP2P.pubsubService.getActiveAuctions()
+            setActiveAuctions(auctions)
+        } catch (error) {
+            console.error('Failed to load auctions:', error)
+        } finally {
+            setLoading(false)
         }
-    }, [starting, error, refreshActiveAuctions])
+    }
 
+    // Load auctions when AHP2P is ready
+    useEffect(() => {
+        if (AHP2P?.pubsubService) {
+            loadAuctions()
+        }
+    }, [AHP2P])
 
+    // Auto-refresh auctions periodically
+    useEffect(() => {
+        if (!AHP2P?.pubsubService) return
+        
+        const interval = setInterval(loadAuctions, 15000) // Refresh every 15 seconds
+        return () => clearInterval(interval)
+    }, [AHP2P])
 
     if (starting) {
         return (
@@ -67,10 +84,11 @@ export const ActiveAuctions = () => {
 
                 <div className="flex space-x-4">
                     <button
-                        onClick={refreshActiveAuctions}
-                        className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                        onClick={loadAuctions}
+                        disabled={loading}
+                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors"
                     >
-                        🔄 Refresh
+                        {loading ? '⏳' : '🔄'} Refresh
                     </button>
                     <button
                         onClick={() => setShowCreateForm(true)}
@@ -85,7 +103,12 @@ export const ActiveAuctions = () => {
             <div className="mb-8">
                 <h2 className="text-2xl font-bold text-white mb-6">Live Auctions</h2>
 
-                {liveAuctions.length === 0 ? (
+                {loading ? (
+                    <div className="bg-black/20 backdrop-blur-sm rounded-xl p-12 border border-white/10 text-center">
+                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                        <p className="text-white">Loading auctions from OrbitDB...</p>
+                    </div>
+                ) : liveAuctions.length === 0 ? (
                     <div className="bg-black/20 backdrop-blur-sm rounded-xl p-12 border border-white/10 text-center">
                         <div className="text-6xl mb-4">🏛️</div>
                         <h3 className="text-xl font-semibold text-white mb-2">No Active Auctions</h3>
@@ -220,7 +243,6 @@ export const ActiveAuctions = () => {
             <CreateAuctionModal
                 showCreateForm={showCreateForm}
                 setShowCreateForm={setShowCreateForm}
-                createAuction={createAuction}
             />
         </div>
     )
