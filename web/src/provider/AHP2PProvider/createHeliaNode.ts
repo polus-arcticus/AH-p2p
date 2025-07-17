@@ -13,8 +13,9 @@ import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
 
 import { stabilizeConnection } from "./utils/stabilizeConnection"
 import { waitForWebRTCAddress } from "./utils/waitForWebRTCAddress"
+import type { CustomHelia } from "../../types/orbitdb"
 
-export const createHeliaNode = async () => {
+export const createHeliaNode = async (): Promise<CustomHelia> => {
     const datastoreName = 'ah-p2p-datastore'
     const blockstoreName = 'ah-p2p-blockstore'
 
@@ -69,4 +70,4 @@ export const createHeliaNode = async () => {
         console.error(e)
     }
 
-    return helia
+    return helia as CustomHelia

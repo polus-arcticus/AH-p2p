@@ -1,10 +1,10 @@
 import type { Multiaddr } from '@multiformats/multiaddr'
-
-import { WebRTC  } from '@multiformats/multiaddr-matcher'
+import { WebRTC } from '@multiformats/multiaddr-matcher'
+import type { CustomHelia } from "../../../types/orbitdb"
 
 export const waitForWebRTCAddress = async (
-  helia
-) => {
+  helia: CustomHelia
+): Promise<Multiaddr> => {
   return new Promise<Multiaddr>(
     (resolve) => {
     const interval = setInterval(() => {

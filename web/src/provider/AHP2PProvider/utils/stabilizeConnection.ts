@@ -1,13 +1,14 @@
 import { TOPICS } from "./topics"
+import type { CustomHelia, PubSubMessageEvent } from "../../../types/orbitdb"
 
 export const stabilizeConnection = async (
-  helia
-) => {
+  helia: CustomHelia
+): Promise<void> => {
   return new Promise<void>(
     (resolve) => {
       let pingInterval: NodeJS.Timeout | null = null
       helia.libp2p.services.pubsub.subscribe(TOPICS.PONG)
-      const pongListener = (evt: { detail: { topic: string, data: Uint8Array } }) => {
+      const pongListener = (evt: PubSubMessageEvent) => {
         const { topic, data } = evt.detail
         if (topic === TOPICS.PONG) {
           console.log('Received pong - connection is stable')

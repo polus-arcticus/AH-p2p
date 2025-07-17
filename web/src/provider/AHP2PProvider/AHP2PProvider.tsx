@@ -1,9 +1,12 @@
 import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useOrbitDB } from "./useOrbitDB";
-import type {Orbit} from '@types/orbitdb'
-export const AHP2PContext = createContext({
-  orbit: {} as Orbit
+import type { AHP2PContextType } from "../../types/orbitdb";
+
+export const AHP2PContext = createContext<AHP2PContextType>({
+  orbit: null,
+  loading: true,
+  error: null
 })
 
 export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
@@ -20,8 +23,10 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
   }, [orbit])
   return (
     <AHP2PContext.Provider value={{
-      orbit
-      }}>
+      orbit,
+      loading: orbitDBLoading,
+      error: orbitDBError
+    }}>
       {children}
     </AHP2PContext.Provider>
   )

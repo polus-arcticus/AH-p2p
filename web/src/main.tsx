@@ -5,7 +5,7 @@ import { BrowserRouter, Routes, Route } from "react-router";
 import { WagmiProvider } from 'wagmi'
 import { config } from './config.ts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { AHP2PProvider } from './provider/AHP2PProvider/AHP2PProvider.tsx';
+import { AHP2PProvider } from './provider/AHP2PProvider/AHP2PProvider.tsx'
 
 const queryClient = new QueryClient()
 
