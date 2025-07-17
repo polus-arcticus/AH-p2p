@@ -9,7 +9,8 @@ import { TOPICS } from '../utils/topics'
 import { useContext } from 'react'
 import { AHP2PContext } from '../AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
-import type { PubSubMessageEvent } from '../../../types/orbitdb'
+
+type PubSubMessageEvent = CustomEvent<{ topic: string; data: Uint8Array }>
 
 export const useSubPeerList = () => {
   const { orbit } = useContext(AHP2PContext)
