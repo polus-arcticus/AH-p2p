@@ -9,6 +9,10 @@ import { circuitRelayTransport } from "@libp2p/circuit-relay-v2"
 import { identify } from "@libp2p/identify"
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { createHelia } from 'helia'
+import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
+
+import { stabilizeConnection } from "./utils/stabilizeConnection"
+import { waitForWebRTCAddress } from "./utils/waitForWebRTCAddress"
 
 export const createHeliaNode = async () => {
     const datastoreName = 'ah-p2p-datastore'
@@ -52,6 +56,15 @@ export const createHeliaNode = async () => {
     try {
         libp2p = await createLibp2p(options)
         helia = await createHelia({ libp2p, datastore, blockstore })
+
+        const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
+        await helia.libp2p.dial(multiaddr(relay))
+        await stabilizeConnection(helia)
+
+        const selfWebRTCMultiaddr = await waitForWebRTCAddress(helia)
+        console.log('WebRTC Multiaddr', selfWebRTCMultiaddr.toString())
+
+
     } catch (e) {
         console.error(e)
     }

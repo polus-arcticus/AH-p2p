@@ -5,7 +5,7 @@ import {
 } from "react";
 
 import { createHeliaNode } from "./createHeliaNode";
-import { getWalletInterface } from "./getWalletInterface";
+import { getWalletInterface } from "./utils/getWalletInterface";
 import { useWalletClient } from "wagmi";
 import { createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 
@@ -14,7 +14,7 @@ import { OrbitDBIdentityProviderEthereum } from "@orbitdb/identity-provider-ethe
 
 export const useOrbitDB = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
-  const [orbitDB, setOrbitDB] = useState<any>(null)
+  const [orbit, setOrbit] = useState<any>(null)
 
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
@@ -30,7 +30,7 @@ export const useOrbitDB = () => {
       const helia = await createHeliaNode()
 
       const walletInterface = getWalletInterface({
-        address: walletClient.data.account,
+        address: walletClient.account.address,
         walletClient
       })
 
@@ -41,7 +41,7 @@ export const useOrbitDB = () => {
         identity: {provider: ethProvider}
       })
 
-      setOrbitDB(orbit)
+      setOrbit(orbit)
       setLoading(false)
 
   }, [walletClient])
@@ -54,7 +54,7 @@ export const useOrbitDB = () => {
   }, [startBootstrapNode, walletClient])
 
   return {
-    orbitDB,
+    orbit,
     error,
     loading
   }
