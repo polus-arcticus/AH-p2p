@@ -24,6 +24,7 @@
     "@orbitdb/core": "^3.0.2",
     "@orbitdb/core-types": "^1.1.7",
     "@orbitdb/identity-provider-ethereum": "^1.0.3",
+    "@tanstack/react-query": "^5.62.8",
     "blockstore-idb": "^2.0.3",
     "datastore-idb": "^3.0.3",
     "helia": "^5.4.2",

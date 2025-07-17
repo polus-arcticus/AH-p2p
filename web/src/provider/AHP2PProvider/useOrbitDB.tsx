@@ -10,10 +10,11 @@ import { useWalletClient } from "wagmi";
 import { createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 import { OrbitDBIdentityProviderEthereum } from "@orbitdb/identity-provider-ethereum";
 import type { Orbit, CustomHelia } from "../../types/orbitdb";
+import type { OrbitDB } from '@orbitdb/core-types'
 
 export const useOrbitDB = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
-  const [orbit, setOrbit] = useState<Orbit | null>(null)
+  const [orbit, setOrbit] = useState<OrbitDB | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -38,7 +39,7 @@ export const useOrbitDB = () => {
       const orbit = await createOrbitDB({
         ipfs: helia,
         identity: { provider: ethProvider }
-      }) as Orbit
+      }) as OrbitDB
 
       setOrbit(orbit)
       setLoading(false)
