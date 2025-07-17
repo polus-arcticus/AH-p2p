@@ -9,25 +9,24 @@ import { getWalletInterface } from "./utils/getWalletInterface";
 import { useWalletClient } from "wagmi";
 import { createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 import { OrbitDBIdentityProviderEthereum } from "@orbitdb/identity-provider-ethereum";
-import type { Orbit, CustomHelia } from "../../types/orbitdb";
 import type { OrbitDB } from '@orbitdb/core-types'
 
-export const useOrbitDB = () => {
+export const useOrbit = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
   const [orbit, setOrbit] = useState<OrbitDB | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)
 
   const { data: walletClient } = useWalletClient()
 
-  const startBootstrapNode = useCallback(async () => {
+  const startOrbit = useCallback(async () => {
     if (!walletClient) return
 
     try {
       setLoading(true)
       setError(null)
 
-      const helia = await createHeliaNode() as CustomHelia
+      const helia = await createHeliaNode() 
 
       const walletInterface = getWalletInterface({
         address: walletClient.account.address,
@@ -43,8 +42,9 @@ export const useOrbitDB = () => {
 
       setOrbit(orbit)
       setLoading(false)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to initialize OrbitDB')
+
+    } catch (err:unknown) {
+      setError(err as Error)
       setLoading(false)
     }
   }, [walletClient])
@@ -53,8 +53,8 @@ export const useOrbitDB = () => {
 
   useEffect(() => {
     if (!walletClient) return
-    startBootstrapNode()
-  }, [startBootstrapNode, walletClient])
+    startOrbit()
+  }, [startOrbit, walletClient])
 
   return {
     orbit,
