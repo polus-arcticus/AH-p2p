@@ -22,7 +22,7 @@
     "@multiformats/multiaddr": "^12.5.0",
     "@multiformats/multiaddr-matcher": "^1.7.2",
     "@orbitdb/core": "^3.0.2",
-    "@orbitdb/core-types": "^1.1.7",
+    "@orbitdb/core-types": "^1.2.0",
     "@orbitdb/identity-provider-ethereum": "^1.0.3",
     "@tanstack/react-query": "^5.62.8",
     "blockstore-idb": "^2.0.3",

@@ -13,9 +13,10 @@ import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
 
 import { stabilizeConnection } from "./utils/stabilizeConnection"
 import { waitForWebRTCAddress } from "./utils/waitForWebRTCAddress"
-import type { CustomHelia } from "../../types/orbitdb"
 
-export const createHeliaNode = async (): Promise<CustomHelia> => {
+
+
+export const createHeliaNode = async (): Promise<{ helia: any, selfWebRTCMultiaddr: Multiaddr | null }> => {
     const datastoreName = 'ah-p2p-datastore'
     const blockstoreName = 'ah-p2p-blockstore'
 
@@ -54,15 +55,18 @@ export const createHeliaNode = async (): Promise<CustomHelia> => {
     }
     let libp2p
     let helia
+    let selfWebRTCMultiaddr: Multiaddr | null = null
     try {
         libp2p = await createLibp2p(options)
         helia = await createHelia({ libp2p, datastore, blockstore })
 
         const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
         await helia.libp2p.dial(multiaddr(relay))
+        console.log('Dialing relay', relay)
         await stabilizeConnection(helia)
+        console.log('connection stabilized')
 
-        const selfWebRTCMultiaddr = await waitForWebRTCAddress(helia)
+        selfWebRTCMultiaddr = await waitForWebRTCAddress(helia)
         console.log('WebRTC Multiaddr', selfWebRTCMultiaddr.toString())
 
 
@@ -70,4 +74,8 @@ export const createHeliaNode = async (): Promise<CustomHelia> => {
         console.error(e)
     }
 
-    return helia as CustomHelia
+    return {
+        helia,
+        selfWebRTCMultiaddr
+    }
+}

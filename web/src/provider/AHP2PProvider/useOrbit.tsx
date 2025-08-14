@@ -5,15 +5,18 @@ import {
 } from "react";
 
 import { createHeliaNode } from "./createHeliaNode";
-import { getWalletInterface } from "./utils/getWalletInterface";
+
 import { useWalletClient } from "wagmi";
 import { createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
-import { OrbitDBIdentityProviderEthereum } from "@orbitdb/identity-provider-ethereum";
-import type { OrbitDB } from '@orbitdb/core-types'
+import type { OrbitDB } from '@orbitdb/core'
+import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
+
+import type { Multiaddr } from '@multiformats/multiaddr'
 
 export const useOrbit = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
   const [orbit, setOrbit] = useState<OrbitDB | null>(null)
+  const [selfAddress, setSelfAddress] = useState<Multiaddr | null>(null)
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -24,21 +27,17 @@ export const useOrbit = () => {
 
     try {
       setLoading(true)
-      setError(null)
+      setError(undefined)
 
-      const helia = await createHeliaNode() 
-
-      const walletInterface = getWalletInterface({
-        address: walletClient.account.address,
-        walletClient
-      })
-
-      const ethProvider = OrbitDBIdentityProviderEthereum.default({ wallet: walletInterface })
-
+      const {helia, selfWebRTCMultiaddr} = await createHeliaNode() 
+      setSelfAddress(selfWebRTCMultiaddr)
+      // Create OrbitDB instance - the identity will be created automatically
+      // using the registered Ethereum identity provider
       const orbit = await createOrbitDB({
-        ipfs: helia,
-        identity: { provider: ethProvider }
+        ipfs: helia
       }) as OrbitDB
+
+      console.log('OrbitDB created', orbit)
 
       setOrbit(orbit)
       setLoading(false)
@@ -58,6 +57,7 @@ export const useOrbit = () => {
 
   return {
     orbit,
+    selfAddress,
     error,
     loading
   }
