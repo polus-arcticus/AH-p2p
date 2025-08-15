@@ -3,15 +3,19 @@ import type { CustomHelia, PubSubMessageEvent } from "../../../types/orbitdb"
 
 export const stabilizeConnection = async (
   helia: CustomHelia
-): Promise<void> => {
-  return new Promise<void>(
+): Promise<Record<string, string>> => {
+  return new Promise<Record<string, string>>(
     (resolve) => {
       let pingInterval: NodeJS.Timeout | null = null
       helia.libp2p.services.pubsub.subscribe(TOPICS.PONG)
       const pongListener = (evt: PubSubMessageEvent) => {
         const { topic, data } = evt.detail
+
         if (topic === TOPICS.PONG) {
           console.log('Received pong - connection is stable')
+          const dataJson = JSON.parse(new TextDecoder().decode(data))
+          console.log('dataJson', dataJson)
+          
           // Clear the ping interval
           if (pingInterval) {
             clearInterval(pingInterval)
@@ -19,7 +23,7 @@ export const stabilizeConnection = async (
           }
           // Remove this pong listener
           helia.libp2p.services.pubsub.removeEventListener('message', pongListener)
-          resolve()
+          resolve(dataJson)
         }
       }
       // Subscribe to pong messages

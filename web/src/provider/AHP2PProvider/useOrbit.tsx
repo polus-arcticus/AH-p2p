@@ -29,13 +29,16 @@ export const useOrbit = () => {
       setLoading(true)
       setError(undefined)
 
-      const {helia, selfWebRTCMultiaddr} = await createHeliaNode() 
+      const {helia, selfWebRTCMultiaddr, dbAddrs} = await createHeliaNode() 
       setSelfAddress(selfWebRTCMultiaddr)
       // Create OrbitDB instance - the identity will be created automatically
       // using the registered Ethereum identity provider
       const orbit = await createOrbitDB({
         ipfs: helia
       }) as OrbitDB
+
+      const auctionsDB = await orbit.open(dbAddrs.auctionsDBAddress)
+      console.log('auctionsDB', auctionsDB)
 
       console.log('OrbitDB created', orbit)
 
