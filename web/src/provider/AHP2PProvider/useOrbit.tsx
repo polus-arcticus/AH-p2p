@@ -7,7 +7,7 @@ import {
 import { createHeliaNode } from "./createHeliaNode";
 
 import { useWalletClient } from "wagmi";
-import { createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
+import { type BaseDatabase, createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 import type { OrbitDB } from '@orbitdb/core'
 import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
 
@@ -16,6 +16,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 export const useOrbit = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
   const [orbit, setOrbit] = useState<OrbitDB | null>(null)
+  const [auctionsDB, setAuctionsDB] = useState<BaseDatabase | null>(null)
   const [selfAddress, setSelfAddress] = useState<Multiaddr | null>(null)
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)
@@ -43,6 +44,7 @@ export const useOrbit = () => {
       console.log('OrbitDB created', orbit)
 
       setOrbit(orbit)
+      setAuctionsDB(auctionsDB)
       setLoading(false)
 
     } catch (err:unknown) {
@@ -60,8 +62,9 @@ export const useOrbit = () => {
 
   return {
     orbit,
-    selfAddress,
+      selfAddress,
     error,
-    loading
+    loading,
+    auctionsDB
   }
 }
