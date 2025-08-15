@@ -33,19 +33,11 @@ export const useSubPeerList = (orbit: OrbitDB | null) => {
         if (topic === TOPICS.PEER_LIST) {
           const peerListJson: Record<string, string> = JSON.parse(new TextDecoder().decode(data))
           delete peerListJson[orbit.ipfs.libp2p.peerId.toString()]
-          setPeerList(peerListJson)
           console.log('Peer list received from hub:', peerListJson)
-
-          // Dial WebRTC connections to peers
-          for (const [peerId, webrtcMultiaddr] of Object.entries(peerListJson)) {
-            console.log('Dialing WebRTC connection to peer:', peerId)
-            try {
-              await orbit.ipfs.libp2p.dial(multiaddr(webrtcMultiaddr))
-              console.log('Successfully established WebRTC connection to:', peerId)
-            } catch (error) {
-              console.error('Failed to dial WebRTC connection to', peerId, error)
-            }
-          }
+          // Store peer directory without connecting immediately
+          // Connections will be established on-demand when entering auction rooms
+          console.log('Updated peer directory. Available peers:', Object.keys(peerListJson).length)
+          setPeerList(peerListJson)
 
           resolve(peerListJson)
         }

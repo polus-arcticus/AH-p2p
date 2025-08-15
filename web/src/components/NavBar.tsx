@@ -64,7 +64,7 @@ function ConnectWallet() {
 }
 
 export const NavBar = () => {
-    const {loading, peerList } = useContext(AHP2PContext)
+    const {loading, peerList, selfAddress } = useContext(AHP2PContext)
 
     return (<div style={{
         display: 'flex',
