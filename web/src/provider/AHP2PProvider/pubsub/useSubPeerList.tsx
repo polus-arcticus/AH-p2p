@@ -14,7 +14,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 type PubSubMessageEvent = CustomEvent<{ topic: string; data: Uint8Array }>
 
 export const useSubPeerList = (orbit: OrbitDB | null) => {
-  const [peerList, setPeerList] = useState<Record<string, string>>({})
+  const [peerList, setPeerList] = useState<Record<string, string>>({}) 
   const peerListListenerRef = useRef<((evt: PubSubMessageEvent) => Promise<void>) | null>(null)
 
   const subPeerList = useCallback(async (selfAddress: Multiaddr) => {
@@ -50,27 +50,34 @@ export const useSubPeerList = (orbit: OrbitDB | null) => {
           resolve(peerListJson)
         }
       }
-
+      const { pubsub } = orbit.ipfs.libp2p.services
       peerListListenerRef.current = listener
-      orbit.ipfs.libp2p.services.pubsub.addEventListener('message', listener)
+      pubsub.addEventListener('message', listener)
       
       // Subscribe only to PEER_LIST (hub will send us updates)
-      orbit.ipfs.libp2p.services.pubsub.subscribe(TOPICS.PEER_LIST)
+      pubsub.subscribe(TOPICS.PEER_LIST)
       
       // Announce ourselves to the hub and request current peer list
-      orbit.ipfs.libp2p.services.pubsub.publish(TOPICS.PEER_ANNOUNCE, new TextEncoder().encode(JSON.stringify({
+      pubsub.publish(TOPICS.PEER_ANNOUNCE, new TextEncoder().encode(JSON.stringify({
         peerId: orbit.ipfs.libp2p.peerId.toString(),
         multiaddrs: selfAddress.toString()
       })))
-      orbit.ipfs.libp2p.services.pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
+      pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
+
+      orbit.ipfs.libp2p.addEventListener('peer:disconnect', (evt) => {
+        console.log('Disconnected from peer:', evt.detail)
+        console.log('tostring', evt.detail.toString())
+        delete peerList[evt.detail.toString()]
+        setPeerList({ ...peerList })
+      })
     })
   }, [orbit])
 
   const unSubPeerList = useCallback(() => {
     if (!orbit?.ipfs || !peerListListenerRef.current) return
-
-    orbit.ipfs.libp2p.services.pubsub.unsubscribe(TOPICS.PEER_LIST)
-    orbit.ipfs.libp2p.services.pubsub.removeEventListener('message', peerListListenerRef.current)
+    const { pubsub } = orbit.ipfs.libp2p.services
+    pubsub.unsubscribe(TOPICS.PEER_LIST)
+    pubsub.removeEventListener('message', peerListListenerRef.current)
     peerListListenerRef.current = null
   }, [orbit])
 
