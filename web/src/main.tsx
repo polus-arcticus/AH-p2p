@@ -7,6 +7,7 @@ import { config } from './config.ts'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { AHP2PProvider } from './provider/AHP2PProvider/AHP2PProvider.tsx'
 import { NavBar } from './components/NavBar';
+import { Auction } from './pages/Auction/Auction.tsx';
 const queryClient = new QueryClient()
 
 createRoot(document.getElementById('root')!).render(
@@ -17,6 +18,7 @@ createRoot(document.getElementById('root')!).render(
             <NavBar />
             <Routes>
               <Route path="/" element={<App />} />
+              <Route path="/auction/:auctionId" element={<Auction />} />
             </Routes>
         </AHP2PProvider>
       </BrowserRouter>
