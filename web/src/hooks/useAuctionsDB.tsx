@@ -1,13 +1,11 @@
-import {
-    useContext,
-    useState,
-    useEffect,
-    useCallback
-} from 'react'
+import { useCallback, useContext, useState, useEffect, useRef } from 'react'
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
 export const useAuctionsDB = () => {
+    const initRef = useRef(false)
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
+    const [auctions, setAuctions] = useState([])
+
 
 
     const createAuction = useCallback(async (auctionData: any) => {
@@ -24,7 +22,10 @@ export const useAuctionsDB = () => {
             roomAddress: room.address.toString()
         })
 
-        console.log('auction', auction)
+        console.log('🎯 Auction created locally:', auction)
+        
+        // Manually trigger a refresh since OrbitDB update events only fire for remote changes
+        // The component should refetch auctions after createAuction completes
         return auction
     }, [auctionsDB])
 
@@ -32,6 +33,7 @@ export const useAuctionsDB = () => {
         if (!auctionsDB) return
         const auctions = await auctionsDB.all()
         console.log('auctions', auctions)
+        setAuctions(auctions)
         return auctions
     }, [auctionsDB])
 
@@ -117,22 +119,53 @@ export const useAuctionsDB = () => {
     }, [auctionsDB, orbit, selfAddress])
 
 
-    const watchAuctions = useCallback(async () => {
+    const watchAuctions = useCallback(() => {
         if (!auctionsDB) return
-        const listener = auctionsDB.events.on('update', (event) => {
-            console.log('event', event)
+        
+        // Clean up any existing listeners first
+        auctionsDB.events.removeAllListeners('update')
+    
+        console.log('🎯 Auctions watcher enabled')
+        
+        // Listen for both local updates and remote replication
+        auctionsDB.events.on('update', (event) => {
+            console.log('🎯 Auctions DB update event:', event)
+            setAuctions(old => [...old, event.payload.value])
         })
-        listener()
-
+        // Return cleanup function for component to use
         return () => {
-            listener.remove()
+            console.log('watcher disabled')
+            auctionsDB.events.removeAllListeners('update')
+            console.log('🛡️ Auctions watcher cleanup complete')
+
         }
     }, [auctionsDB])
 
+    useEffect(() => {
+        if (!initRef.current && orbit && selfAddress && auctionsDB) {
+            console.log('🚀 Initializing auctions DB hook')
+            initRef.current = true
+            
+            const initializeAuctions = async () => {
+                await getAuctions()
+            }
+            
+            initializeAuctions()
+            const cleanup = watchAuctions()
+            
+            return () => {
+                console.log('🧹 Cleaning up auctions watcher')
+                initRef.current = false
+                if (cleanup) {
+                    cleanup()
+                }
+            }
+        }
+    }, [orbit, selfAddress, auctionsDB])
 
     return {
         createAuction,
-        getAuctions,
+        auctions,
         getAuction, 
         joinAuction,
         watchAuctions

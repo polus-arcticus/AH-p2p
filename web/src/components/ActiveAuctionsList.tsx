@@ -16,35 +16,8 @@ interface Auction {
 }
 
 const ActiveAuctionsList: React.FC = () => {
-  const { getAuctions, watchAuctions } = useAuctionsDB()
-  const [auctions, setAuctions] = useState<Auction[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { auctions } = useAuctionsDB()
 
-  useEffect(() => {
-    const fetchAuctions = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const auctionsData = await getAuctions()
-        console.log('auctionsData', auctionsData) 
-        if (auctionsData) {
-          setAuctions(auctionsData)
-        } else {
-          setAuctions([])
-        }
-      } catch (err) {
-        console.error('Error fetching auctions:', err)
-        setError('Failed to fetch auctions')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchAuctions()
-    watchAuctions()
-
-  }, [getAuctions, watchAuctions])
 
   const formatEndTime = (endTime: string) => {
     try {
@@ -68,7 +41,7 @@ const ActiveAuctionsList: React.FC = () => {
     }
   }
 
-  if (loading) {
+  if (!auctions) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <div className="relative">
@@ -85,29 +58,7 @@ const ActiveAuctionsList: React.FC = () => {
     )
   }
 
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-16">
-        <div className="text-6xl mb-4">⚠️</div>
-        <div className="text-xl text-red-400 font-semibold mb-2">
-          Connection to Auction Arena Failed
-        </div>
-        <div className="text-slate-400 mb-6 text-center max-w-md">
-          {error}
-        </div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="px-6 py-3 bg-gradient-to-r from-red-500 to-orange-600 hover:from-red-400 hover:to-orange-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 glow-orange"
-        >
-          <span className="flex items-center gap-2">
-            🔄 Reconnect to Arena
-          </span>
-        </button>
-      </div>
-    )
-  }
-
-  if (auctions.length === 0) {
+  if (auctions?.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-16">
         <div className="text-8xl mb-6 opacity-50">🏟️</div>
@@ -142,7 +93,7 @@ const ActiveAuctionsList: React.FC = () => {
       <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {auctions.map((auction) => (
           <div
-            key={auction.id}
+            key={auction.key}
             className="group relative bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-2xl p-6 transition-all duration-300 hover:border-green-400 hover:shadow-2xl hover:shadow-green-400/20 hover:-translate-y-2 glow-green"
           >
             {/* Gaming Card Header */}
@@ -224,27 +175,13 @@ const ActiveAuctionsList: React.FC = () => {
             {/* Epic Action Buttons */}
             <div className="mt-6 flex gap-3">
               <Link
-                to={`/auction/${auction._id}`}
+                to={`/auction/${auction.key}`}
                 className="flex-1 px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 text-center no-underline glow-cyan"
               >
                 <span className="flex items-center justify-center gap-2">
-                  👁️ View Battle
+                    ⚔️ Join Battle
                 </span>
               </Link>
-              
-              {isAuctionActive(auction.value.endTime) && (
-                <button
-                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 glow-green pulse-glow"
-                  onClick={() => {
-                    // TODO: Implement place bid functionality
-                    console.log('Place bid on auction:', auction.id)
-                  }}
-                >
-                  <span className="flex items-center justify-center gap-2">
-                    ⚔️ Join Battle
-                  </span>
-                </button>
-              )}
             </div>
           </div>
         ))}

@@ -27,20 +27,27 @@ export const useSubPeerList = (orbit: OrbitDB | null) => {
     return new Promise<Record<string, string>>((resolve) => {
       const listener = async (evt: PubSubMessageEvent) => {
         const { topic, data } = evt.detail
-        console.log('topic', topic)
-        console.log('data', data)
         
+        // Only handle peer-related topics, ignore OrbitDB replication messages
         if (topic === TOPICS.PEER_LIST) {
-          const peerListJson: Record<string, string> = JSON.parse(new TextDecoder().decode(data))
-          delete peerListJson[orbit.ipfs.libp2p.peerId.toString()]
-          console.log('Peer list received from hub:', peerListJson)
-          // Store peer directory without connecting immediately
-          // Connections will be established on-demand when entering auction rooms
-          console.log('Updated peer directory. Available peers:', Object.keys(peerListJson).length)
-          setPeerList(peerListJson)
+          console.log('📡 Peer list topic:', topic)
+          console.log('📡 Peer list data:', data)
+          
+          try {
+            const peerListJson: Record<string, string> = JSON.parse(new TextDecoder().decode(data))
+            delete peerListJson[orbit.ipfs.libp2p.peerId.toString()]
+            console.log('Peer list received from hub:', peerListJson)
+            // Store peer directory without connecting immediately
+            // Connections will be established on-demand when entering auction rooms
+            console.log('Updated peer directory. Available peers:', Object.keys(peerListJson).length)
+            setPeerList(peerListJson)
 
-          resolve(peerListJson)
+            resolve(peerListJson)
+          } catch (error) {
+            console.warn('Failed to parse peer list data:', error)
+          }
         }
+        // Ignore all other topics (including OrbitDB replication messages)
       }
       const { pubsub } = orbit.ipfs.libp2p.services
       peerListListenerRef.current = listener
@@ -55,7 +62,6 @@ export const useSubPeerList = (orbit: OrbitDB | null) => {
         multiaddrs: selfAddress.toString()
       })))
       pubsub.publish(TOPICS.PEER_REQUEST, new Uint8Array())
-
       orbit.ipfs.libp2p.addEventListener('peer:disconnect', (evt) => {
         console.log('Disconnected from peer:', evt.detail)
         console.log('tostring', evt.detail.toString())

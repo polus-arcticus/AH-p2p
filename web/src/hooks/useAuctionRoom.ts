@@ -63,8 +63,9 @@ export const useAuctionRoom = () => {
     useEffect(() => {
         if (loading) return 
         const init = async () => {
+            console.log('init')
             if (auctionId) {
-
+                console.log("auctionID")
                 const auction = await getAuction(auctionId)
                 const room = await joinAuction(auctionId)
                 setAuction(auction)
