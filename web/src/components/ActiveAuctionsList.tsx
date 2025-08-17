@@ -29,15 +29,7 @@ const ActiveAuctionsList: React.FC = () => {
         const auctionsData = await getAuctions()
         console.log('auctionsData', auctionsData) 
         if (auctionsData) {
-          // Convert the auctions object to an array if needed
-          const auctionsArray = Array.isArray(auctionsData) 
-            ? auctionsData 
-            : Object.entries(auctionsData).map(([id, data]) => ({
-                id,
-                ...(data as any)
-              }))
-          
-          setAuctions(auctionsArray)
+          setAuctions(auctionsData)
         } else {
           setAuctions([])
         }
@@ -56,7 +48,9 @@ const ActiveAuctionsList: React.FC = () => {
 
   const formatEndTime = (endTime: string) => {
     try {
-      const date = new Date(endTime)
+      // Handle Unix timestamp in seconds (from blockchain)
+      const endTimeNum = parseInt(endTime)
+      const date = new Date(endTimeNum * 1000) // Convert seconds to milliseconds
       return date.toLocaleString()
     } catch {
       return endTime
@@ -65,7 +59,9 @@ const ActiveAuctionsList: React.FC = () => {
 
   const isAuctionActive = (endTime: string) => {
     try {
-      const end = new Date(endTime)
+      // Handle Unix timestamp in seconds (from blockchain)
+      const endTimeNum = parseInt(endTime)
+      const end = new Date(endTimeNum * 1000) // Convert seconds to milliseconds
       return end > new Date()
     } catch {
       return false
@@ -153,29 +149,29 @@ const ActiveAuctionsList: React.FC = () => {
             <div className="mb-4">
               {/* Pulsing Corner Indicator */}
               <div className="absolute top-3 right-3">
-                <div className={`w-3 h-3 rounded-full ${isAuctionActive(auction.endTime) ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
+                <div className={`w-3 h-3 rounded-full ${isAuctionActive(auction.value.endTime) ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></div>
               </div>
               
               <h3 className="text-xl font-bold text-white mb-3 group-hover:text-green-400 transition-colors duration-300">
-                🎯 {auction.title || 'Untitled Auction'}
+                🎯 {auction.value.title || 'Untitled Auction'}
               </h3>
               
               <div className="flex items-center gap-2 mb-3">
                 <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                  isAuctionActive(auction.endTime) 
+                  isAuctionActive(auction.value.endTime) 
                     ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                     : 'bg-red-500/20 text-red-400 border border-red-500/30'
                 }`}>
-                  {isAuctionActive(auction.endTime) ? '🔥 LIVE' : '💀 ENDED'}
+                  {isAuctionActive(auction.value.endTime) ? '🔥 LIVE' : '💀 ENDED'}
                 </span>
                 <div className="text-xs text-slate-400">
-                  {isAuctionActive(auction.endTime) ? '⚡ Battle in progress' : '🏁 Battle concluded'}
+                  {isAuctionActive(auction.value.endTime) ? '⚡ Battle in progress' : '🏁 Battle concluded'}
                 </div>
               </div>
               
-              {auction.description && (
+              {auction.value.description && (
                 <p className="text-slate-300 text-sm leading-relaxed line-clamp-2">
-                  {auction.description}
+                  {auction.value.description}
                 </p>
               )}
             </div>
@@ -188,7 +184,7 @@ const ActiveAuctionsList: React.FC = () => {
                   🆔 <span>Token ID</span>
                 </span>
                 <span className="text-orange-400 font-mono font-semibold">
-                  #{auction.nftTokenId || 'N/A'}
+                  #{auction.value.nftTokenId || 'N/A'}
                 </span>
               </div>
               
@@ -198,7 +194,7 @@ const ActiveAuctionsList: React.FC = () => {
                   💰 <span>Starting Bid</span>
                 </span>
                 <span className="text-green-400 font-bold text-lg">
-                  {auction.startingBid || '0'} 🪙
+                  {auction.value.startingBid || '0'} 🪙
                 </span>
               </div>
               
@@ -208,18 +204,18 @@ const ActiveAuctionsList: React.FC = () => {
                   ⏰ <span>Battle Ends</span>
                 </span>
                 <span className="text-cyan-400 font-medium text-sm">
-                  {formatEndTime(auction.endTime)}
+                  {formatEndTime(auction.value.endTime)}
                 </span>
               </div>
               
               {/* Contract Address */}
-              {auction.nftContract && (
+              {auction.value.nftContract && (
                 <div className="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-600">
                   <div className="text-slate-400 text-xs mb-1 flex items-center gap-1">
                     🖼️ <span>NFT Contract</span>
                   </div>
                   <div className="font-mono text-xs text-slate-300 break-all">
-                    {auction.nftContract}
+                    {auction.value.nftContract}
                   </div>
                 </div>
               )}
@@ -236,7 +232,7 @@ const ActiveAuctionsList: React.FC = () => {
                 </span>
               </Link>
               
-              {isAuctionActive(auction.endTime) && (
+              {isAuctionActive(auction.value.endTime) && (
                 <button
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 glow-green pulse-glow"
                   onClick={() => {

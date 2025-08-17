@@ -7,7 +7,7 @@ import {
 import { createHeliaNode } from "./createHeliaNode";
 
 import { useWalletClient } from "wagmi";
-import { type BaseDatabase, createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
+import { type DocumentsDatabase, createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 import type { OrbitDB } from '@orbitdb/core'
 import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
 
@@ -16,7 +16,7 @@ import type { Multiaddr } from '@multiformats/multiaddr'
 export const useOrbit = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
   const [orbit, setOrbit] = useState<OrbitDB | null>(null)
-  const [auctionsDB, setAuctionsDB] = useState<BaseDatabase | null>(null)
+  const [auctionsDB, setAuctionsDB] = useState<DocumentsDatabase | null>(null)
   const [selfAddress, setSelfAddress] = useState<Multiaddr | null>(null)
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)

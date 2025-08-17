@@ -31,11 +31,14 @@ declare module '@orbitdb/core' {
   }
 
   // Database interfaces
-  export interface BaseDatabase {
+  export interface DocumentsDatabase {
     type: string;
     address: string;
     name: string;
-    identity: Identity;
+    put(doc: any): Promise<void>;
+    query(filter: (doc:any) => boolean): Promise<any[]>;
+    events: Events;
+    all(): Promise<any[]>;
     close(): Promise<void>;
     drop(): Promise<void>;
   }

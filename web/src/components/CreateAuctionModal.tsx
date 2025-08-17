@@ -53,9 +53,9 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
     const onSubmit = async (data: AuctionFormData) => {
         console.log('submitting')
         try {
-            // Calculate end time based on duration in hours
-            const endTime = Date.now() + (data.durationHours * 60 * 60 * 1000)
-            
+            // Calculate end time based on duration in hours (blockchain expects seconds)
+            const endTime = Math.floor((Date.now() + (data.durationHours * 60 * 60 * 1000)) / 1000)
+            console.log('endTime (seconds):', endTime) 
             const auctionData = {
                 title: data.title,
                 description: data.description,

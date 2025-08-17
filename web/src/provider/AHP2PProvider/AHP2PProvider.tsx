@@ -2,7 +2,7 @@ import { createContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useOrbit } from "./useOrbit";
 import type { OrbitDB } from '@orbitdb/core'
-import type { BaseDatabase } from '@orbitdb/core'
+import type { DocumentsDatabase } from '@orbitdb/core'
 import { useSubPeerList } from "./pubsub/useSubPeerList";
 import type { Multiaddr } from "@multiformats/multiaddr";
 
@@ -12,7 +12,7 @@ export const AHP2PContext = createContext({
   loading: true,
   err: '',
   peerList: {},
-  auctionsDB: null as BaseDatabase | null
+  auctionsDB: null as DocumentsDatabase | null
 })
 
 export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
@@ -23,11 +23,13 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
     selfAddress,
     auctionsDB
   } = useOrbit()
+
   const { 
     peerList,
     subPeerList,
     unSubPeerList
   } = useSubPeerList(orbit)
+  
   const [err, setErr] = useState<string | null>(null)
   const [loading, setLoading] = useState<boolean>(true)
 
