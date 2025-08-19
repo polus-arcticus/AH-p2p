@@ -20,13 +20,12 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction }) => {
   const [isActive, setIsActive] = useState<boolean>(false)
 
   useEffect(() => {
+    console.log('auction', auction)
     if (!auction?.endTime) return
 
     const updateTimer = () => {
       try {
-        const endTime = typeof auction.endTime === 'string' 
-          ? new Date(auction.endTime).getTime()
-          : (auction.endTime || 0)
+        const endTime = (auction.endTime as number) * 1000 // Convert Unix seconds to milliseconds
         const now = Date.now()
         const difference = endTime - now
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { useAuctionsDB } from '../hooks/useAuctionsDB'
 
@@ -16,8 +16,39 @@ interface Auction {
 }
 
 const ActiveAuctionsList: React.FC = () => {
-  const { auctions } = useAuctionsDB()
-
+  const { getAuctions, watchAuctions } = useAuctionsDB()
+  const [initialized, setInitialized] = useState(false)
+  const [auctions, setAuctions ] = useState<Auction[]>([])
+  const cleanupRef = useRef<(() => void) | null>(null)
+  
+  useEffect(() => {
+    if (initialized) return
+    getAuctions().then((auctions) => {
+      if (auctions) {
+        setAuctions(auctions)
+      }
+    })
+    
+    // Handle new auctions from P2P events
+    const handleNewAuction = (newAuction: Auction) => {
+      console.log("new Auction", newAuction)
+      setAuctions(prevAuctions => {
+        return [...prevAuctions, newAuction]
+      })
+    }
+    
+    const cleanup = watchAuctions(handleNewAuction)
+    cleanupRef.current = cleanup || null
+    setInitialized(true)
+    
+    // Only cleanup on component unmount
+    return () => {
+      if (cleanupRef.current) {
+        cleanupRef.current()
+        cleanupRef.current = null
+      }
+    }
+  }, [watchAuctions, getAuctions])
 
   const formatEndTime = (endTime: string) => {
     try {

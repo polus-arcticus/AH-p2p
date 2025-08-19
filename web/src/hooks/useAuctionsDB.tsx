@@ -2,14 +2,13 @@ import {
     useContext,
     useState,
     useEffect,
-    useCallback
+    useCallback,
+    useRef
 } from 'react'
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
 export const useAuctionsDB = () => {
-    const [initialized, setInitialized] = useState(false)
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
-    const [auctions, setAuctions] = useState([])
 
 
 
@@ -37,8 +36,6 @@ export const useAuctionsDB = () => {
     const getAuctions = useCallback(async () => {
         if (!auctionsDB) return
         const auctions = await auctionsDB.all()
-        console.log('auctions', auctions)
-        setAuctions(auctions)
         return auctions
     }, [auctionsDB])
 
@@ -50,10 +47,15 @@ export const useAuctionsDB = () => {
     }, [auctionsDB])    
 
     const joinAuction = useCallback(async (auctionId: string) => {
+        console.log('joinAuction:auctionId', auctionId)
+        console.log('auctionsDB', auctionsDB)
+        console.log('orbit', orbit)
+        console.log('selfAddress', selfAddress)
         if (!auctionsDB || !orbit || !selfAddress) return
         try {
-            const auction = await getAuction(auctionId)
-            if (!auction) return
+            const auction = (await auctionsDB.query((doc: any) => doc._id === auctionId))[0]
+            console.log('auction', auction)
+            if (!auction) throw new Error('Auction not found')
             const room = await orbit.open(auction.roomAddress)
             if (!room) throw new Error('Room not found')
 
@@ -117,14 +119,14 @@ export const useAuctionsDB = () => {
                 webrtcMultiaddr: selfAddress.toString()
             })
 
-            return room
+            return {auction, room}
         } catch (e) {
             console.error('Error joining auction:', e)
         }
     }, [auctionsDB, orbit, selfAddress])
 
 
-    const watchAuctions = useCallback(() => {
+    const watchAuctions = useCallback((onNewAuction?: (auction: any) => void) => {
         if (!auctionsDB) return
         
         // Clean up any existing listeners first
@@ -135,7 +137,10 @@ export const useAuctionsDB = () => {
         // Listen for both local updates and remote replication
         auctionsDB.events.on('update', (event) => {
             console.log('🎯 Auctions DB update event:', event)
-            setAuctions(old => [...old, event.payload])
+            // Call the provided callback to handle new auction
+            if (onNewAuction) {
+                onNewAuction(event.payload)
+            }
         })
         // Return cleanup function for component to use
         return () => {
@@ -146,21 +151,9 @@ export const useAuctionsDB = () => {
         }
     }, [auctionsDB])
 
-    useEffect(() => {
-        if (!initialized && orbit && selfAddress) {
-            getAuctions()
-            const cleanup = watchAuctions()
-            setInitialized(true)
-            return () => {
-                console.log('cleaning up')
-                return cleanup
-            }
-        }
-    }, [initialized, orbit, selfAddress])
-
     return {
         createAuction,
-        auctions,
+        getAuctions,
         getAuction, 
         joinAuction,
         watchAuctions

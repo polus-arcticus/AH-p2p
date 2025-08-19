@@ -4,7 +4,14 @@ import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
 
 export const Auction = () => {
-    const { auction, room } = useAuctionRoom()
+    const { 
+        auction, 
+        room, 
+        postChatMessage, 
+        fetchMessages, 
+        watchRoom, 
+        peers 
+    } = useAuctionRoom()
     
     useEffect(() => {
         console.log('auction', auction)
@@ -49,7 +56,14 @@ export const Auction = () => {
 
                 {/* Chat Interface - Takes 1 column on large screens */}
                 <div className="xl:col-span-1">
-                    <AuctionChat auctionId={auction?.id} room={room} />
+                    <AuctionChat 
+                        auctionId={auction?.id} 
+                        room={room}
+                        postChatMessage={postChatMessage}
+                        fetchMessages={fetchMessages}
+                        watchRoom={watchRoom}
+                        peers={peers}
+                    />
                 </div>
             </div>
 

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { useAuctionRoom } from '../../hooks/useAuctionRoom'
 
 interface ChatMessage {
   id: string
@@ -16,16 +15,20 @@ interface AuctionChatProps {
     address?: string
     [key: string]: any
   } | null
+  postChatMessage: (message: string) => Promise<void>
+  fetchMessages: () => Promise<any>
+  watchRoom: () => Promise<(() => void) | undefined>
+  peers: any
 }
 
-const AuctionChat: React.FC<AuctionChatProps> = () => {
-  const { 
-    postChatMessage, 
-    fetchMessages, 
-    watchRoom, 
-    peers,
-    room: auctionRoom 
-  } = useAuctionRoom()
+const AuctionChat: React.FC<AuctionChatProps> = ({ 
+  auctionId, 
+  room, 
+  postChatMessage, 
+  fetchMessages, 
+  watchRoom, 
+  peers 
+}) => {
   
   const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
@@ -37,7 +40,7 @@ const AuctionChat: React.FC<AuctionChatProps> = () => {
   // Load initial messages and setup real-time updates
   useEffect(() => {
     const loadMessages = async () => {
-      if (!auctionRoom) return
+      if (!room) return
       
       try {
         console.log('🎯 Loading battle chat messages...')
@@ -68,11 +71,11 @@ const AuctionChat: React.FC<AuctionChatProps> = () => {
     }
     
     loadMessages()
-  }, [auctionRoom, fetchMessages])
+  }, [room, fetchMessages])
 
   // Setup real-time message watching
   useEffect(() => {
-    if (!auctionRoom) return
+    if (!room) return
     
     let cleanup: (() => void) | undefined
     
@@ -94,7 +97,7 @@ const AuctionChat: React.FC<AuctionChatProps> = () => {
         console.log('🛡️ Battle watcher cleanup complete')
       }
     }
-  }, [auctionRoom, watchRoom])
+  }, [room, watchRoom])
 
   // Update online warriors from peers
   useEffect(() => {
@@ -121,7 +124,7 @@ const AuctionChat: React.FC<AuctionChatProps> = () => {
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!newMessage.trim() || !auctionRoom) return
+    if (!newMessage.trim() || !room) return
 
     try {
       console.log('🎯 Sending battle message:', newMessage.trim())

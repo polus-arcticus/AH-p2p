@@ -2,13 +2,15 @@ import {
     useCallback,
     useContext,
     useEffect,
-    useState
+    useState,
+    useRef
 } from 'react'
 
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { useAuctionsDB } from './useAuctionsDB'
 import { useParams } from 'react-router'
 export const useAuctionRoom = () => {
+    const initializedRef = useRef(false)
     const {auctionId} = useParams()
     const {loading, orbit, selfAddress} = useContext(AHP2PContext)
     const {joinAuction, getAuction} = useAuctionsDB()
@@ -49,11 +51,11 @@ export const useAuctionRoom = () => {
     }, [room])
 
     const watchRoom = useCallback(async () => {
+        console.log('watching room')
         if (!room) return
         const listener = room.events.on('update', (event) => {
             console.log('event', event)
         })
-        listener()
 
         return () => {
             listener.remove()
@@ -61,19 +63,27 @@ export const useAuctionRoom = () => {
     }, [room])
 
     useEffect(() => {
-        if (loading) return 
+        if (initializedRef.current) return
+        if (!orbit || !auctionId) return 
         const init = async () => {
-            console.log('init')
-            if (auctionId) {
                 console.log("auctionID")
-                const auction = await getAuction(auctionId)
-                const room = await joinAuction(auctionId)
-                setAuction(auction)
-                setRoom(room)
-            }
+                const result = await joinAuction(auctionId)
+                if (result) {
+                    const {auction, room} = result
+                    setAuction(auction)
+                    setRoom(room)
+                    initializedRef.current = true
+                } else {
+                    console.error('Failed to join auction:', auctionId)
+                }
         }
         init()
-    }, [auctionId, loading])
+        
+        // Cleanup function to reset ref on unmount
+        return () => {
+            initializedRef.current = false
+        }
+    }, [auctionId, orbit])
 
 
 
