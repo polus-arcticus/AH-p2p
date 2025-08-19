@@ -1,8 +1,13 @@
-import { useCallback, useContext, useState, useEffect, useRef } from 'react'
+import {
+    useContext,
+    useState,
+    useEffect,
+    useCallback
+} from 'react'
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
 export const useAuctionsDB = () => {
-    const initRef = useRef(false)
+    const [initialized, setInitialized] = useState(false)
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
     const [auctions, setAuctions] = useState([])
 
@@ -130,7 +135,7 @@ export const useAuctionsDB = () => {
         // Listen for both local updates and remote replication
         auctionsDB.events.on('update', (event) => {
             console.log('🎯 Auctions DB update event:', event)
-            setAuctions(old => [...old, event.payload.value])
+            setAuctions(old => [...old, event.payload])
         })
         // Return cleanup function for component to use
         return () => {
@@ -142,26 +147,16 @@ export const useAuctionsDB = () => {
     }, [auctionsDB])
 
     useEffect(() => {
-        if (!initRef.current && orbit && selfAddress && auctionsDB) {
-            console.log('🚀 Initializing auctions DB hook')
-            initRef.current = true
-            
-            const initializeAuctions = async () => {
-                await getAuctions()
-            }
-            
-            initializeAuctions()
+        if (!initialized && orbit && selfAddress) {
+            getAuctions()
             const cleanup = watchAuctions()
-            
+            setInitialized(true)
             return () => {
-                console.log('🧹 Cleaning up auctions watcher')
-                initRef.current = false
-                if (cleanup) {
-                    cleanup()
-                }
+                console.log('cleaning up')
+                return cleanup
             }
         }
-    }, [orbit, selfAddress, auctionsDB])
+    }, [initialized, orbit, selfAddress])
 
     return {
         createAuction,
