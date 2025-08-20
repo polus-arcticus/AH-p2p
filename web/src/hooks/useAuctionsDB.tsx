@@ -58,22 +58,10 @@ export const useAuctionsDB = () => {
             console.log('useAuctionsDB::joinAuction::auction', auction)
             if (!auction) throw new Error('Auction not found')
             let room;
-            //const room = await orbit.open(auction.roomAddress)
-            //if (!room) throw new Error('Room not found')
-            //console.log('useAuctionsDB::joinAuction::room', room)
-
-            //const peers = await room.query((doc) => doc.type === 'peer')
-            //console.log('useAuctionsDB::joinAuction::peers', peers)
             const peers = auction.peers
             // Use Promise.race to connect to first available peer, then continue others async
             const peerEntries = Object.entries(peers)
             delete peers[orbit.ipfs.libp2p.peerId.toString()]
-
-            const connectionTopic = `ah-p2p.market/connections`
-            const { pubsub } = orbit.ipfs.libp2p.services
-            pubsub.subscribe(connectionTopic)
-            orbit.ipfs.libp2p
-
 
             if (peerEntries.length > 0) {
                 console.log('🎯 Racing to connect to', peerEntries.length, 'peers...')
@@ -129,6 +117,9 @@ export const useAuctionsDB = () => {
                                     orbit.open(auction.roomAddress).then(openedRoom => {
                                         console.log('🎮 Room opened (fallback):', openedRoom)
                                         room = openedRoom
+
+                                        auction.peers[orbit.ipfs.libp2p.peerId.toString()] = selfAddress.toString()
+                                        auctionsDB.put(auction)
                                         resolve()
                                     }).catch(error => {
                                         console.error('❌ Failed to open room (fallback):', error)

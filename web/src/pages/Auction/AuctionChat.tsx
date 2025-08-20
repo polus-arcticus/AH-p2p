@@ -15,87 +15,27 @@ interface AuctionChatProps {
     address?: string
     [key: string]: any
   } | null
+  messages: any[]
   postChatMessage: (message: string) => Promise<void>
-  fetchMessages: () => Promise<any>
-  watchRoom: (onRoomUpdate?: (event: any) => void) => (() => void) | undefined
 }
 
 const AuctionChat: React.FC<AuctionChatProps> = ({ 
   auctionId, 
   room, 
-  postChatMessage, 
-  fetchMessages, 
-  watchRoom
+  messages,
+  postChatMessage
 }) => {
   
-  const [messages, setMessages] = useState<ChatMessage[]>([])
   const [newMessage, setNewMessage] = useState('')
   const [isConnected, setIsConnected] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<string[]>(['GameMaster']) // Always show GameMaster
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLInputElement>(null)
 
-  // Load initial messages and setup real-time updates
+  // Set connected state when room is available
   useEffect(() => {
-    const loadMessages = async () => {
-      if (!room) return
-      
-      try {
-        console.log('🎯 Loading battle chat messages...')
-        const roomMessages = await fetchMessages()
-        console.log('roomMessages', roomMessages)
-        if (roomMessages) {
-          // Convert OrbitDB messages to ChatMessage format
-          const formattedMessages: ChatMessage[] = roomMessages
-            .filter((msg: any) => msg.type === 'message' || msg.type === 'bid')
-            .map((msg: any) => ({
-              id: msg._id || msg.timestamp?.toString() || Date.now().toString(),
-              user: msg.user || 'Anonymous Warrior',
-              message: msg.message || msg.bid || '',
-              timestamp: msg.timestamp || Date.now(),
-              type: msg.type as 'message' | 'bid',
-              avatar: msg.type === 'bid' ? '💰' : '⚔️'
-            }))
-            .sort((a: any, b: any) => a.timestamp - b.timestamp)
-          
-          setMessages(formattedMessages)
-          console.log('⚡ Loaded', formattedMessages.length, 'battle messages')
-        }
-        
-        setIsConnected(true)
-      } catch (error) {
-        console.error('❌ Failed to load battle messages:', error)
-      }
-    }
-    
-    loadMessages()
-  }, [room, fetchMessages])
-
-  // Setup real-time message watching
-  useEffect(() => {
-    if (!room) return
-    
-    let cleanup: (() => void) | undefined
-    
-    const setupWatcher = async () => {
-      try {
-        console.log('🌐 Setting up real-time battle updates...')
-        cleanup = await watchRoom()
-        console.log('⚡ Real-time battle watcher active!')
-      } catch (error) {
-        console.error('❌ Failed to setup battle watcher:', error)
-      }
-    }
-    
-    setupWatcher()
-    
-    return () => {
-      if (cleanup) {
-        cleanup()
-        console.log('🛡️ Battle watcher cleanup complete')
-      }
-    }
-  }, [room, watchRoom])
+    setIsConnected(!!room)
+  }, [room])
 
   // Mock online warriors for now (can be updated later with real P2P peer data)
   useEffect(() => {
@@ -124,17 +64,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
       console.log('🎯 Sending battle message:', newMessage.trim())
       await postChatMessage(newMessage.trim())
       
-      // Add message optimistically to UI
-      const message: ChatMessage = {
-        id: Date.now().toString(),
-        user: 'You',
-        message: newMessage.trim(),
-        timestamp: Date.now(),
-        type: 'message',
-        avatar: '🎮'
-      }
-      
-      setMessages(prev => [...prev, message])
+      // Message will be added via parent component's room watcher
       setNewMessage('')
       chatInputRef.current?.focus()
       console.log('⚡ Battle message sent successfully!')

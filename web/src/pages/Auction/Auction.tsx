@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useAuctionRoom } from "@/hooks/useAuctionRoom"
 import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
 
 export const Auction = () => {
     const watcherCleanupRef = useRef<(() => void) | null>(null)
-    
+    const [messages, setMessages] = useState<any>([])
     const { 
         auction, 
         room, 
@@ -19,6 +19,44 @@ export const Auction = () => {
         console.log('Auction.tsx::auction', auction)
     }, [auction])
     
+    // Load initial messages when room is available
+    useEffect(() => {
+        const loadMessages = async () => {
+            if (!room) return
+            
+            try {
+                console.log('🎯 Loading initial battle messages...')
+                const roomMessages = await fetchMessages()
+                if (roomMessages) {
+                    const formattedMessages = roomMessages
+                        .filter((msg: any) => {
+                            const msgData = msg.value || msg
+                            return msgData.type === 'message' || msgData.type === 'bid'
+                        })
+                        .map((msg: any) => {
+                            const msgData = msg.value || msg
+                            return {
+                                id: msgData._id || msgData.timestamp?.toString() || Date.now().toString(),
+                                user: msgData.user || 'Anonymous Warrior',
+                                message: msgData.message || msgData.bid || '',
+                                timestamp: msgData.timestamp || Date.now(),
+                                type: msgData.type as 'message' | 'bid',
+                                avatar: msgData.type === 'bid' ? '💰' : '⚔️'
+                            }
+                        })
+                        .sort((a: any, b: any) => a.timestamp - b.timestamp)
+                    
+                    setMessages(formattedMessages)
+                    console.log('⚡ Loaded', formattedMessages.length, 'battle messages')
+                }
+            } catch (error) {
+                console.error('❌ Failed to load battle messages:', error)
+            }
+        }
+        
+        loadMessages()
+    }, [room, fetchMessages])
+
     useEffect(() => {
         console.log('room', room)
         if (room) {
@@ -31,13 +69,39 @@ export const Auction = () => {
             // Start watching room for updates (messages, bids, etc.)
             const cleanup = watchRoom((event) => {
                 console.log('🎮 Auction room update:', event)
-                // Handle room updates here if needed
+                
+                // Handle new messages/bids from room updates
+                if (event && event.payload) {
+                    const msgData = event.payload.value || event.payload
+                    
+                    // Only process message and bid types
+                    if (msgData.type === 'message' || msgData.type === 'bid') {
+                        const newMessage = {
+                            id: msgData._id || msgData.timestamp?.toString() || Date.now().toString(),
+                            user: msgData.user || 'Anonymous Warrior',
+                            message: msgData.message || msgData.bid || '',
+                            timestamp: msgData.timestamp || Date.now(),
+                            type: msgData.type as 'message' | 'bid',
+                            avatar: msgData.type === 'bid' ? '💰' : '⚔️'
+                        }
+                        
+                        // Add new message to the list (avoid duplicates)
+                        setMessages(prevMessages => {
+                            const exists = prevMessages.some(msg => msg.id === newMessage.id)
+                            if (exists) return prevMessages
+                            
+                            const updatedMessages = [...prevMessages, newMessage]
+                            return updatedMessages.sort((a, b) => a.timestamp - b.timestamp)
+                        })
+                        
+                        console.log('⚡ New battle message added:', newMessage.message)
+                    }
+                }
             })
             
             watcherCleanupRef.current = cleanup || null
             
             return () => {
-
                 if (watcherCleanupRef.current) {
                     watcherCleanupRef.current()
                     watcherCleanupRef.current = null
@@ -84,9 +148,8 @@ export const Auction = () => {
                     <AuctionChat 
                         auctionId={auction?.id} 
                         room={room}
+                        messages={messages}
                         postChatMessage={postChatMessage}
-                        fetchMessages={fetchMessages}
-                        watchRoom={watchRoom}
                     />
                 </div>
             </div>
