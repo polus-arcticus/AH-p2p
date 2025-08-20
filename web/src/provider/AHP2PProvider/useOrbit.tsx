@@ -6,12 +6,37 @@ import {
 
 import { createHeliaNode } from "./createHeliaNode";
 
-import { useWalletClient } from "wagmi";
+import { useWalletClient, useAccount } from "wagmi";
 import { type DocumentsDatabase, createOrbitDB, useIdentityProvider  } from '@orbitdb/core'
 import type { OrbitDB } from '@orbitdb/core'
 import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
 
 import type { Multiaddr } from '@multiformats/multiaddr'
+import type { WalletClient } from 'viem'
+
+export const getWalletInterface = ({
+  address,
+  walletClient
+}:{
+  address: `0x${string}`,
+  walletClient: WalletClient
+}) => {
+  return {
+    address: address,
+    getAddress: () => address,
+    signMessage: async (message: string) => {
+      const oldSig = localStorage.getItem(address)
+      if (oldSig) return oldSig
+      const signature = await walletClient.signMessage({
+        message,
+        account: address
+      })
+      localStorage.setItem(address, signature)
+      return signature
+    }
+  }
+}
+
 
 export const useOrbit = () => {
   useIdentityProvider(OrbitDBIdentityProviderEthereum.default)
@@ -22,20 +47,34 @@ export const useOrbit = () => {
   const [loading, setLoading] = useState<boolean>(true)
 
   const { data: walletClient } = useWalletClient()
+  const {address} = useAccount()
 
   const startOrbit = useCallback(async () => {
-    if (!walletClient) return
+    console.log('trying to start orbit')
+    console.log('walletClient', Boolean(walletClient))
+    console.log('address', Boolean(address))
+    if (!walletClient || !address) return
 
     try {
       setLoading(true)
       setError(undefined)
 
-      const {helia, selfWebRTCMultiaddr, dbAddrs} = await createHeliaNode() 
+      const {helia, selfWebRTCMultiaddr, dbAddrs} = await createHeliaNode(address, walletClient) 
       setSelfAddress(selfWebRTCMultiaddr)
-      // Create OrbitDB instance - the identity will be created automatically
-      // using the registered Ethereum identity provider
+
+      const walletInterface = getWalletInterface({
+        address: address as `0x${string}`,
+        walletClient: walletClient
+      })
+
+      const ethProvider = OrbitDBIdentityProviderEthereum.default({
+        wallet: walletInterface
+      })
+     
       const orbit = await createOrbitDB({
-        ipfs: helia
+        ipfs: helia,
+        identity: {provider: ethProvider}
+
       }) as OrbitDB
 
       const auctionsDB = await orbit.open(dbAddrs.auctionsDBAddress)
@@ -51,14 +90,14 @@ export const useOrbit = () => {
       setError(err as Error)
       setLoading(false)
     }
-  }, [walletClient])
+  }, [walletClient, address])
 
 
 
   useEffect(() => {
-    if (!walletClient) return
+    if (!walletClient || !address) return
     startOrbit()
-  }, [startOrbit, walletClient])
+  }, [startOrbit, walletClient, address])
 
   return {
     orbit,

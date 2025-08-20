@@ -13,10 +13,16 @@ import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
 
 import { stabilizeConnection } from "./utils/stabilizeConnection"
 import { waitForWebRTCAddress } from "./utils/waitForWebRTCAddress"
+import { createPersistentPeerId } from "./utils/createPersistentPeerId"
+
+import type { WalletClient } from 'viem'
 
 
 
-export const createHeliaNode = async (): Promise<{ 
+export const createHeliaNode = async (
+    address: `0x${string}`,
+    walletClient: WalletClient
+): Promise<{ 
     helia: any,
     selfWebRTCMultiaddr: Multiaddr | null,
     dbAddrs: Record<string, string>
@@ -30,7 +36,11 @@ export const createHeliaNode = async (): Promise<{
     await datastore.open()
     await blockstore.open()
 
+    // Generate persistent peer ID from Ethereum wallet signature
+    const privateKey = await createPersistentPeerId(address, walletClient)
+
     const options = {
+        privateKey,
 
         addresses: {
             listen: [

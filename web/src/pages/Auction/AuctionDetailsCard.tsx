@@ -13,9 +13,10 @@ interface AuctionDetailsCardProps {
     createdAt?: string
     [key: string]: any
   } | null
+  postBid: (bid: string) => Promise<void>
 }
 
-const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction }) => {
+const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid }) => {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(false)
 

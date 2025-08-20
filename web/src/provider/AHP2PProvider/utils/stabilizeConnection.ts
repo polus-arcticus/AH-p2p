@@ -10,8 +10,10 @@ export const stabilizeConnection = async (
       helia.libp2p.services.pubsub.subscribe(TOPICS.PONG)
       const pongListener = (evt: PubSubMessageEvent) => {
         const { topic, data } = evt.detail
-
+        
+        // Only process messages on the PONG topic
         if (topic === TOPICS.PONG) {
+          console.log('pong listener triggered - received pong message')
           console.log('Received pong - connection is stable')
           const dataJson = JSON.parse(new TextDecoder().decode(data))
           console.log('dataJson', dataJson)
@@ -25,6 +27,7 @@ export const stabilizeConnection = async (
           helia.libp2p.services.pubsub.removeEventListener('message', pongListener)
           resolve(dataJson)
         }
+        // Ignore messages on other topics
       }
       // Subscribe to pong messages
       helia.libp2p.services.pubsub.addEventListener('message', pongListener)

@@ -1,25 +1,50 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useAuctionRoom } from "@/hooks/useAuctionRoom"
 import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
 
 export const Auction = () => {
+    const watcherCleanupRef = useRef<(() => void) | null>(null)
+    
     const { 
         auction, 
         room, 
         postChatMessage, 
+        postBid,
         fetchMessages, 
-        watchRoom, 
-        peers 
+        watchRoom
     } = useAuctionRoom()
     
     useEffect(() => {
-        console.log('auction', auction)
+        console.log('Auction.tsx::auction', auction)
     }, [auction])
     
     useEffect(() => {
         console.log('room', room)
-    }, [room])
+        if (room) {
+            // Clean up previous watcher if exists
+            if (watcherCleanupRef.current) {
+                watcherCleanupRef.current()
+                watcherCleanupRef.current = null
+            }
+            
+            // Start watching room for updates (messages, bids, etc.)
+            const cleanup = watchRoom((event) => {
+                console.log('🎮 Auction room update:', event)
+                // Handle room updates here if needed
+            })
+            
+            watcherCleanupRef.current = cleanup || null
+            
+            return () => {
+
+                if (watcherCleanupRef.current) {
+                    watcherCleanupRef.current()
+                    watcherCleanupRef.current = null
+                }
+            }
+        }
+    }, [room, watchRoom])
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
@@ -51,7 +76,7 @@ export const Auction = () => {
             <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
                 {/* Auction Details - Takes 2 columns on large screens */}
                 <div className="xl:col-span-2">
-                    <AuctionDetailsCard auction={auction} />
+                    <AuctionDetailsCard auction={auction} postBid={postBid} />
                 </div>
 
                 {/* Chat Interface - Takes 1 column on large screens */}
@@ -62,7 +87,6 @@ export const Auction = () => {
                         postChatMessage={postChatMessage}
                         fetchMessages={fetchMessages}
                         watchRoom={watchRoom}
-                        peers={peers}
                     />
                 </div>
             </div>

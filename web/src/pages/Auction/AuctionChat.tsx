@@ -17,8 +17,7 @@ interface AuctionChatProps {
   } | null
   postChatMessage: (message: string) => Promise<void>
   fetchMessages: () => Promise<any>
-  watchRoom: () => Promise<(() => void) | undefined>
-  peers: any
+  watchRoom: (onRoomUpdate?: (event: any) => void) => (() => void) | undefined
 }
 
 const AuctionChat: React.FC<AuctionChatProps> = ({ 
@@ -26,8 +25,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
   room, 
   postChatMessage, 
   fetchMessages, 
-  watchRoom, 
-  peers 
+  watchRoom
 }) => {
   
   const [messages, setMessages] = useState<ChatMessage[]>([])
@@ -99,16 +97,12 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
     }
   }, [room, watchRoom])
 
-  // Update online warriors from peers
+  // Mock online warriors for now (can be updated later with real P2P peer data)
   useEffect(() => {
-    if (peers && Array.isArray(peers)) {
-      const peerNames = peers.map((peer: any) => 
-        peer.peerId ? `Warrior_${peer.peerId.slice(-6)}` : 'Anonymous Warrior'
-      )
-      setOnlineUsers(peerNames)
-      console.log('🎯 Active warriors updated:', peerNames.length)
-    }
-  }, [peers])
+    // For now, just show some mock warriors
+    setOnlineUsers(['GameMaster', 'CyberWarrior_001', 'BidBot_Alpha'])
+    console.log('🎯 Mock warriors loaded')
+  }, [])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
