@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import staticContracts from '../assets/Static.json'
 
@@ -33,10 +33,13 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
     setShowCreateForm,
     createAuction
 }) => {
+    const [signingStep, setSigningStep] = useState<'idle' | 'signing' | 'creating' | 'success' | 'error'>('idle')
+    const [errorMessage, setErrorMessage] = useState<string>('')
+    
     const {
         register,
         handleSubmit,
-        formState: { errors, isSubmitting },
+        formState: { errors },
         reset
     } = useForm<AuctionFormData>({
         defaultValues: {
@@ -51,11 +54,16 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
     })
 
     const onSubmit = async (data: AuctionFormData) => {
-        console.log('submitting')
+        console.log('🎯 Starting auction creation process...')
+        setErrorMessage('')
+        
         try {
+            setSigningStep('signing')
+            
             // Calculate end time based on duration in hours (blockchain expects seconds)
             const endTime = Math.floor((Date.now() + (data.durationHours * 60 * 60 * 1000)) / 1000)
             console.log('endTime (seconds):', endTime) 
+            
             const auctionData = {
                 title: data.title,
                 description: data.description,
@@ -66,22 +74,74 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                 endTime
             }
 
+            console.log('📝 Requesting signature for auction...')
+            setSigningStep('creating')
+            
             const result = await createAuction(auctionData)
             
             if (result) {
-                console.log('Auction created successfully:', result)
-                reset()
-                setShowCreateForm(false)
+                console.log('✅ Auction created successfully:', result)
+                setSigningStep('success')
+                
+                // Auto-close after success
+                setTimeout(() => {
+                    reset()
+                    setSigningStep('idle')
+                    setShowCreateForm(false)
+                }, 2000)
             }
         } catch (error) {
-            console.error('Error creating auction:', error)
+            console.error('❌ Error creating auction:', error)
+            setSigningStep('error')
+            setErrorMessage(error instanceof Error ? error.message : 'Failed to create auction')
         }
     }
 
     const handleClose = () => {
         reset()
+        setSigningStep('idle')
+        setErrorMessage('')
         setShowCreateForm(false)
     }
+
+    const getButtonContent = () => {
+        switch (signingStep) {
+            case 'signing':
+                return (
+                    <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        📝 Please sign in wallet...
+                    </>
+                )
+            case 'creating':
+                return (
+                    <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+                        🎯 Creating auction...
+                    </>
+                )
+            case 'success':
+                return (
+                    <>
+                        ✅ Auction created successfully!
+                    </>
+                )
+            case 'error':
+                return (
+                    <>
+                        ❌ Try again
+                    </>
+                )
+            default:
+                return (
+                    <>
+                        🚀 Launch Auction ⚡
+                    </>
+                )
+        }
+    }
+
+    const isFormDisabled = signingStep !== 'idle' && signingStep !== 'error'
 
     if (!showCreateForm) {
         return null
@@ -346,13 +406,53 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                         )}
                     </div>
 
+                    {/* Error Message Display */}
+                    {errorMessage && signingStep === 'error' && (
+                        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-2 text-red-400">
+                                <span className="text-lg">⚠️</span>
+                                <span className="font-semibold">Auction Creation Failed</span>
+                            </div>
+                            <p className="text-red-300 text-sm mt-1">{errorMessage}</p>
+                            <p className="text-red-200 text-xs mt-2">
+                                💡 Make sure your wallet is connected and try again. You may need to approve the signature request.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Success Message Display */}
+                    {signingStep === 'success' && (
+                        <div className="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-2 text-green-400">
+                                <span className="text-lg">✅</span>
+                                <span className="font-semibold">Auction Created Successfully!</span>
+                            </div>
+                            <p className="text-green-300 text-sm mt-1">
+                                Your auction has been signed and stored on the P2P network. Closing automatically...
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Signing Instructions */}
+                    {signingStep === 'signing' && (
+                        <div className="bg-cyan-500/20 border border-cyan-500/50 rounded-lg p-4 mb-4">
+                            <div className="flex items-center gap-2 text-cyan-400">
+                                <span className="text-lg">📝</span>
+                                <span className="font-semibold">Signature Required</span>
+                            </div>
+                            <p className="text-cyan-300 text-sm mt-1">
+                                Please check your wallet and sign the auction authorization message to continue.
+                            </p>
+                        </div>
+                    )}
+
                     {/* Epic Action Buttons */}
                     <div className="flex gap-4 pt-6 border-t border-slate-700">
                         <button
                             type="button"
                             onClick={handleClose}
-                            disabled={isSubmitting}
-                            className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 border border-slate-600 hover:border-slate-500 text-black font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={signingStep === 'signing' || signingStep === 'creating'}
+                            className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 border border-slate-600 hover:border-slate-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center justify-center gap-2">
                                 ❌ Cancel
@@ -360,20 +460,17 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                         </button>
                         <button
                             type="submit"
-                            disabled={isSubmitting}
-                            className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-bold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed glow-green pulse-glow"
+                            disabled={isFormDisabled}
+                            className={`flex-1 px-6 py-3 font-bold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed ${
+                                signingStep === 'success' 
+                                    ? 'bg-gradient-to-r from-green-600 to-emerald-700 text-white glow-green'
+                                    : signingStep === 'error'
+                                    ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-400 hover:to-red-500 text-white'
+                                    : 'bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 disabled:from-gray-600 disabled:to-gray-700 text-white glow-green pulse-glow'
+                            }`}
                         >
                             <span className="flex items-center justify-center gap-2">
-                                {isSubmitting ? (
-                                    <>
-                                        <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
-                                        Launching...
-                                    </>
-                                ) : (
-                                    <>
-                                        🚀 Launch Auction ⚡
-                                    </>
-                                )}
+                                {getButtonContent()}
                             </span>
                         </button>
                     </div>

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react"
 import { useAuctionRoom } from "@/hooks/useAuctionRoom"
 import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
+import { NFTBalanceCard } from "./NFTBalanceCard"
+import { TokenBalanceCard } from "./TokenBalanceCard"
 
 export const Auction = () => {
     const watcherCleanupRef = useRef<(() => void) | null>(null)
@@ -137,48 +139,36 @@ export const Auction = () => {
             </div>
 
             {/* Main Dashboard Grid */}
-            <div className="max-w-7xl mx-auto grid grid-cols-1 xl:grid-cols-3 gap-8">
-                {/* Auction Details - Takes 2 columns on large screens */}
-                <div className="xl:col-span-2">
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* Top Row - Auction Details */}
+                <div className="w-full">
                     <AuctionDetailsCard auction={auction} postBid={postBid} />
                 </div>
 
-                {/* Chat Interface - Takes 1 column on large screens */}
-                <div className="xl:col-span-1">
-                    <AuctionChat 
-                        auctionId={auction?.id} 
-                        room={room}
-                        messages={messages}
-                        postChatMessage={postChatMessage}
-                    />
+                {/* Bottom Row - Balance Cards and Chat */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* NFT Balance Card */}
+                    <div className="lg:col-span-1">
+                        <NFTBalanceCard auction={auction} />
+                    </div>
+
+                    {/* Token Balance Card */}
+                    <div className="lg:col-span-1">
+                        <TokenBalanceCard auction={auction} />
+                    </div>
+
+                    {/* Chat Interface - Larger now */}
+                    <div className="lg:col-span-1">
+                        <AuctionChat 
+                            auctionId={auction?.id} 
+                            room={room}
+                            messages={messages}
+                            postChatMessage={postChatMessage}
+                        />
+                    </div>
                 </div>
             </div>
 
-            {/* Additional Battle Stats Footer */}
-            <div className="max-w-7xl mx-auto mt-8">
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 text-center">
-                        <div className="text-2xl mb-2">🎯</div>
-                        <div className="text-lg font-bold text-cyan-400">Active</div>
-                        <div className="text-sm text-slate-400">Battle Status</div>
-                    </div>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 text-center">
-                        <div className="text-2xl mb-2">⚡</div>
-                        <div className="text-lg font-bold text-green-400">Real-time</div>
-                        <div className="text-sm text-slate-400">Updates</div>
-                    </div>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 text-center">
-                        <div className="text-2xl mb-2">🛡️</div>
-                        <div className="text-lg font-bold text-orange-400">Secure</div>
-                        <div className="text-sm text-slate-400">P2P Network</div>
-                    </div>
-                    <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-4 text-center">
-                        <div className="text-2xl mb-2">🚀</div>
-                        <div className="text-lg font-bold text-purple-400">Epic</div>
-                        <div className="text-sm text-slate-400">Gaming UI</div>
-                    </div>
-                </div>
-            </div>
         </div>
     )
 }

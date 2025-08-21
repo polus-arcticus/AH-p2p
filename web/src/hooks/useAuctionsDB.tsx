@@ -8,35 +8,74 @@ import {
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
 import { IPFSAccessController } from '@orbitdb/core'
+import { useAuctionSignature, type AuctionAuthSigMessage } from './useAuctionSignature'
+import { parseUnits } from 'viem'
 
 export const useAuctionsDB = () => {
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
-
-
+    const { signAuctionAuth, address } = useAuctionSignature()
 
     const createAuction = useCallback(async (auctionData: any) => {
-        if (!auctionsDB || !orbit || !selfAddress) return
-        const _id = 'auction' + Date.now()
+        if (!auctionsDB || !orbit || !selfAddress || !address) return
+        
+        try {
+            console.log('🎯 Creating auction with signature...')
+            
+            // Generate unique auction ID and nonce
+            const _id = 'auction' + Date.now()
+            const auctioneerNonce = BigInt(Date.now())
+            
+            // Prepare signature message
+            const signatureMessage: AuctionAuthSigMessage = {
+                auctioneer: address,
+                auctioneerNonce,
+                nft: auctionData.nftContract,
+                nftId: BigInt(auctionData.nftTokenId),
+                token: auctionData.tokenContract,
+                bidStart: parseUnits(auctionData.startingBid, 18), // Assuming 18 decimals
+                deadline: auctionData.endTime
+            }
 
-        const room = await orbit.open(_id, {
-            type: 'documents',
-            AccessController: IPFSAccessController({
-                write: ['*']
+            console.log('📝 Signing auction authorization...', signatureMessage)
+            
+            // Sign the auction authorization
+            const { signature, sigHash } = await signAuctionAuth(signatureMessage)
+            
+            console.log('✅ Auction signed successfully:', { signature, sigHash })
+
+            // Create the room for P2P communication
+            const room = await orbit.open(_id, {
+                type: 'documents',
+                AccessController: IPFSAccessController({
+                    write: ['*']
+                })
             })
 
+            // Store auction with signature data
+            const auction = await auctionsDB.put({
+                _id,
+                ...auctionData,
+                // Add signature data
+                signature,
+                sigHash,
+                auctioneerNonce: auctioneerNonce.toString(),
+                signatureMessage,
+                // P2P data
+                peers: {[orbit.ipfs.libp2p.peerId.toString()]: selfAddress.toString()},
+                roomAddress: room.address.toString(),
+                // Metadata
+                createdAt: Date.now(),
+                auctioneer: address
+            })
 
-        })
-
-        const auction = await auctionsDB.put({
-            _id,
-            ...auctionData,
-            peers: {[orbit.ipfs.libp2p.peerId.toString()]: selfAddress.toString()},
-            roomAddress: room.address.toString()
-        })
-
-        console.log('🎯 Auction created locally:', auction)
-        return auction
-    }, [auctionsDB, orbit, selfAddress])
+            console.log('🎯 Auction created with signature:', auction)
+            return auction
+            
+        } catch (error) {
+            console.error('❌ Failed to create auction:', error)
+            throw error
+        }
+    }, [auctionsDB, orbit, selfAddress, signAuctionAuth, address])
 
     const getAuctions = useCallback(async () => {
         if (!auctionsDB) return

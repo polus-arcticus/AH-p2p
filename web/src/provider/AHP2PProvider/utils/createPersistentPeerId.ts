@@ -2,12 +2,7 @@ import { keys } from '@libp2p/crypto'
 import { keccak256, hexToBytes } from 'viem'
 import type { WalletClient } from 'viem'
 
-const EIP712_DOMAIN = {
-  name: 'AH-P2P Network',
-  version: '1',
-  chainId: 1,
-  verifyingContract: '0x0000000000000000000000000000000000000000' as `0x${string}`
-}
+import { englishAuctionAddr } from '@/assets/Static.json'
 
 const EIP712_TYPES = {
   PeerIdSeed: [
@@ -27,7 +22,15 @@ export const createPersistentPeerId = async (
   address: `0x${string}`,
   walletClient: WalletClient
 ): Promise<any> => {
+  const chainId = await walletClient.getChainId()
   const cacheKey = `ah-p2p-peer-id-${address}`
+
+  const domain = {
+    name: 'AH-P2P Network',
+    version: '1',
+    chainId,
+    verifyingContract: englishAuctionAddr as `0x${string}`
+  }
   
   // Check if we already have a cached peer ID for this address
   const cachedPeerId = localStorage.getItem(cacheKey)
@@ -50,7 +53,7 @@ export const createPersistentPeerId = async (
   // Create EIP-712 signature as deterministic seed
   const signature = await walletClient.signTypedData({
     account: address,
-    domain: EIP712_DOMAIN,
+    domain,
     types: EIP712_TYPES,
     primaryType: 'PeerIdSeed',
     message: {
