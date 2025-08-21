@@ -11,6 +11,10 @@ contract ExampleToken is ERC20 {
           
   }
 
+  function faucet() public {
+    _mint(msg.sender, 10**18);
+  }
+
   
 }
 

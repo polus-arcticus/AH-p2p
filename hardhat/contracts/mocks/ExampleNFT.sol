@@ -16,4 +16,8 @@ contract ExampleNFT is ERC1155 {
 		_mint(msg.sender, SWORD, 10**9, "");
 		_mint(msg.sender, SHIELD, 10**9, "");
 	}
+
+	function faucet() public {
+		_mint(msg.sender, THORS_HAMMER, 1, "");
+	}
 }
