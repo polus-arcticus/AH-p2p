@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { formatEther } from 'viem/utils'
-import { useAccount } from 'wagmi'
+import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 
 interface AuctionDetailsCardProps {
   auction: {
@@ -18,16 +18,57 @@ interface AuctionDetailsCardProps {
   } | null
   postBid: (bid: string) => Promise<void>
   highBid?: string
+  consumeAuction: () => Promise<{ auctionMessage: any; finalSignature: string; bidsCount: number; hash?: `0x${string}` } | undefined>
+  completeAuction: () => Promise<void>
+  refetchBalances?: () => void
+  onAuctionSuccess?: (result: { winnerAddress?: string; finalBid?: string; nftName?: string }) => void
 }
 
-const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid, highBid }) => {
+const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid, highBid, consumeAuction, completeAuction, refetchBalances, onAuctionSuccess }) => {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(false)
   const [bidAmount, setBidAmount] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+  const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
 
   const {address} = useAccount()
+  const [transactionHash, setTransactionHash] = useState<`0x${string}` | undefined>()
 
+  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+    hash: transactionHash,
+    query: {
+      enabled: !!transactionHash,
+    },
+  })
+  
+  // Show transaction status in UI
+  useEffect(() => {
+    if (isConfirmed && transactionHash) {
+      setIsSubmitting(false)
+      completeAuction()
+      
+      // Set auction result data now that transaction is confirmed
+      const result = {
+        winnerAddress: auction?.highestBidder,
+        finalBid: auction?.highestBid ? formatEther(BigInt(auction.highestBid)) : undefined,
+        nftName: auction?.title || 'NFT'
+      }
+      setAuctionResult(result)
+      
+      // Trigger success modal
+      if (onAuctionSuccess) {
+        onAuctionSuccess(result)
+      }
+      
+      // Refetch balances if available
+      if (refetchBalances) {
+        refetchBalances()
+      }
+      
+      // Clear transaction hash to prevent re-execution
+      setTransactionHash(undefined)
+    }
+  }, [isConfirmed, transactionHash])
   const isAuctioneer = address && auction?.auctioneer && address.toLowerCase() === auction.auctioneer.toLowerCase()
 
   const handlePlaceBid = async () => {
@@ -51,14 +92,16 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
   const handleConsumeAuction = async () => {
     try {
       setIsSubmitting(true)
-      // TODO: Implement consume auction logic
-      console.log('Consuming auction:', auction?.id)
-      alert('Consume auction functionality to be implemented')
+      console.log('🎯 Consuming auction:', auction?.id)
+      
+      const result = await consumeAuction()
+      setTransactionHash(result?.hash)
+      
+      console.log('conume auction returned')
     } catch (error) {
-      console.error('Failed to consume auction:', error)
-      alert('Failed to consume auction. Please try again.')
+      console.error('❌ Failed to consume auction:', error)
     } finally {
-      setIsSubmitting(false)
+      // Don't set isSubmitting to false here - let the transaction confirmation handle it
     }
   }
 

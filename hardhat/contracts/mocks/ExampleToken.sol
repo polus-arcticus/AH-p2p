@@ -7,8 +7,6 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract ExampleToken is ERC20 {
   constructor(uint256 initialSupply) ERC20("Example Token", "extn") {
         _mint(msg.sender, initialSupply);
-
-          
   }
 
   function faucet() public {

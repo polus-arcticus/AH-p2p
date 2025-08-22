@@ -4,18 +4,23 @@ import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
 import { NFTBalanceCard } from "./NFTBalanceCard"
 import { TokenBalanceCard } from "./TokenBalanceCard"
+import { SuccessModal } from "../../components/SuccessModal"
 
 export const Auction = () => {
     const watcherCleanupRef = useRef<(() => void) | null>(null)
     const [messages, setMessages] = useState<any>([])
     const [highBid, setHighBid] = useState<string>('0')
+    const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
+    const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
     const { 
         auction, 
         room, 
         postChatMessage, 
         postBid,
         fetchMessages, 
-        watchRoom
+        watchRoom,
+        consumeAuction,
+        completeAuction
     } = useAuctionRoom()
     
     useEffect(() => {
@@ -156,7 +161,17 @@ export const Auction = () => {
                 {/* All Cards in Single Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Auction Details Card - Compressed */}
-                    <AuctionDetailsCard auction={auction} postBid={postBid} highBid={highBid} />
+                    <AuctionDetailsCard 
+                        auction={auction} 
+                        postBid={postBid} 
+                        highBid={highBid} 
+                        consumeAuction={consumeAuction} 
+                        completeAuction={completeAuction}
+                        onAuctionSuccess={(result) => {
+                            setAuctionResult(result)
+                            setShowSuccessModal(true)
+                        }}
+                    />
                     
                     {/* NFT Balance Card */}
                     <NFTBalanceCard auction={auction} />
@@ -176,6 +191,16 @@ export const Auction = () => {
                 </div>
             </div>
 
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="🏆 Auction Complete!"
+                message="The battle has concluded and rewards have been distributed!"
+                winnerAddress={auctionResult?.winnerAddress}
+                finalBid={auctionResult?.finalBid}
+                nftName={auctionResult?.nftName}
+            />
         </div>
     )
 }
