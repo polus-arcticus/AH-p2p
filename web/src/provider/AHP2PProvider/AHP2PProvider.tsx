@@ -9,6 +9,7 @@ import type { Multiaddr } from "@multiformats/multiaddr";
 export const AHP2PContext = createContext({
   orbit: null as OrbitDB | null,
   selfAddress: null as Multiaddr | null,
+  peerId: null as string | null,
   loading: true,
   err: '',
   auctionsDB: null as DocumentsDatabase | null
@@ -20,6 +21,7 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
     error: orbitError,
     orbit,
     selfAddress,
+    peerId,
     auctionsDB
   } = useOrbit()
   /*
@@ -62,6 +64,7 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
     <AHP2PContext.Provider value={{
       orbit,
       selfAddress,
+      peerId,
       loading,
       err: err || '',
       auctionsDB

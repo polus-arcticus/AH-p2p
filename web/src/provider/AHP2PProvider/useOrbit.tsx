@@ -43,6 +43,7 @@ export const useOrbit = () => {
   const [orbit, setOrbit] = useState<OrbitDB | null>(null)
   const [auctionsDB, setAuctionsDB] = useState<DocumentsDatabase | null>(null)
   const [selfAddress, setSelfAddress] = useState<Multiaddr | null>(null)
+  const [peerId, setPeerId] = useState<string | null>(null)
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)
 
@@ -85,6 +86,7 @@ export const useOrbit = () => {
       setOrbit(orbit)
       setAuctionsDB(auctionsDB)
       setLoading(false)
+      setPeerId(helia.libp2p.peerId.toString())
 
     } catch (err:unknown) {
       setError(err as Error)
@@ -102,6 +104,7 @@ export const useOrbit = () => {
   return {
     orbit,
       selfAddress,
+      peerId,
     error,
     loading,
     auctionsDB

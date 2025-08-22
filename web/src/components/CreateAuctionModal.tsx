@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import staticContracts from '../assets/Static.json'
+import { parseEther } from 'viem'
 
 interface CreateAuctionModalProps {
     showCreateForm: boolean
@@ -46,7 +47,7 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
             title: 'Test Auction',
             description: 'Testing ERC1155 to ERC20 auction',
             nftContract: staticContracts.exampleNftAddr,
-            nftTokenId: '0',
+            nftTokenId: '2',
             tokenContract: staticContracts.exampleTokenAddr,
             startingBid: '0.01',
             durationHours: 24
@@ -70,7 +71,7 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                 nftContract: data.nftContract,
                 nftTokenId: data.nftTokenId,
                 tokenContract: data.tokenContract,
-                startingBid: data.startingBid,
+                startingBid: parseEther(data.startingBid),
                 endTime
             }
 

@@ -10,50 +10,80 @@ import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { useAuctionsDB } from './useAuctionsDB'
 import { useParams } from 'react-router'
 import { multiaddr } from '@multiformats/multiaddr'
+import { useAuctionSignature, type BidMessage } from './useAuctionSignature'
+import { parseEther } from 'viem'
+import { useAccount } from 'wagmi'
 export const useAuctionRoom = () => {
     const initializedRef = useRef(false)
     const {auctionId} = useParams()
-    const {orbit, selfAddress} = useContext(AHP2PContext)
+    const {orbit, selfAddress, peerId} = useContext(AHP2PContext)
+    const {address} = useAccount()
     const {joinAuction, getAuction} = useAuctionsDB()
+    const {signBid} = useAuctionSignature()
 
     const [auction, setAuction] = useState<any>(null)
     const [room, setRoom] = useState<any>(null)
 
     const postChatMessage = useCallback(async (message: string) => {
-        if (!room) return
+        if (!room || !address) return
 
         await room.put({
             _id: 'message:' + Math.floor(Date.now()/1000),
             type: 'message',
             message,
             timestamp: Date.now(),
-            user: 'You'
+            user: address
         })
 
-    }, [room])
+    }, [room, address])
 
     const postBid = useCallback(async (bid: string) => {
-        if (!room) return
+        console.log('🎯 Posting bid:', bid)
+        if (!room || !address || !auction || !address) return
 
-        await room.put({
-            _id: 'bid:' + Math.floor(Date.now() / 1000),
-            type: 'bid',
-            bid,
-            timestamp: Date.now(),
-            user: 'You'
-        })
-    }, [room])
+        try {
+            // Validate auction signature hash exists
+            if (!auction.auctionSigHash) {
+                throw new Error('Auction signature hash is missing - cannot place bid')
+            }
+
+            // Create bid message for signing
+            const bidMessage: BidMessage = {
+                bidder: address,
+                amount: parseEther(bid),
+                bidderNonce: BigInt(Math.floor(Date.now() / 1000)), // Simple nonce
+                auctionSigHash: auction.auctionSigHash
+            }
+
+            // Sign the bid
+            const signature = await signBid(bidMessage)
+
+            // Store bid with signature and message data
+            await room.put({
+                _id: 'bid:' + Math.floor(Date.now() / 1000),
+                type: 'bid',
+                bid,
+                bidMessage,
+                signature,
+                timestamp: Date.now(),
+                user: address
+            })
+        } catch (error) {
+            console.error('Failed to sign and post bid:', error)
+            throw error
+        }
+    }, [room, address, auction, signBid])
 
     const fetchMessages = useCallback(async () => {
-        if (!room) return
+        if (!room || !address) return
         const messages = await room.all()
         console.log('messages', messages)
         return messages
-    }, [room])
+    }, [room, address])
 
     const watchRoom = useCallback((onRoomUpdate?: (event: any) => void) => {
         console.log('🎮 Room watcher enabled')
-        if (!room) return
+        if (!room || !address) return
         
         // Clean up any existing listeners first
         room.events.removeAllListeners('update')
@@ -73,11 +103,11 @@ export const useAuctionRoom = () => {
             room.events.removeAllListeners('update')
             console.log('🛡️ Room watcher cleanup complete')
         }
-    }, [room])
+    }, [room, address])
 
     useEffect(() => {
         if (initializedRef.current) return
-        if (!orbit || !auctionId || !selfAddress) return 
+        if (!orbit || !auctionId || !selfAddress || !address) return 
         
         const init = async () => {
                 console.log("initializing")
@@ -97,7 +127,7 @@ export const useAuctionRoom = () => {
         return () => {
             initializedRef.current = false
         }
-    }, [auctionId, orbit, selfAddress, joinAuction])
+    }, [auctionId, orbit, address, selfAddress, joinAuction])
 
 
 

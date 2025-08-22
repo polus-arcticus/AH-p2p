@@ -140,32 +140,26 @@ export const Auction = () => {
 
             {/* Main Dashboard Grid */}
             <div className="max-w-7xl mx-auto space-y-8">
-                {/* Top Row - Auction Details */}
-                <div className="w-full">
+                {/* All Cards in Single Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Auction Details Card - Compressed */}
                     <AuctionDetailsCard auction={auction} postBid={postBid} />
+                    
+                    {/* NFT Balance Card */}
+                    <NFTBalanceCard auction={auction} />
+                    
+                    {/* Token Balance Card */}
+                    <TokenBalanceCard auction={auction} />
                 </div>
 
-                {/* Bottom Row - Balance Cards and Chat */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* NFT Balance Card */}
-                    <div className="lg:col-span-1">
-                        <NFTBalanceCard auction={auction} />
-                    </div>
-
-                    {/* Token Balance Card */}
-                    <div className="lg:col-span-1">
-                        <TokenBalanceCard auction={auction} />
-                    </div>
-
-                    {/* Chat Interface - Larger now */}
-                    <div className="lg:col-span-1">
-                        <AuctionChat 
-                            auctionId={auction?.id} 
-                            room={room}
-                            messages={messages}
-                            postChatMessage={postChatMessage}
-                        />
-                    </div>
+                {/* Chat Interface - Full Width */}
+                <div className="w-full">
+                    <AuctionChat 
+                        auctionId={auction?.id} 
+                        room={room}
+                        messages={messages}
+                        postChatMessage={postChatMessage}
+                    />
                 </div>
             </div>
 

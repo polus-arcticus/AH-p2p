@@ -1,6 +1,6 @@
 import { useTokenData } from "@/hooks/useTokenData"
 import { useApproveERC20 } from "@/hooks/useApproveERC20"
-import { formatUnits } from "viem"
+import { formatEther } from "viem"
 
 interface TokenBalanceCardProps {
     auction: any
@@ -32,21 +32,6 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
     }
 
     const approvalStatus = getApprovalStatus()
-
-    const formatBalance = (balance: bigint, decimals: number) => {
-        const formatted = formatUnits(balance, decimals)
-        const num = parseFloat(formatted)
-        if (num < 0.001 && num > 0) return "< 0.001"
-        return num.toLocaleString(undefined, { maximumFractionDigits: 4 })
-    }
-
-    const formatAllowance = (allowance: bigint, decimals: number) => {
-        const formatted = formatUnits(allowance, decimals)
-        const num = parseFloat(formatted)
-        if (num > 1000000) return "∞"
-        return num.toLocaleString(undefined, { maximumFractionDigits: 4 })
-    }
-
     return (
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 h-full">
             <div className="flex items-center gap-3 mb-6">
@@ -57,51 +42,16 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
                 </div>
             </div>
 
-            {/* Token Balance */}
             <div className="space-y-4">
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-300 font-medium">Balance</span>
-                        <div className="text-right">
-                            <div className="text-2xl font-bold text-green-400">
-                                {tokenBalance ? formatBalance(tokenBalance.value, tokenBalance.decimals) : "0"}
-                            </div>
-                            <div className="text-sm text-slate-400">
-                                {tokenBalance?.symbol || "TOKEN"}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Contract Info */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                    <div className="text-sm text-slate-300 mb-2">Token Contract</div>
-                    <div className="font-mono text-xs text-green-400 break-all">
-                        {auction?.tokenContract || "Not connected"}
-                    </div>
-                </div>
-
-                {/* Allowance Info */}
-                <div className="bg-slate-700/50 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-300 font-medium">Allowance</span>
-                        <div className="text-right">
-                            <div className="text-lg font-bold text-orange-400">
-                                {allowance && tokenBalance ? 
-                                    formatAllowance(allowance, tokenBalance.decimals) : "0"
-                                }
-                            </div>
-                            <div className="text-sm text-slate-400">
-                                {tokenBalance?.symbol || "TOKEN"}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Approval Status */}
+                {/* Balance & Approval Combined in Single Row */}
                 <div className="bg-slate-700/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-3">
-                        <span className="text-slate-300 font-medium">Auction Approval</span>
+                        <div className="flex-1">
+                            <span className="text-slate-300 font-medium">Balance</span>
+                            <div className="text-xl font-bold text-green-400">
+                                {tokenBalance ? formatEther(tokenBalance.value) : "0"} {tokenBalance?.symbol || "TOKEN"}
+                            </div>
+                        </div>
                         <div className="flex items-center gap-2">
                             {approvalStatus === "approved" && (
                                 <>
@@ -123,6 +73,21 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
                             )}
                         </div>
                     </div>
+                    <div className="text-xs text-slate-500 mb-2 text-right">
+                        Allowance: {allowance && tokenBalance ? 
+                            Number(formatEther(allowance)).toExponential(2) : "0"
+                        } {tokenBalance?.symbol || "TOKEN"}
+                    </div>
+                    <div className="pt-2 border-t border-slate-600">
+                        <div className="text-xs text-slate-400 mb-1">Contract Address</div>
+                        <div className="font-mono text-xs text-green-400 break-all">
+                            {auction?.tokenContract || "Not connected"}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="bg-slate-700/50 rounded-lg p-4">
                     
                     {approvalStatus === "not_approved" && (
                         <button

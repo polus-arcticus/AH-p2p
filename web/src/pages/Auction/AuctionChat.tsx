@@ -15,6 +15,10 @@ interface AuctionChatProps {
     address?: string
     [key: string]: any
   } | null
+  auction?: {
+    peers?: Record<string, string>
+    [key: string]: any
+  } | null
   messages: any[]
   postChatMessage: (message: string) => Promise<void>
 }
@@ -22,6 +26,7 @@ interface AuctionChatProps {
 const AuctionChat: React.FC<AuctionChatProps> = ({ 
   auctionId, 
   room, 
+  auction,
   messages,
   postChatMessage
 }) => {
@@ -37,12 +42,24 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
     setIsConnected(!!room)
   }, [room])
 
-  // Mock online warriors for now (can be updated later with real P2P peer data)
+  // Load active warriors from auction peers
   useEffect(() => {
-    // For now, just show some mock warriors
-    setOnlineUsers(['GameMaster', 'CyberWarrior_001', 'BidBot_Alpha'])
-    console.log('🎯 Mock warriors loaded')
-  }, [])
+    if (auction?.peers) {
+      const peerIds = Object.keys(auction.peers)
+      const formattedPeers = peerIds.map(peerId => {
+        // Show first 4 and last 4 characters with ... in between
+        if (peerId.length > 8) {
+          return `${peerId.slice(0, 4)}...${peerId.slice(-4)}`
+        }
+        return peerId
+      })
+      setOnlineUsers(['GameMaster', ...formattedPeers])
+      console.log('🎯 Active warriors loaded from peers:', formattedPeers)
+    } else {
+      // Fallback to GameMaster only if no peers
+      setOnlineUsers(['GameMaster'])
+    }
+  }, [auction?.peers])
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {

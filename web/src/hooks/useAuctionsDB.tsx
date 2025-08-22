@@ -9,7 +9,8 @@ import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
 import { multiaddr } from '@multiformats/multiaddr'
 import { IPFSAccessController } from '@orbitdb/core'
 import { useAuctionSignature, type AuctionAuthSigMessage } from './useAuctionSignature'
-import { parseUnits } from 'viem'
+import { parseEther } from 'viem'
+
 
 export const useAuctionsDB = () => {
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
@@ -24,7 +25,6 @@ export const useAuctionsDB = () => {
             // Generate unique auction ID and nonce
             const _id = 'auction' + Date.now()
             const auctioneerNonce = BigInt(Date.now())
-            
             // Prepare signature message
             const signatureMessage: AuctionAuthSigMessage = {
                 auctioneer: address,
@@ -32,7 +32,7 @@ export const useAuctionsDB = () => {
                 nft: auctionData.nftContract,
                 nftId: BigInt(auctionData.nftTokenId),
                 token: auctionData.tokenContract,
-                bidStart: parseUnits(auctionData.startingBid, 18), // Assuming 18 decimals
+                bidStart: auctionData.startingBid,
                 deadline: auctionData.endTime
             }
 
@@ -57,7 +57,7 @@ export const useAuctionsDB = () => {
                 ...auctionData,
                 // Add signature data
                 signature,
-                sigHash,
+                auctionSigHash: sigHash,
                 auctioneerNonce: auctioneerNonce.toString(),
                 signatureMessage,
                 // P2P data
