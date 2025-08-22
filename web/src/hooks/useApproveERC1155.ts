@@ -1,4 +1,4 @@
-import * as React from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { 
   useWaitForTransactionReceipt,
   useWriteContract,
@@ -33,14 +33,14 @@ export function useApproveERC1155(nftContract?: `0x${string}`, onApprovalConfirm
   })
 
   // Refetch approval and balances when transaction is confirmed
-  React.useEffect(() => {
+  useEffect(() => {
     if (isConfirmed) {
       refetchApproval()
       onApprovalConfirmed?.()
     }
   }, [isConfirmed, refetchApproval, onApprovalConfirmed])
 
-  const approveERC1155 = React.useCallback((contractAddress: `0x${string}`) => {
+  const approveERC1155 = useCallback((contractAddress: `0x${string}`) => {
     writeContract({
       address: contractAddress,
       abi: staticData.exampleNftAbi,

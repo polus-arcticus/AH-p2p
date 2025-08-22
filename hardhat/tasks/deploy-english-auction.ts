@@ -3,9 +3,9 @@ import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as fs from 'fs';
 import { parseEther } from "viem";
 
-import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
-import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleNFT.json'
-import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
+//import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
+//import ExampleNFTJson from '../artifacts/contracts/mocks/ExampleNFT.sol/ExampleNFT.json'
+//import ExampleTokenJson from '../artifacts/contracts/mocks/ExampleToken.sol/ExampleToken.json'
 
 // Hardhat task for deployment
 task("deploy-english-auction", "Deploy English Auction and optionally mock contracts")
@@ -35,9 +35,9 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
         englishAuctionAddr: englishAuction.address,
         exampleTokenAddr: exampleToken.address,
         exampleNftAddr: exampleNFT.address,
-        englishAuctionAbi: EnglishAuctionJson.abi,
-        exampleTokenAbi: ExampleTokenJson.abi,
-        exampleNftAbi: ExampleNFTJson.abi,
+        englishAuctionAbi: englishAuction.abi,
+        exampleTokenAbi: exampleToken.abi,
+        exampleNftAbi: exampleNFT.abi,
       };
       
       // Write to both locations for testnet
@@ -54,7 +54,7 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
     } else {
       const contractData = {
         englishAuctionAddr: englishAuction.address,
-        englishAuctionAbi: EnglishAuctionJson.abi,
+        englishAuctionAbi: englishAuction.abi,
       };
       
       fs.writeFileSync('../web/src/assets/Static.json', JSON.stringify(contractData));

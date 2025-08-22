@@ -1,100 +1,172 @@
-import { useContext, useState } from 'react'
-import { Link, useLocation } from 'react-router'
-import { useAccount, useConnect, useDisconnect } from 'wagmi'
-import { HeliaContext } from '../providers/HeliaProvider'
-import { useSwitchChain } from 'wagmi'
+import {
+    useDisconnect,
+    useEnsAvatar,
+    useEnsName,
+    useConnect, 
+    useAccount,
+    useSwitchChain
+} from 'wagmi'
+import type { Connector } from 'wagmi'
+import { useState, useEffect, useContext } from 'react'
+import { Link } from 'react-router'
+import { AHP2PContext } from '@/provider/AHP2PProvider/AHP2PProvider'
 
-export const NavBar = () => {
-    const { peerId, peerList } = useContext(HeliaContext)
-    const location = useLocation()
-    const { address, isConnected } = useAccount()
-    const { connect, connectors } = useConnect()
-    const { disconnect } = useDisconnect()
-    const { switchChain, chains } = useSwitchChain()
-    const [isChainDropdownOpen, setIsChainDropdownOpen] = useState(false)
+export function WalletOptions() {
+    const { connectors, connect } = useConnect()
+
+    return connectors.map((connector) => (
+        <WalletOption
+            key={connector.uid}
+            connector={connector}
+            onClick={() => connect({ connector })}
+        />
+    ))
+}
+
+function WalletOption({
+    connector,
+    onClick,
+}: {
+    connector: Connector
+    onClick: () => void
+}) {
+    const [ready, setReady] = useState(false)
+
+    useEffect(() => {
+        ; (async () => {
+            const provider = await connector.getProvider()
+            setReady(!!provider)
+        })()
+    }, [connector])
 
     return (
-        <nav className="bg-black/20 backdrop-blur-sm border-b border-white/10">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between items-center h-16">
-                    <div className="flex items-center space-x-4">
-                        <Link
-                            to="/"
-                            className="text-white font-bold text-xl hover:text-purple-300 transition-colors"
-                        >
-                            🏛️ AH-P2P
-                        </Link>
-                        <Link
-                            to="/auctions"
-                            className="text-gray-300 hover:text-white transition-colors px-3 py-2 rounded-lg hover:bg-white/10"
-                        >
-                            Active Auctions
-                        </Link>
-                        {location.pathname.startsWith('/room/') && (
-                            <span className="text-gray-300">
-                                → Auction {location.pathname.split('/')[2]}
-                            </span>
-                        )}
-                    </div>
-                    
-                    <div className="flex items-center space-x-4">
-                        <div className="text-sm text-gray-300">
-                            <span className="text-green-400">●</span> {Object.keys(peerList).length} peers
-                        </div>
-                        <div className="text-xs text-gray-400">
-                            {peerId ? `${peerId.slice(0, 8)}...${peerId.slice(-8)}` : 'Connecting...'}
-                        </div>
-                        
-                        {/* Wallet Connection */}
-                        {isConnected ? (
-                            <div className="flex items-center space-x-2">
-                                <div className="text-xs text-green-400 font-mono">
-                                    {address?.slice(0, 6)}...{address?.slice(-4)}
-                                </div>
-                                <button
-                                    onClick={() => disconnect()}
-                                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-lg transition-colors"
-                                >
-                                    Disconnect
-                                </button>
-                            </div>
-                        ) : (
-                            <button
-                                onClick={() => connect({ connector: connectors[0] })}
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors"
-                            >
-                                Connect Wallet
-                            </button>
+        <button 
+            disabled={!ready} 
+            onClick={onClick}
+            className="px-2 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-medium text-xs rounded transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
+        >
+            🔗 {connector.name}
+        </button>
+    )
+}
+export function Account() {
+    const { address, chain } = useAccount()
+    const { disconnect } = useDisconnect()
+    const { data: ensName } = useEnsName({ address })
+    const { data: ensAvatar } = useEnsAvatar({ name: ensName! })
 
-                        )}
-                        <div className="relative">
-                            <button
-                                onClick={() => setIsChainDropdownOpen(!isChainDropdownOpen)}
-                                className="bg-blue-600 hover:bg-blue-700 text-white text-sm px-4 py-2 rounded-lg transition-colors flex items-center space-x-1"
-                            >
-                                <span>Switch Chain</span>
-                                <span>{isChainDropdownOpen ? '▲' : '▼'}</span>
-                            </button>
-                            {isChainDropdownOpen && (
-                                <div className="absolute right-0 mt-2 w-40 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
-                                    {chains.map((chain) => (
-                                        <button
-                                            key={chain.id}
-                                            onClick={() => {
-                                                switchChain({ chainId: chain.id })
-                                                setIsChainDropdownOpen(false)
-                                            }}
-                                            className="block w-full text-left px-4 py-2 text-white hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg"
-                                        >
-                                            {chain.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
+    return (
+        <div className="flex items-center gap-1 bg-slate-800/50 backdrop-blur-sm border border-slate-600 rounded-lg px-2 py-1">
+            {ensAvatar && (
+                <img 
+                    alt="ENS Avatar" 
+                    src={ensAvatar} 
+                    className="w-5 h-5 rounded-full border border-green-400"
+                />
+            )}
+            {address && (
+                <div className="text-xs">
+                    <div className="text-green-400 font-medium">
+                        {ensName ? `🎮 ${ensName}` : '👤'}
+                    </div>
+                    <div className="text-slate-400 text-xs font-mono">
+                        {address.slice(0, 4)}...{address.slice(-2)}
+                    </div>
+                    {chain && (
+                        <div className="text-cyan-400 text-xs font-medium">
+                            🌐 {chain.name}
                         </div>
+                    )}
+                </div>
+            )}
+            <button 
+                onClick={() => disconnect()}
+                className="ml-1 px-2 py-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
+            >
+                ⚡
+            </button>
+        </div>
+    )
+}
+
+function ChainSwitcher() {
+    const { chains, switchChain } = useSwitchChain()
+    const [showChains, setShowChains] = useState(false)
+
+    return (
+        <div className="relative">
+            <button
+                onClick={() => setShowChains(!showChains)}
+                className="px-2 py-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
+            >
+                🔗
+            </button>
+            {showChains && (
+                <div className="absolute top-full right-0 mt-1 bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-lg shadow-xl min-w-32 z-50">
+                    {chains.map((chain) => (
+                        <button
+                            key={chain.id}
+                            onClick={() => {
+                                switchChain({ chainId: chain.id })
+                                setShowChains(false)
+                            }}
+                            className="w-full px-2 py-1 text-left text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 first:rounded-t-lg last:rounded-b-lg transition-colors duration-200"
+                        >
+                            🌐 {chain.name}
+                        </button>
+                    ))}
+                </div>
+            )}
+        </div>
+    )
+}
+
+function ConnectWallet() {
+    const { isConnected } = useAccount()
+    if (isConnected) return <Account />
+    return <WalletOptions />
+}
+
+export const NavBar = () => {
+    const {loading } = useContext(AHP2PContext)
+
+    return (
+        <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-700 shadow-xl">
+            <div className="container mx-auto px-3 py-2">
+                <div className="flex items-center justify-between">
+                    {/* Logo/Brand Section */}
+                    <div className="flex items-center gap-2">
+                        <Link 
+                            to="/" 
+                            className="text-lg font-bold bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200 cursor-pointer"
+                        >
+                            🎯 AH P2P
+                        </Link>
+                        <div className="hidden md:block w-px h-4 bg-slate-600"></div>
+                        <div className="hidden md:flex items-center gap-1 text-xs">
+                            <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                            <span className="text-slate-300">LIVE</span>
+                        </div>
+                    </div>
+
+                    {/* Network Status Section */}
+                    <div className="flex items-center gap-2">
+                        {loading ? (
+                            <div className="flex items-center gap-1 bg-slate-800/50 backdrop-blur-sm border border-slate-600 rounded-lg px-2 py-1">
+                                <div className="animate-spin rounded-full h-3 w-3 border border-cyan-400 border-t-transparent"></div>
+                                <span className="text-cyan-400 font-medium text-xs">Connecting...</span>
+                            </div>
+                        ) : (<></>
+                        )}
+
+                        {/* Chain Switcher */}
+                        <ChainSwitcher />
+
+                        {/* Wallet Connection */}
+                        <ConnectWallet />
                     </div>
                 </div>
             </div>
         </nav>
     )
-}   
+}

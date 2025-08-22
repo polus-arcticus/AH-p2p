@@ -1,69 +1,206 @@
-import { useParams, Link } from "react-router"
-import { useAuctionRoom } from '../../hooks/useAuctionRoom'
-import { useAuctionData } from '../../hooks/useAuctionData'
-import { AuctionHeader } from './AuctionHeader'
-import { BiddingSection } from './BiddingSection'
-import { ConsumeAuctionSection } from './ConsumeAuctionSection'
-import { ActivityFeed } from './ActivityFeed'
+import { useEffect, useRef, useState } from "react"
+import { useAuctionRoom } from "@/hooks/useAuctionRoom"
+import AuctionDetailsCard from "./AuctionDetailsCard"
+import AuctionChat from "./AuctionChat"
+import { NFTBalanceCard } from "./NFTBalanceCard"
+import { TokenBalanceCard } from "./TokenBalanceCard"
+import { SuccessModal } from "../../components/SuccessModal"
 
 export const Auction = () => {
-    const { roomId } = useParams()
+    const watcherCleanupRef = useRef<(() => void) | null>(null)
+    const [messages, setMessages] = useState<any>([])
+    const [highBid, setHighBid] = useState<string>('0')
+    const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
+    const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
+    const { 
+        auction, 
+        room, 
+        postChatMessage, 
+        postBid,
+        fetchMessages, 
+        watchRoom,
+        consumeAuction,
+        completeAuction
+    } = useAuctionRoom()
     
-    // Get auction data for layout decisions
-    const { isAuctioneer } = useAuctionData(roomId)
-    // Only need room data for loading/error states
-    const { starting, error } = useAuctionRoom(roomId)
+    useEffect(() => {
+        console.log('Auction.tsx::auction', auction)
+    }, [auction])
+    
+    // Load initial messages when room is available
+    useEffect(() => {
+        const loadMessages = async () => {
+            let highestBid = 0
+            if (!room) return
+            
+            try {
+                console.log('🎯 Loading initial battle messages...')
+                const roomMessages = await fetchMessages()
+                if (roomMessages) {
+                    const formattedMessages = roomMessages
+                        .filter((msg: any) => {
+                            const msgData = msg.value || msg
+                            return msgData.type === 'message' || msgData.type === 'bid'
+                        })
+                        .map((msg: any) => {
+                            const msgData = msg.value || msg
+                            if (msgData.type === 'bid') {
+                                if (!highestBid || Number(msgData.bid) > highestBid) {
+                                    highestBid = Number(msgData.bid)
+                                }
+                            }
+                            return {
+                                id: msgData._id || msgData.timestamp?.toString() || Date.now().toString(),
+                                user: msgData.user || 'Anonymous Warrior',
+                                message: msgData.message || msgData.bid || '',
+                                timestamp: msgData.timestamp || Date.now(),
+                                type: msgData.type as 'message' | 'bid',
+                                avatar: msgData.type === 'bid' ? '💰' : '⚔️'
+                            }
+                        })
+                        .sort((a: any, b: any) => a.timestamp - b.timestamp)
+                    
+                    setMessages(formattedMessages)
+                    setHighBid(highestBid.toString())
+                    console.log('⚡ Loaded', formattedMessages.length, 'battle messages')
+                }
+            } catch (error) {
+                console.error('❌ Failed to load battle messages:', error)
+            }
+        }
+        
+        loadMessages()
+    }, [room, fetchMessages])
 
-    if (starting) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
-                    <p className="text-white text-xl">Connecting to P2P Network...</p>
-                </div>
-            </div>
-        )
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-pink-900 flex items-center justify-center">
-                <div className="text-center space-y-4">
-                    <p className="text-white text-xl">❌ Connection Failed</p>
-                    <Link to="/" className="text-purple-300 hover:text-white transition-colors">
-                        ← Back to Home
-                    </Link>
-                </div>
-            </div>
-        )
-    }
+    useEffect(() => {
+        console.log('room', room)
+        if (room) {
+            // Clean up previous watcher if exists
+            if (watcherCleanupRef.current) {
+                watcherCleanupRef.current()
+                watcherCleanupRef.current = null
+            }
+            
+            // Start watching room for updates (messages, bids, etc.)
+            const cleanup = watchRoom((event) => {
+                console.log('🎮 Auction room update:', event)
+                
+                // Handle new messages/bids from room updates
+                if (event && event.payload) {
+                    const msgData = event.payload.value || event.payload
+                    
+                    if (msgData.type === 'bid') {
+                        if (!highBid || Number(msgData.bid) > Number(highBid)) {
+                            setHighBid(msgData.bid)
+                        }
+                    }
+                    // Only process message and bid types
+                    if (msgData.type === 'message' || msgData.type === 'bid') {
+                        const newMessage = {
+                            id: msgData._id || msgData.timestamp?.toString() || Date.now().toString(),
+                            user: msgData.user || 'Anonymous Warrior',
+                            message: msgData.message || msgData.bid || '',
+                            timestamp: msgData.timestamp || Date.now(),
+                            type: msgData.type as 'message' | 'bid',
+                            avatar: msgData.type === 'bid' ? '💰' : '⚔️'
+                        }
+                        
+                        // Add new message to the list (avoid duplicates)
+                        setMessages(prevMessages => {
+                            const exists = prevMessages.some(msg => msg.id === newMessage.id)
+                            if (exists) return prevMessages
+                            
+                            const updatedMessages = [...prevMessages, newMessage]
+                            return updatedMessages.sort((a, b) => a.timestamp - b.timestamp)
+                        })
+                        
+                        console.log('⚡ New battle message added:', newMessage.message)
+                    }
+                }
+            })
+            
+            watcherCleanupRef.current = cleanup || null
+            
+            return () => {
+                if (watcherCleanupRef.current) {
+                    watcherCleanupRef.current()
+                    watcherCleanupRef.current = null
+                }
+            }
+        }
+    }, [room, watchRoom])
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div className="bg-black/20 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
-                    <AuctionHeader
-                        roomId={roomId}
-                    />
-
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-                        <div className="lg:col-span-1 space-y-4">
-                            {isAuctioneer && (
-                                <ConsumeAuctionSection
-                                    roomId={roomId}
-                                />
-                            )}
-                            <BiddingSection
-                                roomId={roomId}
-                            />
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+            {/* Epic Header */}
+            <div className="max-w-7xl mx-auto mb-8">
+                <div className="text-center py-8">
+                    <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-4">
+                        ⚔️ Battle Arena Dashboard
+                    </h1>
+                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">
+                        Welcome to the ultimate P2P auction battleground! Monitor your battles, place strategic bids, and communicate with fellow warriors in real-time.
+                    </p>
+                    <div className="flex items-center justify-center gap-4 mt-4">
+                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-xl">
+                            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                            <span className="text-green-400 font-semibold">Arena Online</span>
                         </div>
-
-                        <ActivityFeed
-                            roomId={roomId}
-                        />
+                        {room?.address && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-xl">
+                                <span className="text-slate-400">🌐 Room:</span>
+                                <span className="text-cyan-400 font-mono text-sm">{room.address.slice(0, 8)}...</span>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* Main Dashboard Grid */}
+            <div className="max-w-7xl mx-auto space-y-8">
+                {/* All Cards in Single Row */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Auction Details Card - Compressed */}
+                    <AuctionDetailsCard 
+                        auction={auction} 
+                        postBid={postBid} 
+                        highBid={highBid} 
+                        consumeAuction={consumeAuction} 
+                        completeAuction={completeAuction}
+                        onAuctionSuccess={(result) => {
+                            setAuctionResult(result)
+                            setShowSuccessModal(true)
+                        }}
+                    />
+                    
+                    {/* NFT Balance Card */}
+                    <NFTBalanceCard auction={auction} />
+                    
+                    {/* Token Balance Card */}
+                    <TokenBalanceCard auction={auction} />
+                </div>
+
+                {/* Chat Interface - Full Width */}
+                <div className="w-full">
+                    <AuctionChat 
+                        auctionId={auction?.id} 
+                        room={room}
+                        messages={messages}
+                        postChatMessage={postChatMessage}
+                    />
+                </div>
+            </div>
+
+            {/* Success Modal */}
+            <SuccessModal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="🏆 Auction Complete!"
+                message="The battle has concluded and rewards have been distributed!"
+                winnerAddress={auctionResult?.winnerAddress}
+                finalBid={auctionResult?.finalBid}
+                nftName={auctionResult?.nftName}
+            />
         </div>
     )
 }

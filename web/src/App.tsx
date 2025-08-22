@@ -1,215 +1,157 @@
 import { useContext, useState } from 'react'
-import { useNavigate } from 'react-router'
-import { HeliaContext } from './providers/HeliaProvider'
-import './App.css'
+import { AHP2PContext } from './provider/AHP2PProvider/AHP2PProvider'
+import { useAuctionsDB } from './hooks/useAuctionsDB'
+import { useErc20Faucet, useErc1155Faucet } from './hooks/useFaucet'
+import CreateAuctionModal from './components/CreateAuctionModal'
+import ActiveAuctionsList from './components/ActiveAuctionsList'
 
 function App() {
-  const { 
-    peerId, 
-    starting, 
-    error, 
-    peerList,
-    chatMessages
-  } = useContext(HeliaContext)
+  const { loading } = useContext(AHP2PContext)
+  const {
+    createAuction
+  } = useAuctionsDB()
+  const {
+    claimFaucetErc20,
+    isPending: erc20Pending,
+    isConfirming: erc20Confirming,
+    isConfirmed: erc20Confirmed,
+    isConnected: erc20Connected,
+    error: erc20Error
+  } = useErc20Faucet()
+  
+  const {
+    claimFaucetErc1155,
+    isPending: erc1155Pending,
+    isConfirming: erc1155Confirming,
+    isConfirmed: erc1155Confirmed,
+    isConnected: erc1155Connected,
+    error: erc1155Error
+  } = useErc1155Faucet()
 
-  const navigate = useNavigate()
-  const [auctionInput, setAuctionInput] = useState('')
+  const [showCreateForm, setShowCreateForm] = useState(false)
 
-  const handleJoinAuction = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (auctionInput.trim()) {
-      navigate(`/room/${auctionInput.trim()}`)
-      setAuctionInput('')
-    }
+  const handleCreateAuction = () => {
+    setShowCreateForm(true)
   }
-
-  if (starting) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto"></div>
-          <p className="text-white text-xl">Connecting to P2P Auction Network...</p>
-          <p className="text-gray-300">Establishing WebRTC connections</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-900 via-purple-900 to-pink-900 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-white text-xl">❌ Failed to connect to auction network</p>
-          <p className="text-gray-300">Please refresh to try again</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Get unique auction rooms from chat messages
-  const activeRooms = [...new Set(chatMessages.map(msg => msg.roomId))].filter(room => room)
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-pink-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4">
-            Decentralized NFT Auction House
-          </h1>
-          <p className="text-gray-300 text-lg">
-            P2P auctions with no central servers • WebRTC powered
-          </p>
-        </div>
-
-        {/* Join Auction Form */}
-        <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 mb-8">
-          <h2 className="text-2xl font-bold text-white mb-4">Join an Auction</h2>
-          <form onSubmit={handleJoinAuction} className="flex gap-4">
-            <input
-              type="text"
-              value={auctionInput}
-              onChange={(e) => setAuctionInput(e.target.value)}
-              placeholder="Enter auction room ID (e.g. nft-123)"
-              className="flex-1 p-3 rounded-lg bg-black/30 border border-white/20 text-white placeholder-gray-400 focus:border-purple-400 focus:outline-none"
-            />
-            <button
-              type="submit"
-              disabled={!auctionInput.trim()}
-              className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:from-gray-600 disabled:to-gray-700 text-white px-8 py-3 rounded-lg font-semibold transition-all duration-200"
-            >
-              Join Auction
-            </button>
-          </form>
-        </div>
-
-        {/* Network Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-2">Network Status</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Connected Peers:</span>
-                <span className="text-green-400">{Object.keys(peerList).length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Your ID:</span>
-                <span className="text-blue-400 font-mono text-xs">
-                  {peerId ? `${peerId.slice(0, 8)}...${peerId.slice(-8)}` : 'Loading...'}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-2">Active Rooms</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Discovered Rooms:</span>
-                <span className="text-blue-400">{activeRooms.length}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Total Messages:</span>
-                <span className="text-green-400">{chatMessages.length}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h3 className="text-lg font-semibold text-white mb-2">Activity</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Total Bids:</span>
-                <span className="text-yellow-400">
-                  {chatMessages.filter(msg => msg.message.startsWith('BID:')).length}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-400">Last Activity:</span>
-                <span className="text-gray-300 text-xs">
-                  {chatMessages.length > 0 
-                    ? new Date(Math.max(...chatMessages.map(msg => msg.timestamp))).toLocaleTimeString()
-                    : 'None'
-                  }
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Discovered Auction Rooms */}
-        {activeRooms.length > 0 && (
-          <div className="bg-black/20 backdrop-blur-sm rounded-xl p-6 border border-white/10">
-            <h2 className="text-2xl font-bold text-white mb-6">Discovered Auction Rooms</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {activeRooms.map((roomId) => {
-                const roomMessages = chatMessages.filter(msg => msg.roomId === roomId)
-                const bidMessages = roomMessages.filter(msg => msg.message.startsWith('BID:'))
-                const uniqueParticipants = [...new Set(roomMessages.map(msg => msg.peerId))].length
-                const highestBid = bidMessages.length > 0 
-                  ? Math.max(...bidMessages.map(msg => parseFloat(msg.message.slice(4)) || 0))
-                  : 0
-
-                return (
-                  <div
-                    key={roomId}
-                    className="bg-white/5 rounded-lg p-4 border border-white/10 hover:border-purple-400/50 transition-all duration-200"
-                  >
-                    <h3 className="text-lg font-semibold text-white mb-2">{roomId}</h3>
-                    <div className="space-y-1 mb-4">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Participants:</span>
-                        <span className="text-blue-400">{uniqueParticipants}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Bids:</span>
-                        <span className="text-green-400">{bidMessages.length}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">High Bid:</span>
-                        <span className="text-yellow-400">
-                          {highestBid > 0 ? `${highestBid} ETH` : 'No bids'}
-                        </span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => navigate(`/room/${roomId}`)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-2 rounded-lg font-semibold transition-all duration-200"
-                    >
-                      Join Room
-                    </button>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* How It Works */}
-        <div className="bg-gradient-to-r from-purple-600/20 to-pink-600/20 backdrop-blur-sm rounded-xl p-6 border border-white/10 mt-8">
-          <h2 className="text-2xl font-bold text-white mb-4">🚀 How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-sm">
-            <div>
-              <h3 className="font-semibold text-white mb-2">1. 🔗 P2P Discovery</h3>
-              <p className="text-gray-300">
-                Peers find each other through WebRTC without central servers
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-2">2. 💬 Real-time Bidding</h3>
-              <p className="text-gray-300">
-                Bids are shared instantly across all auction participants
-              </p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-white mb-2">3. ⛓️ On-chain Settlement</h3>
-              <p className="text-gray-300">
-                Winning bid bundle gets submitted to smart contract
-              </p>
-            </div>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+      {/* Animated background particles */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-green-400 rounded-full animate-ping opacity-75"></div>
+        <div className="absolute top-3/4 right-1/4 w-1 h-1 bg-orange-400 rounded-full animate-pulse"></div>
+        <div className="absolute top-1/2 left-3/4 w-1.5 h-1.5 bg-cyan-400 rounded-full animate-bounce"></div>
       </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-green-400 border-t-transparent glow-green"></div>
+            <p className="mt-4 text-xl text-green-400 font-semibold animate-pulse">
+              Connecting to P2P Network...
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div className="relative z-10 container mx-auto px-4 py-4">
+          {/* Header Section */}
+          <div className="text-center mb-6">
+            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent mb-2 pulse-glow">
+              🎯 AUCTION HOUSE P2P
+            </h1>
+            <p className="text-sm md:text-base text-slate-300 max-w-xl mx-auto">
+              Decentralized auctions in the ultimate P2P gaming experience.
+            </p>
+          </div>
+
+          {/* Action Section */}
+          <div className="flex justify-center mb-6">
+            <button
+              onClick={handleCreateAuction}
+              className="group relative px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-semibold text-sm rounded-lg transition-all duration-300 transform hover:scale-105 glow-green"
+            >
+              <span className="relative z-10 flex items-center gap-2">
+                <span className="text-lg">🚀</span>
+                Create New Auction
+                <span className="text-lg">⚡</span>
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-green-600 to-emerald-700 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+          </div>
+
+          {/* Faucet Claims Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+            <button
+              onClick={claimFaucetErc20}
+              disabled={!erc20Connected || erc20Pending || erc20Confirming}
+              className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                erc20Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-green-400'
+              }`}
+            >
+              <div className="text-2xl mb-1">💰</div>
+              <div className={`text-lg font-bold mb-1 ${
+                erc20Error ? 'text-red-400' : 'text-green-400'
+              }`}>
+                {(erc20Pending || erc20Confirming) ? 'Mining...' : erc20Error ? 'Failed' : 'Claim ERC20'}
+              </div>
+              <div className="text-slate-400 text-xs">
+                {erc20Error ? 
+                  (erc20Error.message?.includes('rejected') || erc20Error.message?.includes('denied') ? 
+                    'Transaction rejected' : 'Transaction failed'
+                  ) : 'Get Test Tokens'
+                }
+              </div>
+              {erc20Confirmed && (
+                <div className="absolute top-1 right-1 text-green-400 text-sm">✅</div>
+              )}
+              {erc20Error && (
+                <div className="absolute top-1 right-1 text-red-400 text-sm">❌</div>
+              )}
+            </button>
+            <button
+              onClick={claimFaucetErc1155}
+              disabled={!erc1155Connected || erc1155Pending || erc1155Confirming}
+              className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+                erc1155Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-orange-400'
+              }`}
+            >
+              <div className="text-2xl mb-1">🎨</div>
+              <div className={`text-lg font-bold mb-1 ${
+                erc1155Error ? 'text-red-400' : 'text-orange-400'
+              }`}>
+                {(erc1155Pending || erc1155Confirming) ? 'Mining...' : erc1155Error ? 'Failed' : 'Claim NFT'}
+              </div>
+              <div className="text-slate-400 text-xs">
+                {erc1155Error ? 
+                  (erc1155Error.message?.includes('rejected') || erc1155Error.message?.includes('denied') ? 
+                    'Transaction rejected' : 'Transaction failed'
+                  ) : 'Get Thor\'s Hammer'
+                }
+              </div>
+              {erc1155Confirmed && (
+                <div className="absolute top-1 right-1 text-orange-400 text-sm">✅</div>
+              )}
+              {erc1155Error && (
+                <div className="absolute top-1 right-1 text-red-400 text-sm">❌</div>
+              )}
+            </button>
+          </div>
+
+          {/* Auctions List */}
+          <div className="bg-slate-800/30 backdrop-blur-sm border border-slate-700 rounded-xl p-4 glow-green">
+            <h2 className="text-xl font-bold text-center mb-4 bg-gradient-to-r from-green-400 to-cyan-400 bg-clip-text text-transparent">
+              🔥 Live Auctions
+            </h2>
+            <ActiveAuctionsList />
+          </div>
+        </div>
+      )}
+      
+      <CreateAuctionModal
+        showCreateForm={showCreateForm}
+        setShowCreateForm={setShowCreateForm}
+        createAuction={createAuction}
+      />
     </div>
   )
 }
