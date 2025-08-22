@@ -8,6 +8,7 @@ import { TokenBalanceCard } from "./TokenBalanceCard"
 export const Auction = () => {
     const watcherCleanupRef = useRef<(() => void) | null>(null)
     const [messages, setMessages] = useState<any>([])
+    const [highBid, setHighBid] = useState<string>('0')
     const { 
         auction, 
         room, 
@@ -24,6 +25,7 @@ export const Auction = () => {
     // Load initial messages when room is available
     useEffect(() => {
         const loadMessages = async () => {
+            let highestBid = 0
             if (!room) return
             
             try {
@@ -37,6 +39,11 @@ export const Auction = () => {
                         })
                         .map((msg: any) => {
                             const msgData = msg.value || msg
+                            if (msgData.type === 'bid') {
+                                if (!highestBid || Number(msgData.bid) > highestBid) {
+                                    highestBid = Number(msgData.bid)
+                                }
+                            }
                             return {
                                 id: msgData._id || msgData.timestamp?.toString() || Date.now().toString(),
                                 user: msgData.user || 'Anonymous Warrior',
@@ -49,6 +56,7 @@ export const Auction = () => {
                         .sort((a: any, b: any) => a.timestamp - b.timestamp)
                     
                     setMessages(formattedMessages)
+                    setHighBid(highestBid.toString())
                     console.log('⚡ Loaded', formattedMessages.length, 'battle messages')
                 }
             } catch (error) {
@@ -76,6 +84,11 @@ export const Auction = () => {
                 if (event && event.payload) {
                     const msgData = event.payload.value || event.payload
                     
+                    if (msgData.type === 'bid') {
+                        if (!highBid || Number(msgData.bid) > Number(highBid)) {
+                            setHighBid(msgData.bid)
+                        }
+                    }
                     // Only process message and bid types
                     if (msgData.type === 'message' || msgData.type === 'bid') {
                         const newMessage = {
@@ -143,7 +156,7 @@ export const Auction = () => {
                 {/* All Cards in Single Row */}
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                     {/* Auction Details Card - Compressed */}
-                    <AuctionDetailsCard auction={auction} postBid={postBid} />
+                    <AuctionDetailsCard auction={auction} postBid={postBid} highBid={highBid} />
                     
                     {/* NFT Balance Card */}
                     <NFTBalanceCard auction={auction} />

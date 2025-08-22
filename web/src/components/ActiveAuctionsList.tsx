@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { useAuctionsDB } from '../hooks/useAuctionsDB'
+import { formatEther } from 'viem'
 
 interface Auction {
   id: string
@@ -176,7 +177,7 @@ const ActiveAuctionsList: React.FC = () => {
                   💰 <span>Starting Bid</span>
                 </span>
                 <span className="text-green-400 font-bold text-lg">
-                  {auction.value.startingBid || '0'} 🪙
+                  {formatEther(auction.value.startingBid || '0')} 🪙
                 </span>
               </div>
               

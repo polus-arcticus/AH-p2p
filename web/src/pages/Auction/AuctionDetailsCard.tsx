@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { formatEther } from 'viem/utils'
+import { useAccount } from 'wagmi'
 
 interface AuctionDetailsCardProps {
   auction: {
+    auctioneer?: string
     id?: string
     title?: string
     description?: string
@@ -15,13 +17,18 @@ interface AuctionDetailsCardProps {
     [key: string]: any
   } | null
   postBid: (bid: string) => Promise<void>
+  highBid?: string
 }
 
-const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid }) => {
+const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid, highBid }) => {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(false)
   const [bidAmount, setBidAmount] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
+
+  const {address} = useAccount()
+
+  const isAuctioneer = address && auction?.auctioneer && address.toLowerCase() === auction.auctioneer.toLowerCase()
 
   const handlePlaceBid = async () => {
     if (!bidAmount || parseFloat(bidAmount) <= 0) {
@@ -36,6 +43,20 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
     } catch (error) {
       console.error('Failed to place bid:', error)
       alert('Failed to place bid. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleConsumeAuction = async () => {
+    try {
+      setIsSubmitting(true)
+      // TODO: Implement consume auction logic
+      console.log('Consuming auction:', auction?.id)
+      alert('Consume auction functionality to be implemented')
+    } catch (error) {
+      console.error('Failed to consume auction:', error)
+      alert('Failed to consume auction. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -144,7 +165,7 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
           <div className="flex items-center justify-between mb-2">
             <span className="text-green-400 font-semibold text-sm">💰 High</span>
             <span className="text-green-400 font-bold text-sm">
-              {auction.startingBid ? formatEther(BigInt(auction.startingBid)) : '0'} 🪙
+              {highBid ? highBid : '0'} 🪙
             </span>
           </div>
         </div>
@@ -153,25 +174,37 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
       {/* Compact Action Buttons */}
       <div className="flex gap-2 mt-auto">
         {isActive ? (
-          <>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              value={bidAmount}
-              onChange={(e) => setBidAmount(e.target.value)}
-              placeholder="Bid amount..."
-              disabled={isSubmitting}
-              className="flex-1 px-3 py-2 bg-slate-800/50 border border-slate-600 hover:border-slate-500 focus:border-green-400 text-white placeholder-slate-400 rounded-lg transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-green-400/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-            />
+          isAuctioneer ? (
+            // Auctioneer view - Show consume auction button
             <button 
-              onClick={handlePlaceBid}
-              disabled={isSubmitting || !bidAmount || parseFloat(bidAmount) <= 0}
-              className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 glow-green pulse-glow whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
+              onClick={handleConsumeAuction}
+              disabled={isSubmitting}
+              className="flex-1 px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 hover:from-purple-400 hover:to-violet-500 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 glow-purple pulse-glow disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
             >
-              {isSubmitting ? '⏳' : '⚔️ Bid'}
+              {isSubmitting ? '⏳' : '🏆 Consume Auction'}
             </button>
-          </>
+          ) : (
+            // Non-auctioneer view - Show bid form
+            <>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                placeholder="Bid amount..."
+                disabled={isSubmitting}
+                className="flex-1 px-3 py-2 bg-slate-800/50 border border-slate-600 hover:border-slate-500 focus:border-green-400 text-white placeholder-slate-400 rounded-lg transition-all duration-300 focus:outline-none focus:ring-1 focus:ring-green-400/20 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+              />
+              <button 
+                onClick={handlePlaceBid}
+                disabled={isSubmitting || !bidAmount || parseFloat(bidAmount) <= 0}
+                className="px-4 py-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-lg transition-all duration-300 transform hover:scale-105 glow-green pulse-glow whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none text-sm"
+              >
+                {isSubmitting ? '⏳' : '⚔️ Bid'}
+              </button>
+            </>
+          )
         ) : (
           <div className="flex-1 px-4 py-2 bg-slate-700 border border-slate-600 text-slate-400 font-semibold rounded-lg text-center text-sm">
             🏁 Concluded
