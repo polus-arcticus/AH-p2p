@@ -75,7 +75,7 @@ export const createHeliaNode = async (
         libp2p = await createLibp2p(options)
         helia = await createHelia({ libp2p, datastore, blockstore })
 
-        const relay = `/dns4/ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
+        const relay = `/dns4/relay.ah-p2p.market/tcp/443/wss/p2p/16Uiu2HAm3TCXKkf8uBHsf1kL4TXC8325P7mxJUzPy8iskhewiyAV`
         await helia.libp2p.dial(multiaddr(relay))
         console.log('Dialing relay', relay)
         dbAddrs = await stabilizeConnection(helia)
