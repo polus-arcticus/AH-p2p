@@ -4,10 +4,11 @@ import {
   useWriteContract,
   useAccount
 } from 'wagmi'
-import staticData from '../assets/Static.json'
+import { useStaticData } from './useStaticData'
 
 export function useErc20Faucet() {
   const { address } = useAccount()
+  const { staticData } = useStaticData()
   
   const { 
     data: hash, 
@@ -22,7 +23,7 @@ export function useErc20Faucet() {
     })
 
   const claimFaucetErc20 = React.useCallback(() => {
-    if (!address) return
+    if (!address || !staticData) return
     
     writeContract({
       address: staticData.exampleTokenAddr as `0x${string}`,
@@ -30,7 +31,7 @@ export function useErc20Faucet() {
       functionName: 'faucet',
       args: [],
     })
-  }, [writeContract, address])
+  }, [writeContract, address, staticData])
 
   return {
     claimFaucetErc20,
@@ -45,6 +46,7 @@ export function useErc20Faucet() {
 
 export function useErc1155Faucet() {
   const { address } = useAccount()
+  const { staticData } = useStaticData()
   
   const { 
     data: hash, 
@@ -59,15 +61,24 @@ export function useErc1155Faucet() {
     })
 
   const claimFaucetErc1155 = React.useCallback(() => {
-    if (!address) return
+    if (!address || !staticData) return
+
+    console.log('claimFaucetErc1155', address, staticData)
     
     writeContract({
       address: staticData.exampleNftAddr as `0x${string}`,
       abi: staticData.exampleNftAbi,
       functionName: 'faucet',
       args: [],
+    }, {
+      onSuccess: () => {
+        console.log('faucet success')
+      },
+      onError: (error) => {
+        console.log('faucet error', error)
+      }
     })
-  }, [writeContract, address])
+  }, [writeContract, address, staticData])
 
   return {
     claimFaucetErc1155,

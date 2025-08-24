@@ -1,10 +1,6 @@
 import { useSignTypedData, useChainId, useAccount } from 'wagmi'
 import { keccak256 } from 'viem'
-import staticContracts from '../assets/Static.json'
-
-const MOCK_CONTRACTS = {
-    englishAuctionAddr: (staticContracts as any).englishAuctionAddr
-}
+import { useStaticData } from './useStaticData'
 
 // Type definitions from the test file
 export const AuctionAuthSig = [
@@ -70,13 +66,14 @@ export interface AuctionMessage extends Record<string, unknown> {
 export const useAuctionSignature = () => {
     const chainId = useChainId()
     const { address } = useAccount()
+    const { staticData } = useStaticData()
     const { signTypedData, isPending, error } = useSignTypedData()
 
     const domain = {
         name: 'EnglishAuction',
         version: '1',
         chainId: chainId,
-        verifyingContract: MOCK_CONTRACTS.englishAuctionAddr as `0x${string}`
+        verifyingContract: staticData?.englishAuctionAddr as `0x${string}`
     }
 
     const signAuctionAuth = (message: AuctionAuthSigMessage) => {

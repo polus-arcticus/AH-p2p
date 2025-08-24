@@ -1,7 +1,6 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import staticContracts from '../assets/Static.json'
-import { parseEther } from 'viem'
+import { useStaticData } from '../hooks/useStaticData'
 
 interface CreateAuctionModalProps {
     showCreateForm: boolean
@@ -36,6 +35,7 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
 }) => {
     const [signingStep, setSigningStep] = useState<'idle' | 'signing' | 'creating' | 'success' | 'error'>('idle')
     const [errorMessage, setErrorMessage] = useState<string>('')
+    const { staticData } = useStaticData()
     
     const {
         register,
@@ -46,13 +46,28 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
         defaultValues: {
             title: 'Test Auction',
             description: 'Testing ERC1155 to ERC20 auction',
-            nftContract: staticContracts.exampleNftAddr,
+            nftContract: '',
             nftTokenId: '2',
-            tokenContract: staticContracts.exampleTokenAddr,
+            tokenContract: '',
             startingBid: '0.01',
             durationHours: 24
         }
     })
+
+    // Update form defaults when staticData loads
+    useEffect(() => {
+        if (staticData) {
+            reset({
+                title: 'Test Auction',
+                description: 'Testing ERC1155 to ERC20 auction',
+                nftContract: staticData.exampleNftAddr,
+                nftTokenId: '2',
+                tokenContract: staticData.exampleTokenAddr,
+                startingBid: '0.01',
+                durationHours: 24
+            })
+        }
+    }, [staticData, reset])
 
     const onSubmit = async (data: AuctionFormData) => {
         console.log('🎯 Starting auction creation process...')
@@ -71,7 +86,7 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                 nftContract: data.nftContract,
                 nftTokenId: data.nftTokenId,
                 tokenContract: data.tokenContract,
-                startingBid: parseEther(data.startingBid),
+                startingBid: data.startingBid,
                 endTime
             }
 
@@ -453,7 +468,7 @@ const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
                             type="button"
                             onClick={handleClose}
                             disabled={signingStep === 'signing' || signingStep === 'creating'}
-                            className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 border border-slate-600 hover:border-slate-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex-1 px-6 py-3 bg-slate-800 hover:bg-slate-700 disabled:bg-slate-900 border border-slate-600 hover:border-slate-500 text-black font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             <span className="flex items-center justify-center gap-2">
                                 ❌ Cancel

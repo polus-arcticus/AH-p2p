@@ -13,7 +13,7 @@ import { multiaddr } from '@multiformats/multiaddr'
 import { useAuctionSignature, type BidMessage, type AuctionMessage } from './useAuctionSignature'
 import { parseEther } from 'viem'
 import { useAccount, useWriteContract, useReadContract } from 'wagmi'
-import staticContracts from '../assets/Static.json'
+import { useStaticData } from './useStaticData'
 export const useAuctionRoom = () => {
     const initializedRef = useRef(false)
     const { auctionId } = useParams()
@@ -21,6 +21,7 @@ export const useAuctionRoom = () => {
     const { address } = useAccount()
     const { joinAuction, getAuction, updateAuction } = useAuctionsDB()
     const { signBid, signAuction } = useAuctionSignature()
+    const { staticData } = useStaticData()
     const {
         data: hash,
         isPending,
@@ -45,12 +46,12 @@ export const useAuctionRoom = () => {
 
     // Hook to read current nonce for the bidder
     const { data: currentNonce } = useReadContract({
-        address: (staticContracts as any).englishAuctionAddr as `0x${string}`,
-        abi: (staticContracts as any).englishAuctionAbi,
+        address: staticData?.englishAuctionAddr as `0x${string}`,
+        abi: staticData?.englishAuctionAbi,
         functionName: 'usedNonces',
         args: address ? [address] : undefined,
         query: {
-            enabled: !!address
+            enabled: !!(address && staticData)
         }
     })
 
@@ -174,7 +175,7 @@ export const useAuctionRoom = () => {
                 nft: auction.nftContract,
                 nftId: BigInt(auction.nftTokenId),
                 token: auction.tokenContract,
-                bidStart: BigInt(auction.startingBid),
+                bidStart: parseEther(auction.startingBid),
                 deadline: Math.floor(auction.endTime / 1000),
                 auctionSigHash: auction.auctionSigHash,
                 bids: bidMessages.map(bid => ({
@@ -219,9 +220,14 @@ export const useAuctionRoom = () => {
 
             // Call the contract and wrap in Promise
             return new Promise((resolve, reject) => {
+                if (!staticData) {
+                    reject(new Error('Static data not loaded'))
+                    return
+                }
+                
                 writeContract({
-                    address: (staticContracts as any).englishAuctionAddr as `0x${string}`,
-                    abi: (staticContracts as any).englishAuctionAbi,
+                    address: staticData.englishAuctionAddr as `0x${string}`,
+                    abi: staticData.englishAuctionAbi,
                     functionName: 'consumeAuction',
                     args: [v, r, s, contractAuctionMessage]
                 }, {
