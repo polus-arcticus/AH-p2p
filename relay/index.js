@@ -83,10 +83,8 @@ const main = async () => {
   const auctionsDB = await orbit.open(
     'ah-p2p/auctions',
     {
-      type: 'keyvalue',
-      AccessController: IPFSAccessController({
-        write: [orbit.identity.id]
-      })
+      type: 'documents',
+      AccessController: IPFSAccessController({ write: ['*'] })
     }
   )
 
