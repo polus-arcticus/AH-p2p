@@ -49,7 +49,7 @@ export const useAuctionsDB = () => {
                 nft: auctionData.nftContract,
                 nftId: BigInt(auctionData.nftTokenId),
                 token: auctionData.tokenContract,
-                bidStart: auctionData.startingBid,
+                bidStart: parseEther(auctionData.startingBid),
                 deadline: auctionData.endTime
             }
 

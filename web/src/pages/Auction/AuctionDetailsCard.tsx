@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { formatEther } from 'viem/utils'
+import { formatEther, parseEther } from 'viem/utils'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 
 interface AuctionDetailsCardProps {
@@ -202,7 +202,7 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
           <div className="flex items-center justify-between mb-2">
             <span className="text-green-400 font-semibold text-sm">💰 Start</span>
             <span className="text-green-400 font-bold text-sm">
-              {auction.startingBid ? formatEther(BigInt(auction.startingBid)) : '0'} 🪙
+              {auction.startingBid ? formatEther(parseEther(auction.startingBid)) : '0'} 🪙
             </span>
           </div>
           <div className="flex items-center justify-between mb-2">

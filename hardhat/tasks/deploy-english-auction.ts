@@ -1,6 +1,7 @@
 import { task } from "hardhat/config";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
 import * as fs from 'fs';
+import * as path from 'path';
 import { parseEther } from "viem";
 
 //import EnglishAuctionJson from '../artifacts/contracts/EnglishAuction.sol/EnglishAuction.json'
@@ -16,6 +17,7 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
     const [auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
     
     console.log(`Deploying contracts with isTest=${isTest}...`);
+    const chainId = Number(await hre.getChainId())
     
     const englishAuction = await viem.deployContract('EnglishAuction')
     console.log(`EnglishAuction deployed to: ${englishAuction.address}`);
@@ -41,10 +43,17 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
       };
       
       // Write to both locations for testnet
-      fs.writeFileSync('./export/StaticTestnet.json', JSON.stringify(contractData));
-      fs.writeFileSync('../web/src/assets/Static.json', JSON.stringify(contractData));
+      const exportDir = `./export/${chainId}`;
+      const webAssetsDir = `../web/src/assets/${chainId}`;
       
-      console.log('Contract addresses written to StaticTestnet.json and Static.json');
+      // Create directories if they don't exist
+      fs.mkdirSync(exportDir, { recursive: true });
+      fs.mkdirSync(webAssetsDir, { recursive: true });
+      
+      fs.writeFileSync(path.join(exportDir, 'StaticTestnet.json'), JSON.stringify(contractData, null, 2));
+      fs.writeFileSync(path.join(webAssetsDir, 'Static.json'), JSON.stringify(contractData, null, 2));
+      
+      console.log(`Contract addresses written to ${chainId}/StaticTestnet.json and Static.json`);
       
       return {
         englishAuctionAddr: englishAuction.address,
@@ -57,9 +66,14 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
         englishAuctionAbi: englishAuction.abi,
       };
       
-      fs.writeFileSync('../web/src/assets/Static.json', JSON.stringify(contractData));
+      const webAssetsDir = `../web/src/assets/${chainId}`;
       
-      console.log('Contract addresses written to Static.json');
+      // Create directory if it doesn't exist
+      fs.mkdirSync(webAssetsDir, { recursive: true });
+      
+      fs.writeFileSync(path.join(webAssetsDir, 'Static.json'), JSON.stringify(contractData, null, 2));
+      
+      console.log(`Contract addresses written to ${chainId}/Static.json`);
       
       return {
         englishAuctionAddr: englishAuction.address,
