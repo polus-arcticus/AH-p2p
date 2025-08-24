@@ -11,8 +11,9 @@ import { parseEther } from "viem";
 // Hardhat task for deployment
 task("deploy-english-auction", "Deploy English Auction and optionally mock contracts")
   .addFlag("isTest", "Deploy with mock ERC20 and ERC1155 contracts for testing")
+  .addFlag("verify", "Verify contracts on Etherscan")
   .setAction(async (taskArgs, hre) => {
-    const { isTest } = taskArgs;
+    const { isTest, verify } = taskArgs;
     const viem = hre.viem;
     const [auctioneer, bidderOne, bidderTwo, bidderThree] = await viem.getWalletClients()
     
@@ -24,7 +25,7 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
     
     if (isTest) {
       const exampleNFT = await viem.deployContract('ExampleNFT')
-      const exampleToken = await viem.deployContract('ExampleToken', [parseEther('10000000000000')])
+      const exampleToken = await viem.deployContract('ExampleToken')
       
       console.log(`ExampleNFT deployed to: ${exampleNFT.address}`);
       console.log(`ExampleToken deployed to: ${exampleToken.address}`);
@@ -55,6 +56,12 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
       
       console.log(`Contract addresses written to ${chainId}/StaticTestnet.json and Static.json`);
       
+      if (verify) {
+        await hre.run("verify:verify", { address: englishAuction.address });
+        await hre.run("verify:verify", { address: exampleToken.address });
+        await hre.run("verify:verify", { address: exampleNFT.address });
+      }
+      
       return {
         englishAuctionAddr: englishAuction.address,
         exampleTokenAddr: exampleToken.address,
@@ -74,6 +81,10 @@ task("deploy-english-auction", "Deploy English Auction and optionally mock contr
       fs.writeFileSync(path.join(webAssetsDir, 'Static.json'), JSON.stringify(contractData, null, 2));
       
       console.log(`Contract addresses written to ${chainId}/Static.json`);
+
+      if (verify) {
+        await hre.run("verify:verify", { address: englishAuction.address });
+      }
       
       return {
         englishAuctionAddr: englishAuction.address,

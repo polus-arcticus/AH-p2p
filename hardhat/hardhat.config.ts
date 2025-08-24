@@ -33,8 +33,22 @@ const config: HardhatUserConfig = {
       accounts: {
         mnemonic: process.env.MNEMONIC as string
       }
+    },
+    sepolia: {
+      saveDeployments: true,
+      chainId: 11155111,
+      url: `https://eth-sepolia.g.alchemy.com/v2/${process.env.ALCHEMY_KEY}`,
+      accounts: {
+        mnemonic: process.env.MNEMONIC as string
+      }
     }
   },
+  etherscan: {
+    apiKey: {
+      sepolia: process.env.ETHERSCAN_KEY as string
+    }
+  }
+  
 
 };
 export default config;
