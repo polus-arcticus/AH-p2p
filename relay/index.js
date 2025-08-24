@@ -27,9 +27,7 @@ const TOPICS = {
 
 }
 
-
 const peerList =  {}
-
 
 
 const main = async () => {
@@ -83,9 +81,9 @@ const main = async () => {
   const auctionsDB = await orbit.open(
     'ah-p2p/auctions',
     {
-      type: 'keyvalue',
+      type: 'documents',
       AccessController: IPFSAccessController({
-        write: [orbit.identity.id]
+        write: ['*']
       })
     }
   )
