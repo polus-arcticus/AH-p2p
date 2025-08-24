@@ -35,6 +35,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
   const [isConnected, setIsConnected] = useState(false)
   const [onlineUsers, setOnlineUsers] = useState<string[]>(['GameMaster']) // Always show GameMaster
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const messagesContainerRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLInputElement>(null)
 
   // Set connected state when room is available
@@ -61,9 +62,11 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
     }
   }, [auction?.peers])
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (only within chat container)
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    if (messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop = messagesContainerRef.current.scrollHeight
+    }
   }, [messages])
 
   const formatTime = (timestamp: number) => {
@@ -73,8 +76,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
     })
   }
 
-  const handleSendMessage = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSendMessage = async () => {
     if (!newMessage.trim() || !room) return
 
     try {
@@ -83,10 +85,16 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
       
       // Message will be added via parent component's room watcher
       setNewMessage('')
-      chatInputRef.current?.focus()
       console.log('⚡ Battle message sent successfully!')
     } catch (error) {
       console.error('❌ Failed to send battle message:', error)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
     }
   }
 
@@ -155,7 +163,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
       </div>
 
       {/* Messages Area */}
-      <div className="h-96 overflow-y-auto p-4 space-y-3 bg-slate-900/20">
+      <div ref={messagesContainerRef} className="h-96 overflow-y-auto p-4 space-y-3 bg-slate-900/20">
         {messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-slate-400">
             <div className="text-4xl mb-2">🤐</div>
@@ -207,19 +215,21 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
 
       {/* Message Input */}
       <div className="border-t border-slate-600 p-4 bg-slate-800/30">
-        <form onSubmit={handleSendMessage} className="flex gap-3">
+        <div className="flex gap-3">
           <input
             ref={chatInputRef}
             type="text"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={handleKeyPress}
             placeholder={isConnected ? "Enter your battle cry... ⚔️" : "Connecting to arena..."}
             disabled={!isConnected}
             className="flex-1 px-4 py-3 bg-slate-700/50 border border-slate-600 rounded-xl text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-300"
             maxLength={500}
           />
           <button
-            type="submit"
+            type="button"
+            onClick={handleSendMessage}
             disabled={!isConnected || !newMessage.trim()}
             className="px-6 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed glow-cyan"
           >
@@ -227,7 +237,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
               🚀 <span className="hidden sm:inline">Send</span>
             </span>
           </button>
-        </form>
+        </div>
         <div className="flex items-center justify-between mt-2 text-xs text-slate-400">
           <div className="flex items-center gap-4">
             <span>💡 Tip: Use emojis to express your battle spirit!</span>

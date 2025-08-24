@@ -132,62 +132,43 @@ export const Auction = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
-            {/* Epic Header */}
-            <div className="max-w-7xl mx-auto mb-8">
-                <div className="text-center py-8">
-                    <h1 className="text-5xl font-bold bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent mb-4">
-                        ⚔️ Battle Arena Dashboard
-                    </h1>
-                    <p className="text-xl text-slate-300 max-w-2xl mx-auto">
-                        Welcome to the ultimate P2P auction battleground! Monitor your battles, place strategic bids, and communicate with fellow warriors in real-time.
-                    </p>
-                    <div className="flex items-center justify-center gap-4 mt-4">
-                        <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-xl">
-                            <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                            <span className="text-green-400 font-semibold">Arena Online</span>
-                        </div>
-                        {room?.address && (
-                            <div className="flex items-center gap-2 px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-xl">
-                                <span className="text-slate-400">🌐 Room:</span>
-                                <span className="text-cyan-400 font-mono text-sm">{room.address.slice(0, 8)}...</span>
-                            </div>
-                        )}
+            {/* Main Dashboard Grid */}
+            <div className="max-w-7xl mx-auto space-y-6">
+                {/* First Row: 1/3 Auction Details + 2/3 Chat */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Auction Details Card - 1/3 width */}
+                    <div className="lg:col-span-1">
+                        <AuctionDetailsCard 
+                            auction={auction} 
+                            postBid={postBid} 
+                            highBid={highBid} 
+                            consumeAuction={consumeAuction} 
+                            completeAuction={completeAuction}
+                            onAuctionSuccess={(result) => {
+                                setAuctionResult(result)
+                                setShowSuccessModal(true)
+                            }}
+                        />
+                    </div>
+                    
+                    {/* Chat Interface - 2/3 width */}
+                    <div className="lg:col-span-2">
+                        <AuctionChat 
+                            auctionId={auction?.id} 
+                            room={room}
+                            messages={messages}
+                            postChatMessage={postChatMessage}
+                        />
                     </div>
                 </div>
-            </div>
 
-            {/* Main Dashboard Grid */}
-            <div className="max-w-7xl mx-auto space-y-8">
-                {/* All Cards in Single Row */}
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* Auction Details Card - Compressed */}
-                    <AuctionDetailsCard 
-                        auction={auction} 
-                        postBid={postBid} 
-                        highBid={highBid} 
-                        consumeAuction={consumeAuction} 
-                        completeAuction={completeAuction}
-                        onAuctionSuccess={(result) => {
-                            setAuctionResult(result)
-                            setShowSuccessModal(true)
-                        }}
-                    />
-                    
-                    {/* NFT Balance Card */}
+                {/* Second Row: 50/50 NFT and Token Balance */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    {/* NFT Balance Card - 50% width */}
                     <NFTBalanceCard auction={auction} />
                     
-                    {/* Token Balance Card */}
+                    {/* Token Balance Card - 50% width */}
                     <TokenBalanceCard auction={auction} />
-                </div>
-
-                {/* Chat Interface - Full Width */}
-                <div className="w-full">
-                    <AuctionChat 
-                        auctionId={auction?.id} 
-                        room={room}
-                        messages={messages}
-                        postChatMessage={postChatMessage}
-                    />
                 </div>
             </div>
 

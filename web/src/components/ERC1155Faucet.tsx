@@ -15,17 +15,15 @@ const ERC1155Faucet: React.FC = () => {
     <button
       onClick={claimFaucetErc1155}
       disabled={!erc1155Connected || erc1155Pending || erc1155Confirming}
-      className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-        erc1155Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-orange-400'
+      className={`group relative px-4 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 text-center glow-purple disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+        erc1155Error ? 'from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500' : ''
       }`}
     >
       <div className="text-2xl mb-1">🎨</div>
-      <div className={`text-lg font-bold mb-1 ${
-        erc1155Error ? 'text-red-400' : 'text-orange-400'
-      }`}>
+      <div className="text-lg font-bold mb-1 text-white">
         {(erc1155Pending || erc1155Confirming) ? 'Mining...' : erc1155Error ? 'Failed' : 'Claim NFT'}
       </div>
-      <div className="text-slate-400 text-xs">
+      <div className="text-white/80 text-xs">
         {erc1155Error ? 
           (erc1155Error.message?.includes('rejected') || erc1155Error.message?.includes('denied') ? 
             'Transaction rejected' : 'Transaction failed'
@@ -33,7 +31,7 @@ const ERC1155Faucet: React.FC = () => {
         }
       </div>
       {erc1155Confirmed && (
-        <div className="absolute top-1 right-1 text-orange-400 text-sm">✅</div>
+        <div className="absolute top-1 right-1 text-green-400 text-sm">✅</div>
       )}
       {erc1155Error && (
         <div className="absolute top-1 right-1 text-red-400 text-sm">❌</div>

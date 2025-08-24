@@ -15,17 +15,15 @@ const ERC20Faucet: React.FC = () => {
     <button
       onClick={claimFaucetErc20}
       disabled={!erc20Connected || erc20Pending || erc20Confirming}
-      className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-        erc20Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-green-400'
+      className={`group relative px-4 py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 text-center glow-cyan disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
+        erc20Error ? 'from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500' : ''
       }`}
     >
       <div className="text-2xl mb-1">💰</div>
-      <div className={`text-lg font-bold mb-1 ${
-        erc20Error ? 'text-red-400' : 'text-green-400'
-      }`}>
+      <div className="text-lg font-bold mb-1 text-white">
         {(erc20Pending || erc20Confirming) ? 'Mining...' : erc20Error ? 'Failed' : 'Claim ERC20'}
       </div>
-      <div className="text-slate-400 text-xs">
+      <div className="text-white/80 text-xs">
         {erc20Error ? 
           (erc20Error.message?.includes('rejected') || erc20Error.message?.includes('denied') ? 
             'Transaction rejected' : 'Transaction failed'

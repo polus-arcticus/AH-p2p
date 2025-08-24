@@ -43,7 +43,7 @@ function WalletOption({
         <button 
             disabled={!ready} 
             onClick={onClick}
-            className="px-2 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-medium text-xs rounded transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
+            className="px-0 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 disabled:from-gray-600 disabled:to-gray-700 text-white font-medium text-xs rounded transition-all duration-200 transform hover:scale-105 disabled:scale-100 disabled:cursor-not-allowed"
         >
             🔗 {connector.name}
         </button>
@@ -56,7 +56,7 @@ export function Account() {
     const { data: ensAvatar } = useEnsAvatar({ name: ensName! })
 
     return (
-        <div className="flex items-center gap-1 bg-slate-800/50 backdrop-blur-sm border border-slate-600 rounded-lg px-2 py-1">
+        <div className="flex items-center gap-1 bg-slate-800/50 backdrop-blur-sm border border-slate-600 rounded-lg px-1">
             {ensAvatar && (
                 <img 
                     alt="ENS Avatar" 
@@ -70,7 +70,7 @@ export function Account() {
                         {ensName ? `🎮 ${ensName}` : '👤'}
                     </div>
                     <div className="text-slate-400 text-xs font-mono">
-                        {address.slice(0, 4)}...{address.slice(-2)}
+                        {address.slice(0, 4)}...{address.slice(-4)}
                     </div>
                     {chain && (
                         <div className="text-cyan-400 text-xs font-medium">
@@ -81,7 +81,7 @@ export function Account() {
             )}
             <button 
                 onClick={() => disconnect()}
-                className="ml-1 px-2 py-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
+                className="ml-1 px-1 bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-400 hover:to-pink-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
             >
                 ⚡
             </button>
@@ -97,7 +97,7 @@ function ChainSwitcher() {
         <div className="relative">
             <button
                 onClick={() => setShowChains(!showChains)}
-                className="px-2 py-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
+                className="px-1 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-400 hover:to-indigo-500 text-white text-xs font-medium rounded transition-all duration-200 transform hover:scale-105"
             >
                 🔗
             </button>
@@ -110,7 +110,7 @@ function ChainSwitcher() {
                                 switchChain({ chainId: chain.id })
                                 setShowChains(false)
                             }}
-                            className="w-full px-2 py-1 text-left text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 first:rounded-t-lg last:rounded-b-lg transition-colors duration-200"
+                            className="w-full px-1 text-left text-xs text-slate-300 hover:text-white hover:bg-slate-700/50 first:rounded-t-lg last:rounded-b-lg transition-colors duration-200"
                         >
                             🌐 {chain.name}
                         </button>
@@ -138,9 +138,12 @@ export const NavBar = () => {
                     <div className="flex items-center gap-2">
                         <Link 
                             to="/" 
-                            className="text-lg font-bold bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent hover:scale-105 transition-transform duration-200 cursor-pointer"
+                            className="text-lg font-bold hover:scale-105 transition-transform duration-200 cursor-pointer flex items-center gap-2"
                         >
-                            🎯 AH P2P
+                            <span className="text-xl">🎯</span>
+                            <span className="bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent">
+                                AH P2P
+                            </span>
                         </Link>
                         <div className="hidden md:block w-px h-4 bg-slate-600"></div>
                         <div className="hidden md:flex items-center gap-1 text-xs">

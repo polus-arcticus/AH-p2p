@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { formatEther, parseEther } from 'viem/utils'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
+import { MockNftSvg } from '@/components/MockNftSvg'
 
 interface AuctionDetailsCardProps {
   auction: {
@@ -24,7 +25,15 @@ interface AuctionDetailsCardProps {
   onAuctionSuccess?: (result: { winnerAddress?: string; finalBid?: string; nftName?: string }) => void
 }
 
-const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBid, highBid, consumeAuction, completeAuction, refetchBalances, onAuctionSuccess }) => {
+const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({
+  auction,
+  postBid,
+  highBid,
+  consumeAuction,
+  completeAuction,
+  refetchBalances,
+  onAuctionSuccess
+}) => {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(false)
   const [bidAmount, setBidAmount] = useState<string>('')
@@ -210,6 +219,21 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({ auction, postBi
             <span className="text-green-400 font-bold text-sm">
               {highBid ? highBid : '0'} 🪙
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* NFT Preview */}
+      <div className="mb-4">
+        <div className="bg-slate-900/50 border border-slate-600 rounded-lg p-3">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-cyan-400 font-semibold text-sm">🖼️ NFT Preview</span>
+          </div>
+          <div className="aspect-square w-full max-w-[200px] mx-auto">
+            <MockNftSvg 
+              tokenId={auction.nftTokenId || '0'} 
+              className="w-full h-full rounded-lg border border-slate-600"
+            />
           </div>
         </div>
       </div>

@@ -72,8 +72,11 @@ function App() {
         <div className="relative z-10 container mx-auto px-4 py-4">
           {/* Header Section */}
           <div className="text-center mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent mb-2 pulse-glow">
-              🎯 AUCTION HOUSE P2P
+            <h1 className="text-3xl md:text-4xl font-bold mb-2 pulse-glow">
+              <span className="text-4xl md:text-5xl mr-3">🎯</span>
+              <span className="bg-gradient-to-r from-green-400 via-cyan-400 to-orange-400 bg-clip-text text-transparent">
+                AUCTION HOUSE P2P
+              </span>
             </h1>
             <p className="text-sm md:text-base text-slate-300 max-w-xl mx-auto">
               Decentralized auctions in the ultimate P2P gaming experience.
