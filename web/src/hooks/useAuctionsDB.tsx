@@ -11,6 +11,23 @@ import { IPFSAccessController } from '@orbitdb/core'
 import { useAuctionSignature, type AuctionAuthSigMessage } from './useAuctionSignature'
 import { parseEther } from 'viem'
 
+export type AuctionData = {
+    _id: string
+    nftContract: string
+    nftTokenId: string
+    tokenContract: string
+    startingBid: string
+    endTime: string
+    signature: string
+    auctionSigHash: string
+    auctioneerNonce: string
+    signatureMessage: AuctionAuthSigMessage
+    peers: Record<string, string>
+    roomAddress: string
+    createdAt: number
+    auctioneer: string
+}
+
 
 export const useAuctionsDB = () => {
     const {auctionsDB, orbit, selfAddress} = useContext(AHP2PContext)
@@ -79,8 +96,20 @@ export const useAuctionsDB = () => {
 
     const getAuctions = useCallback(async () => {
         if (!auctionsDB) return
-        const auctions = await auctionsDB.all()
-        return auctions
+        const auctionsArray = await auctionsDB.all()
+        // Convert array to object with auction.key as key
+        const auctionsObject = auctionsArray.reduce((acc: Record<string, any>, auction: any) => {
+            acc[auction.key] = auction.value
+            return acc
+        }, {})
+        return auctionsObject
+    }, [auctionsDB])
+
+    const updateAuction = useCallback(async (update: any) => {
+        if (!auctionsDB) return
+        await auctionsDB.put({
+            ...update
+        })
     }, [auctionsDB])
 
     const getAuction = useCallback(async (auctionId: string) => {
@@ -225,6 +254,7 @@ export const useAuctionsDB = () => {
         getAuctions,
         getAuction, 
         joinAuction,
+        updateAuction,
         watchAuctions
     }
 }

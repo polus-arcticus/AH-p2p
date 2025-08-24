@@ -19,7 +19,7 @@ export const useAuctionRoom = () => {
     const { auctionId } = useParams()
     const { orbit, selfAddress, peerId } = useContext(AHP2PContext)
     const { address } = useAccount()
-    const { joinAuction, getAuction } = useAuctionsDB()
+    const { joinAuction, getAuction, updateAuction } = useAuctionsDB()
     const { signBid, signAuction } = useAuctionSignature()
     const {
         data: hash,
@@ -128,7 +128,7 @@ export const useAuctionRoom = () => {
 
 
     const completeAuction = useCallback(async () => {
-        if (!room || !address) return
+        if (!room || !address || !auction) return
 
         await room.put({
             _id: 'completion:' + Math.floor(Date.now() / 1000),
@@ -138,6 +138,9 @@ export const useAuctionRoom = () => {
             user: address,
             isSystemMessage: true
         })
+        let updatedAuction = auction
+        updatedAuction.endTime = Math.floor(Date.now() / 1000);
+        updateAuction(updatedAuction)
 
         console.log('✅ Auction completion message posted to room')
     }, [room, address])
