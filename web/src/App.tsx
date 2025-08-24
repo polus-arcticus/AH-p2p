@@ -1,37 +1,53 @@
 import { useContext, useState } from 'react'
 import { AHP2PContext } from './provider/AHP2PProvider/AHP2PProvider'
 import { useAuctionsDB } from './hooks/useAuctionsDB'
-import { useErc20Faucet, useErc1155Faucet } from './hooks/useFaucet'
 import CreateAuctionModal from './components/CreateAuctionModal'
 import ActiveAuctionsList from './components/ActiveAuctionsList'
+import ERC20Faucet from './components/ERC20Faucet'
+import ERC1155Faucet from './components/ERC1155Faucet'
+import { useAccount } from 'wagmi'
 
 function App() {
   const { loading } = useContext(AHP2PContext)
+  const { address } = useAccount()
   const {
     createAuction
   } = useAuctionsDB()
-  const {
-    claimFaucetErc20,
-    isPending: erc20Pending,
-    isConfirming: erc20Confirming,
-    isConfirmed: erc20Confirmed,
-    isConnected: erc20Connected,
-    error: erc20Error
-  } = useErc20Faucet()
-  
-  const {
-    claimFaucetErc1155,
-    isPending: erc1155Pending,
-    isConfirming: erc1155Confirming,
-    isConfirmed: erc1155Confirmed,
-    isConnected: erc1155Connected,
-    error: erc1155Error
-  } = useErc1155Faucet()
 
   const [showCreateForm, setShowCreateForm] = useState(false)
 
   const handleCreateAuction = () => {
     setShowCreateForm(true)
+  }
+
+  if (!address) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center max-w-md mx-auto px-4">
+          <div className="inline-block animate-spin rounded-full h-16 w-16 border-4 border-green-400 border-t-transparent glow-green"></div>
+          <p className="mt-4 text-xl text-green-400 font-semibold animate-pulse">
+            Connect Wallet to Begin Joining the Auction House
+          </p>
+          
+          <div className="mt-8 p-6 bg-black/30 backdrop-blur-sm rounded-lg border border-cyan-400/20">
+            <h3 className="text-lg font-semibold text-cyan-400 mb-3 flex items-center justify-center gap-2">
+              🔐 Security Notice
+            </h3>
+            <div className="text-sm text-gray-300 space-y-3 text-left">
+              <p>
+                <span className="text-green-400 font-medium">Step 1:</span> You'll be asked to sign a message to generate your persistent libp2p peer ID. This creates your unique identity in the P2P network.
+              </p>
+              <p>
+                <span className="text-orange-400 font-medium">Step 2:</span> A second signature will be requested to establish your OrbitDB identity for secure database operations.
+              </p>
+              <p className="text-xs text-gray-400 mt-4 italic">
+                💡 These signatures are free and don't involve any transactions - they only create your P2P identities.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -81,60 +97,8 @@ function App() {
 
           {/* Faucet Claims Section */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
-            <button
-              onClick={claimFaucetErc20}
-              disabled={!erc20Connected || erc20Pending || erc20Confirming}
-              className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                erc20Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-green-400'
-              }`}
-            >
-              <div className="text-2xl mb-1">💰</div>
-              <div className={`text-lg font-bold mb-1 ${
-                erc20Error ? 'text-red-400' : 'text-green-400'
-              }`}>
-                {(erc20Pending || erc20Confirming) ? 'Mining...' : erc20Error ? 'Failed' : 'Claim ERC20'}
-              </div>
-              <div className="text-slate-400 text-xs">
-                {erc20Error ? 
-                  (erc20Error.message?.includes('rejected') || erc20Error.message?.includes('denied') ? 
-                    'Transaction rejected' : 'Transaction failed'
-                  ) : 'Get Test Tokens'
-                }
-              </div>
-              {erc20Confirmed && (
-                <div className="absolute top-1 right-1 text-green-400 text-sm">✅</div>
-              )}
-              {erc20Error && (
-                <div className="absolute top-1 right-1 text-red-400 text-sm">❌</div>
-              )}
-            </button>
-            <button
-              onClick={claimFaucetErc1155}
-              disabled={!erc1155Connected || erc1155Pending || erc1155Confirming}
-              className={`group relative bg-slate-800/50 backdrop-blur-sm border rounded-lg p-3 text-center transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 ${
-                erc1155Error ? 'border-red-500 hover:border-red-400' : 'border-slate-700 hover:border-orange-400'
-              }`}
-            >
-              <div className="text-2xl mb-1">🎨</div>
-              <div className={`text-lg font-bold mb-1 ${
-                erc1155Error ? 'text-red-400' : 'text-orange-400'
-              }`}>
-                {(erc1155Pending || erc1155Confirming) ? 'Mining...' : erc1155Error ? 'Failed' : 'Claim NFT'}
-              </div>
-              <div className="text-slate-400 text-xs">
-                {erc1155Error ? 
-                  (erc1155Error.message?.includes('rejected') || erc1155Error.message?.includes('denied') ? 
-                    'Transaction rejected' : 'Transaction failed'
-                  ) : 'Get Thor\'s Hammer'
-                }
-              </div>
-              {erc1155Confirmed && (
-                <div className="absolute top-1 right-1 text-orange-400 text-sm">✅</div>
-              )}
-              {erc1155Error && (
-                <div className="absolute top-1 right-1 text-red-400 text-sm">❌</div>
-              )}
-            </button>
+            <ERC20Faucet />
+            <ERC1155Faucet />
           </div>
 
           {/* Auctions List */}
