@@ -2,6 +2,7 @@ import 'dotenv/config'
 
 import { LevelBlockstore } from 'blockstore-level'
 import { LevelDatastore } from 'datastore-level'
+import { autoNAT } from '@libp2p/autonat'
 
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
@@ -16,6 +17,7 @@ import { loadOrCreatePrivateKey } from './loadOrCreatePeerId.js'
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import * as OrbitDBIdentityProviderEthereum from '@orbitdb/identity-provider-ethereum'
 import { Wallet } from '@ethersproject/wallet'
+import { enable, disable } from '@libp2p/logger'
 
 // Topics definition
 const TOPICS = {
@@ -62,12 +64,15 @@ const main = async () => {
     ],
     services: {
       identify: identify(),
+      autoNat: autoNAT(),
       relay: circuitRelayServer(),
       pubsub: gossipsub({
         allowPublishToZeroTopicPeers: true,
       })
     }
   })
+
+  enable('*,*:debug')
 
   const helia = await createHelia({
     datastore,

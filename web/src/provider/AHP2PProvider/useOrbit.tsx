@@ -80,6 +80,7 @@ export const useOrbit = () => {
 
       const auctionsDB = await orbit.open(dbAddrs.auctionsDBAddress)
       console.log('auctionsDB', auctionsDB)
+      console.log('auctionsDB all', await auctionsDB.all())
 
       console.log('OrbitDB created', orbit)
 

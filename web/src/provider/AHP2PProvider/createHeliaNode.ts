@@ -14,6 +14,8 @@ import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
 import { stabilizeConnection } from "./utils/stabilizeConnection"
 import { waitForWebRTCAddress } from "./utils/waitForWebRTCAddress"
 import { createPersistentPeerId } from "./utils/createPersistentPeerId"
+import { webTransport } from '@libp2p/webtransport'
+import { enable, disable } from '@libp2p/logger'
 
 import type { WalletClient } from 'viem'
 
@@ -50,6 +52,7 @@ export const createHeliaNode = async (
         },
         transports: [
             webSockets({}),
+            webTransport(),
             webRTC(),
             circuitRelayTransport()
         ],
@@ -85,7 +88,7 @@ export const createHeliaNode = async (
         selfWebRTCMultiaddr = await waitForWebRTCAddress(helia)
         console.log('WebRTC Multiaddr', selfWebRTCMultiaddr.toString())
 
-
+        enable('*,*:debug')
     } catch (e) {
         console.error(e)
     }
