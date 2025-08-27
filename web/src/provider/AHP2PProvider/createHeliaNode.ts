@@ -7,6 +7,7 @@ import { webRTC } from "@libp2p/webrtc"
 import { webSockets } from "@libp2p/websockets"
 import { circuitRelayTransport } from "@libp2p/circuit-relay-v2"
 import { identify } from "@libp2p/identify"
+import { ping } from "@libp2p/ping"
 import { gossipsub } from '@chainsafe/libp2p-gossipsub'
 import { createHelia } from 'helia'
 import { multiaddr, type Multiaddr  } from '@multiformats/multiaddr'
@@ -65,6 +66,7 @@ export const createHeliaNode = async (
         },
         services: {
             identify: identify(),
+            ping: ping(),
             pubsub: gossipsub({
                 allowPublishToZeroTopicPeers: true,
             })
