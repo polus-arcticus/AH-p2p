@@ -3,6 +3,7 @@ import 'dotenv/config'
 import { LevelBlockstore } from 'blockstore-level'
 import { LevelDatastore } from 'datastore-level'
 import { autoNAT } from '@libp2p/autonat'
+import { ping } from '@libp2p/ping'
 
 import { noise } from '@chainsafe/libp2p-noise'
 import { yamux } from '@chainsafe/libp2p-yamux'
@@ -66,6 +67,7 @@ const main = async () => {
       identify: identify(),
       autoNat: autoNAT(),
       relay: circuitRelayServer(),
+      ping: ping(),
       pubsub: gossipsub({
         allowPublishToZeroTopicPeers: true,
       })
