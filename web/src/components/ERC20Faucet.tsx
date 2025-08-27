@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useErc20Faucet } from '../hooks/useFaucet'
+import { useFaucetBalances } from '../hooks/useFaucetBalances'
 
 const ERC20Faucet: React.FC = () => {
   const {
@@ -10,6 +11,15 @@ const ERC20Faucet: React.FC = () => {
     isConnected: erc20Connected,
     error: erc20Error
   } = useErc20Faucet()
+
+  const { tokenBalance, refetchTokenData, isConnected } = useFaucetBalances()
+
+  // Refetch balance after successful claim
+  useEffect(() => {
+    if (erc20Confirmed) {
+      refetchTokenData()
+    }
+  }, [erc20Confirmed, refetchTokenData])
 
   return (
     <button
@@ -27,7 +37,8 @@ const ERC20Faucet: React.FC = () => {
         {erc20Error ? 
           (erc20Error.message?.includes('rejected') || erc20Error.message?.includes('denied') ? 
             'Transaction rejected' : 'Transaction failed'
-          ) : 'Get Test Tokens'
+          ) : isConnected ? 
+            `Balance: ${tokenBalance?.formatted?.toFixed(2) ?? '0.00'} ${tokenBalance?.symbol ?? 'Tokens'}` : 'Get Test Tokens'
         }
       </div>
       {erc20Confirmed && (

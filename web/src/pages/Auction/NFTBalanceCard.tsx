@@ -32,6 +32,31 @@ export const NFTBalanceCard = ({ auction }: NFTBalanceCardProps) => {
 
     const approvalStatus = getApprovalStatus()
 
+    // Early return for missing auction
+    if (!auction) {
+        return (
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 h-full">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="text-3xl">🖼️</div>
+                    <div>
+                        <h3 className="text-xl font-bold text-cyan-400">NFT Arsenal</h3>
+                        <p className="text-sm text-slate-400">ERC1155 Balance & Approvals</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="bg-slate-700/50 rounded-lg p-4">
+                        <div className="text-center py-8">
+                            <div className="text-4xl mb-4">❌</div>
+                            <div className="text-xl font-bold text-red-400 mb-2">Auction Not Found</div>
+                            <div className="text-sm text-slate-400">No auction data available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 h-full">
             <div className="flex items-center gap-3 mb-6">
@@ -52,7 +77,7 @@ export const NFTBalanceCard = ({ auction }: NFTBalanceCardProps) => {
                                 {nftBalance ? nftBalance.balance.toString() : "0"}
                             </div>
                             <div className="text-xs text-slate-400 mt-1">
-                                Token ID: {auction?.nftTokenId || "2"}
+                                Token ID: {auction.nftTokenId || "2"}
                             </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -79,7 +104,7 @@ export const NFTBalanceCard = ({ auction }: NFTBalanceCardProps) => {
                     <div className="pt-2 border-t border-slate-600">
                         <div className="text-xs text-slate-400 mb-1">Contract Address</div>
                         <div className="font-mono text-xs text-cyan-400 break-all">
-                            {auction?.nftContract || "Not connected"}
+                            {auction.nftContract || "Not connected"}
                         </div>
                     </div>
                 </div>
@@ -90,7 +115,7 @@ export const NFTBalanceCard = ({ auction }: NFTBalanceCardProps) => {
                     {approvalStatus === "not_approved" && (
                         <button
                             onClick={handleApprove}
-                            disabled={!auction?.nftContract}
+                            disabled={!auction.nftContract}
                             className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                         >
                             🛡️ Approve NFT for Auction

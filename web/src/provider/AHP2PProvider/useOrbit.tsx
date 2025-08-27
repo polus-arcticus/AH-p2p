@@ -46,6 +46,7 @@ export const useOrbit = () => {
   const [peerId, setPeerId] = useState<string | null>(null)
   const [error, setError] = useState<Error>()
   const [loading, setLoading] = useState<boolean>(true)
+  const [connectionError, setConnectionError] = useState<boolean>(false)
 
   const { data: walletClient } = useWalletClient()
   const {address} = useAccount()
@@ -60,8 +61,9 @@ export const useOrbit = () => {
       setLoading(true)
       setError(undefined)
 
-      const {helia, selfWebRTCMultiaddr, dbAddrs} = await createHeliaNode(address, walletClient) 
+      const {helia, selfWebRTCMultiaddr, dbAddrs, connectionError} = await createHeliaNode(address, walletClient) 
       setSelfAddress(selfWebRTCMultiaddr)
+      setConnectionError(connectionError)
 
       const walletInterface = getWalletInterface({
         address: address as `0x${string}`,
@@ -104,10 +106,11 @@ export const useOrbit = () => {
 
   return {
     orbit,
-      selfAddress,
-      peerId,
+    selfAddress,
+    peerId,
     error,
     loading,
-    auctionsDB
+    auctionsDB,
+    connectionError
   }
 }

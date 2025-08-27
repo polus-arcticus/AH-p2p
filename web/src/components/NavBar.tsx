@@ -128,7 +128,7 @@ function ConnectWallet() {
 }
 
 export const NavBar = () => {
-    const {loading } = useContext(AHP2PContext)
+    const {loading, connectionError } = useContext(AHP2PContext)
 
     return (
         <nav className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur-md border-b border-slate-700 shadow-xl">
@@ -147,8 +147,22 @@ export const NavBar = () => {
                         </Link>
                         <div className="hidden md:block w-px h-4 bg-slate-600"></div>
                         <div className="hidden md:flex items-center gap-1 text-xs">
-                            <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
-                            <span className="text-slate-300">LIVE</span>
+                            {connectionError ? (
+                                <>
+                                    <div className="w-1 h-1 bg-red-400 rounded-full"></div>
+                                    <span className="text-red-400">OFFLINE</span>
+                                </>
+                            ) : loading ? (
+                                <>
+                                    <div className="w-1 h-1 bg-yellow-400 rounded-full animate-pulse"></div>
+                                    <span className="text-yellow-400">CONNECTING</span>
+                                </>
+                            ) : (
+                                <>
+                                    <div className="w-1 h-1 bg-green-400 rounded-full animate-pulse"></div>
+                                    <span className="text-green-400">LIVE</span>
+                                </>
+                            )}
                         </div>
                     </div>
 

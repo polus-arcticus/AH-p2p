@@ -28,7 +28,8 @@ export const createHeliaNode = async (
 ): Promise<{ 
     helia: any,
     selfWebRTCMultiaddr: Multiaddr | null,
-    dbAddrs: Record<string, string>
+    dbAddrs: Record<string, string>,
+    connectionError: boolean
 }> => {
     const datastoreName = 'ah-p2p-datastore'
     const blockstoreName = 'ah-p2p-blockstore'
@@ -76,6 +77,8 @@ export const createHeliaNode = async (
     let helia
     let selfWebRTCMultiaddr: Multiaddr | null = null
     let dbAddrs: Record<string, string> = {}
+    let connectionError = false
+    
     try {
         libp2p = await createLibp2p(options)
         helia = await createHelia({ libp2p, datastore, blockstore })
@@ -93,11 +96,13 @@ export const createHeliaNode = async (
         enable('*,*:debug')
     } catch (e) {
         console.error(e)
+        connectionError = true
     }
 
     return {
         helia,
         selfWebRTCMultiaddr,
-        dbAddrs
+        dbAddrs,
+        connectionError
     }
 }

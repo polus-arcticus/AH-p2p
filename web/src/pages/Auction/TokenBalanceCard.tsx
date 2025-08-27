@@ -32,6 +32,32 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
     }
 
     const approvalStatus = getApprovalStatus()
+
+    // Early return for missing auction
+    if (!auction) {
+        return (
+            <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 h-full">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="text-3xl">💰</div>
+                    <div>
+                        <h3 className="text-xl font-bold text-green-400">Token Vault</h3>
+                        <p className="text-sm text-slate-400">ERC20 Balance & Approvals</p>
+                    </div>
+                </div>
+
+                <div className="space-y-4">
+                    <div className="bg-slate-700/50 rounded-lg p-4">
+                        <div className="text-center py-8">
+                            <div className="text-4xl mb-4">❌</div>
+                            <div className="text-xl font-bold text-red-400 mb-2">Auction Not Found</div>
+                            <div className="text-sm text-slate-400">No auction data available</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )
+    }
+
     return (
         <div className="bg-slate-800/50 backdrop-blur-sm border border-slate-700 rounded-xl p-6 h-full">
             <div className="flex items-center gap-3 mb-6">
@@ -81,7 +107,7 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
                     <div className="pt-2 border-t border-slate-600">
                         <div className="text-xs text-slate-400 mb-1">Contract Address</div>
                         <div className="font-mono text-xs text-green-400 break-all">
-                            {auction?.tokenContract || "Not connected"}
+                            {auction.tokenContract || "Not connected"}
                         </div>
                     </div>
                 </div>
@@ -92,7 +118,7 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
                     {approvalStatus === "not_approved" && (
                         <button
                             onClick={handleApprove}
-                            disabled={!auction?.tokenContract}
+                            disabled={!auction.tokenContract}
                             className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 disabled:from-slate-600 disabled:to-slate-700 text-white font-semibold py-2 px-4 rounded-lg transition-all duration-200 disabled:cursor-not-allowed"
                         >
                             💎 Approve Tokens for Bidding

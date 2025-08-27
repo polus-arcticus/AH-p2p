@@ -1,5 +1,6 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { useErc1155Faucet } from '../hooks/useFaucet'
+import { useFaucetBalances } from '../hooks/useFaucetBalances'
 
 const ERC1155Faucet: React.FC = () => {
   const {
@@ -10,6 +11,16 @@ const ERC1155Faucet: React.FC = () => {
     isConnected: erc1155Connected,
     error: erc1155Error
   } = useErc1155Faucet()
+
+  const { nftBalance, refetchNftData, isConnected } = useFaucetBalances()
+
+  // Refetch balance after successful claim
+  useEffect(() => {
+    console.log('confirmed erc1155', erc1155Confirmed)
+    if (erc1155Confirmed) {
+      refetchNftData()
+    }
+  }, [erc1155Confirmed, refetchNftData])
 
   return (
     <button
@@ -27,7 +38,8 @@ const ERC1155Faucet: React.FC = () => {
         {erc1155Error ? 
           (erc1155Error.message?.includes('rejected') || erc1155Error.message?.includes('denied') ? 
             'Transaction rejected' : 'Transaction failed'
-          ) : 'Get Thor\'s Hammer'
+          ) : isConnected ? 
+            `Balance: ${nftBalance?.count ?? 0} NFTs` : 'Get Thor\'s Hammer'
         }
       </div>
       {erc1155Confirmed && (

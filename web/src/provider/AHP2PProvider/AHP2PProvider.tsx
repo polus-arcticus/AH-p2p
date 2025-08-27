@@ -12,7 +12,8 @@ export const AHP2PContext = createContext({
   peerId: null as string | null,
   loading: true,
   err: '',
-  auctionsDB: null as DocumentsDatabase | null
+  auctionsDB: null as DocumentsDatabase | null,
+  connectionError: false
 })
 
 export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
@@ -22,7 +23,8 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
     orbit,
     selfAddress,
     peerId,
-    auctionsDB
+    auctionsDB,
+    connectionError
   } = useOrbit()
   /*
   const { 
@@ -67,7 +69,8 @@ export const AHP2PProvider = ({ children }: { children: ReactNode }) => {
       peerId,
       loading,
       err: err || '',
-      auctionsDB
+      auctionsDB,
+      connectionError
     }}>
       {children}
     </AHP2PContext.Provider>

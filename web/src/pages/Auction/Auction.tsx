@@ -154,7 +154,7 @@ export const Auction = () => {
                     {/* Chat Interface - 2/3 width */}
                     <div className="lg:col-span-2">
                         <AuctionChat 
-                            auctionId={auction?.id} 
+                            auction={auction} 
                             room={room}
                             messages={messages}
                             postChatMessage={postChatMessage}

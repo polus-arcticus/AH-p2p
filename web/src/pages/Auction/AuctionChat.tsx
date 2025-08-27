@@ -10,7 +10,6 @@ interface ChatMessage {
 }
 
 interface AuctionChatProps {
-  auctionId?: string
   room?: {
     address?: string
     [key: string]: any
@@ -24,7 +23,6 @@ interface AuctionChatProps {
 }
 
 const AuctionChat: React.FC<AuctionChatProps> = ({ 
-  auctionId, 
   room, 
   auction,
   messages,
@@ -33,7 +31,7 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
   
   const [newMessage, setNewMessage] = useState('')
   const [isConnected, setIsConnected] = useState(false)
-  const [onlineUsers, setOnlineUsers] = useState<string[]>(['GameMaster']) // Always show GameMaster
+  const [onlineUsers, setOnlineUsers] = useState<string[]>([]) // Always show GameMaster
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const chatInputRef = useRef<HTMLInputElement>(null)
@@ -45,8 +43,11 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
 
   // Load active warriors from auction peers
   useEffect(() => {
+    console.log('auction:chat:auction', auction)
+    if (!auction) return
     if (auction?.peers) {
       const peerIds = Object.keys(auction.peers)
+      console.log('peerIds', peerIds)
       const formattedPeers = peerIds.map(peerId => {
         // Show first 4 and last 4 characters with ... in between
         if (peerId.length > 8) {
@@ -54,13 +55,13 @@ const AuctionChat: React.FC<AuctionChatProps> = ({
         }
         return peerId
       })
-      setOnlineUsers(['GameMaster', ...formattedPeers])
+      setOnlineUsers([...formattedPeers])
       console.log('🎯 Active warriors loaded from peers:', formattedPeers)
     } else {
       // Fallback to GameMaster only if no peers
       setOnlineUsers(['GameMaster'])
     }
-  }, [auction?.peers])
+  }, [auction])
 
   // Auto-scroll to bottom when new messages arrive (only within chat container)
   useEffect(() => {
