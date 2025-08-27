@@ -51,7 +51,10 @@ const main = async () => {
     privateKey,
     datastore,
     addresses: {
-      listen: ['/ip4/0.0.0.0/tcp/9001/ws'],
+      listen: [
+      '/ip4/0.0.0.0/tcp/9001/ws'
+      '/ip4/0.0.0.0/tcp/9002'
+    ],
       announce: ['/dns4/ah-p2p.market/tcp/443/wss']
     },
     transports: [
