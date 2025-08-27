@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router'
 import { useAuctionsDB } from '../hooks/useAuctionsDB'
 import { formatEther, parseEther } from 'viem'
@@ -16,7 +16,7 @@ interface Auction {
   [key: string]: any
 }
 
-const ActiveAuctionsList: React.FC = () => {
+const ActiveAuctionsList = () => {
   const { getAuctions, watchAuctions } = useAuctionsDB()
   const [initialized, setInitialized] = useState(false)
   const [auctions, setAuctions] = useState<Record<string, Auction>>({})

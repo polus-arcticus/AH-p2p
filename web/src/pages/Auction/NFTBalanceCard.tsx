@@ -1,12 +1,22 @@
+import { useEffect } from "react"
 import { useTokenData } from "@/hooks/useTokenData"
 import { useApproveERC1155 } from "@/hooks/useApproveERC1155"
 
 interface NFTBalanceCardProps {
     auction: any
+    auctionCompleted?: boolean
 }
 
-export const NFTBalanceCard = ({ auction }: NFTBalanceCardProps) => {
+export const NFTBalanceCard = ({ auction, auctionCompleted }: NFTBalanceCardProps) => {
     const { nftBalance, refetchBalances } = useTokenData(auction)
+
+    // Refetch balances when auction is completed
+    useEffect(() => {
+        if (auctionCompleted) {
+            console.log('🔄 Auction completed, refreshing NFT balances...')
+            refetchBalances()
+        }
+    }, [auctionCompleted, refetchBalances])
     const { 
         approveERC1155, 
         isApproved, 

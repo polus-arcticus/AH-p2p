@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useErc1155Faucet } from '../hooks/useFaucet'
 import { useFaucetBalances } from '../hooks/useFaucetBalances'
 
-const ERC1155Faucet: React.FC = () => {
+const ERC1155Faucet = () => {
   const {
     claimFaucetErc1155,
     isPending: erc1155Pending,

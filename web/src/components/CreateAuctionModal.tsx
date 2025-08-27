@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useStaticData } from '../hooks/useStaticData'
 
@@ -28,11 +28,11 @@ interface AuctionFormData {
     durationHours: number
 }
 
-const CreateAuctionModal: React.FC<CreateAuctionModalProps> = ({
+const CreateAuctionModal = ({
     showCreateForm,
     setShowCreateForm,
     createAuction
-}) => {
+}: CreateAuctionModalProps) => {
     const [signingStep, setSigningStep] = useState<'idle' | 'signing' | 'creating' | 'success' | 'error'>('idle')
     const [errorMessage, setErrorMessage] = useState<string>('')
     const { staticData } = useStaticData()

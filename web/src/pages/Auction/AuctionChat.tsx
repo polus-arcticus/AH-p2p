@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface ChatMessage {
   id: string
@@ -22,12 +22,12 @@ interface AuctionChatProps {
   postChatMessage: (message: string) => Promise<void>
 }
 
-const AuctionChat: React.FC<AuctionChatProps> = ({ 
+const AuctionChat = ({ 
   room, 
   auction,
   messages,
   postChatMessage
-}) => {
+}: AuctionChatProps) => {
   
   const [newMessage, setNewMessage] = useState('')
   const [isConnected, setIsConnected] = useState(false)

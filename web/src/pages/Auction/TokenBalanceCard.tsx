@@ -1,13 +1,23 @@
+import { useEffect } from "react"
 import { useTokenData } from "@/hooks/useTokenData"
 import { useApproveERC20 } from "@/hooks/useApproveERC20"
 import { formatEther } from "viem"
 
 interface TokenBalanceCardProps {
     auction: any
+    auctionCompleted?: boolean
 }
 
-export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
+export const TokenBalanceCard = ({ auction, auctionCompleted }: TokenBalanceCardProps) => {
     const { tokenBalance, refetchBalances } = useTokenData(auction)
+
+    // Refetch balances when auction is completed
+    useEffect(() => {
+        if (auctionCompleted) {
+            console.log('🔄 Auction completed, refreshing token balances...')
+            refetchBalances()
+        }
+    }, [auctionCompleted, refetchBalances])
     const { 
         approveERC20, 
         allowance, 
@@ -27,7 +37,13 @@ export const TokenBalanceCard = ({ auction }: TokenBalanceCardProps) => {
 
     const getApprovalStatus = () => {
         if (isPending || isConfirming) return "pending"
-        if (allowance && allowance > 0n) return "approved"
+        // Check if allowance exists and is greater than 0
+        // Note: allowance is bigint, so we need to compare properly
+        if (allowance !== undefined && allowance !== null && allowance > 0n) {
+            console.log('🔍 Current allowance:', allowance.toString())
+            return "approved"
+        }
+        console.log('🔍 Allowance check failed:', { allowance, type: typeof allowance })
         return "not_approved"
     }
 

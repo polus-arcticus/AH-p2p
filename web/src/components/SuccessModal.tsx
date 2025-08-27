@@ -1,24 +1,22 @@
-import React from 'react'
-
 interface SuccessModalProps {
   isOpen: boolean
   onClose: () => void
-  title?: string
-  message?: string
+  title: string
+  message: string
   winnerAddress?: string
   finalBid?: string
   nftName?: string
 }
 
-export const SuccessModal: React.FC<SuccessModalProps> = ({
+export const SuccessModal = ({
   isOpen,
   onClose,
-  title = "🏆 Battle Victory!",
-  message = "The auction has been successfully completed!",
+  title,
+  message,
   winnerAddress,
   finalBid,
   nftName
-}) => {
+}: SuccessModalProps) => {
   if (!isOpen) return null
 
   return (

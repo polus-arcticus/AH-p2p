@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { formatEther, parseEther } from 'viem/utils'
 import { useAccount, useWaitForTransactionReceipt } from 'wagmi'
 import { MockNftSvg } from '@/components/MockNftSvg'
@@ -25,7 +25,7 @@ interface AuctionDetailsCardProps {
   onAuctionSuccess?: (result: { winnerAddress?: string; finalBid?: string; nftName?: string }) => void
 }
 
-const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({
+const AuctionDetailsCard = ({
   auction,
   postBid,
   highBid,
@@ -33,17 +33,15 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({
   completeAuction,
   refetchBalances,
   onAuctionSuccess
-}) => {
+}: AuctionDetailsCardProps) => {
   const [timeLeft, setTimeLeft] = useState<string>('')
   const [isActive, setIsActive] = useState<boolean>(false)
   const [bidAmount, setBidAmount] = useState<string>('')
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false)
-  const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
-
   const {address} = useAccount()
   const [transactionHash, setTransactionHash] = useState<`0x${string}` | undefined>()
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
+  const { isSuccess: isConfirmed } = useWaitForTransactionReceipt({
     hash: transactionHash,
     query: {
       enabled: !!transactionHash,
@@ -62,7 +60,6 @@ const AuctionDetailsCard: React.FC<AuctionDetailsCardProps> = ({
         finalBid: auction?.highestBid ? formatEther(BigInt(auction.highestBid)) : undefined,
         nftName: auction?.title || 'NFT'
       }
-      setAuctionResult(result)
       
       // Trigger success modal
       if (onAuctionSuccess) {

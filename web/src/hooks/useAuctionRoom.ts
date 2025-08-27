@@ -146,7 +146,7 @@ export const useAuctionRoom = () => {
         console.log('✅ Auction completion message posted to room')
     }, [room, address])
 
-    const consumeAuction = useCallback(async () => {
+    const consumeAuction = useCallback(async (): Promise<{ auctionMessage: any; finalSignature: string; bidsCount: number; hash?: `0x${string}` } | undefined> => {
         if (!room || !address || !auction) return
 
         try {

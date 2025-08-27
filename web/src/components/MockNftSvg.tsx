@@ -1,14 +1,12 @@
-import React from 'react'
-
 interface MockNftSvgProps {
   className?: string
   tokenId?: string
 }
 
-export const MockNftSvg: React.FC<MockNftSvgProps> = ({ 
+export const MockNftSvg = ({ 
   className = "w-full h-full", 
   tokenId = "0" 
-}) => {
+}: MockNftSvgProps) => {
   // Generate colors based on tokenId for variety
   const colors = [
     { primary: '#00ff88', secondary: '#4ecdc4', accent: '#ff6b35' },

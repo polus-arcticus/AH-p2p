@@ -12,6 +12,7 @@ export const Auction = () => {
     const [highBid, setHighBid] = useState<string>('0')
     const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
     const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
+    const [auctionCompleted, setAuctionCompleted] = useState<boolean>(false)
     const { 
         auction, 
         room, 
@@ -94,6 +95,22 @@ export const Auction = () => {
                             setHighBid(msgData.bid)
                         }
                     }
+                    
+                    // Check for auction completion message
+                    if (msgData.type === 'message' && msgData.isSystemMessage && 
+                        msgData.message && msgData.message.includes('🏆 Auction completed!')) {
+                        console.log('🏆 Detected auction completion message, triggering completion for all participants')
+                        setAuctionCompleted(true)
+                        // Show success modal for all participants
+                        const completionResult = {
+                            winnerAddress: auction?.highestBidder,
+                            finalBid: highBid,
+                            nftName: auction?.title || 'NFT'
+                        }
+                        setAuctionResult(completionResult)
+                        setShowSuccessModal(true)
+                    }
+                    
                     // Only process message and bid types
                     if (msgData.type === 'message' || msgData.type === 'bid') {
                         const newMessage = {
@@ -147,6 +164,7 @@ export const Auction = () => {
                             onAuctionSuccess={(result) => {
                                 setAuctionResult(result)
                                 setShowSuccessModal(true)
+                                setAuctionCompleted(true)
                             }}
                         />
                     </div>
@@ -165,10 +183,10 @@ export const Auction = () => {
                 {/* Second Row: 50/50 NFT and Token Balance */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     {/* NFT Balance Card - 50% width */}
-                    <NFTBalanceCard auction={auction} />
+                    <NFTBalanceCard auction={auction} auctionCompleted={auctionCompleted} />
                     
                     {/* Token Balance Card - 50% width */}
-                    <TokenBalanceCard auction={auction} />
+                    <TokenBalanceCard auction={auction} auctionCompleted={auctionCompleted} />
                 </div>
             </div>
 
