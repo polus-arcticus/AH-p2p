@@ -6,7 +6,6 @@ import {
     useRef
 } from 'react'
 import { AHP2PContext } from '../provider/AHP2PProvider/AHP2PProvider'
-import { multiaddr } from '@multiformats/multiaddr'
 import { IPFSAccessController } from '@orbitdb/core'
 import { useAuctionSignature, type AuctionAuthSigMessage } from './useAuctionSignature'
 import { parseEther } from 'viem'
@@ -119,99 +118,6 @@ export const useAuctionsDB = () => {
         return auction[0]
     }, [auctionsDB])    
 
-    const joinAuction = useCallback(async (auctionId: string) => {
-        if (!auctionsDB || !orbit || !selfAddress) return
-        try {
-            const auction = (await auctionsDB.query((doc: any) => doc._id === auctionId))[0]
-            console.log('useAuctionsDB::joinAuction::auction', auction)
-            if (!auction) throw new Error('Auction not found')
-            let room;
-            const peers = auction.peers
-            // Use Promise.race to connect to first available peer, then continue others async
-            const peerEntries = Object.entries(peers)
-            delete peers[orbit.ipfs.libp2p.peerId.toString()]
-
-            if (peerEntries.length > 0) {
-                console.log('🎯 Racing to connect to', peerEntries.length, 'peers...')
-                
-                // Create bidirectional connection promises for all peers
-                const connectionPromises = peerEntries.map(([peerId, webrtcMultiaddr]) => {
-                    console.log('🔄 Establishing bidirectional connection with peer:', peerId)
-                    console.log('webrtcMultiaddr', webrtcMultiaddr)
-                    
-                    return orbit.ipfs.libp2p.dial(multiaddr(webrtcMultiaddr as string), { 
-                        signal: AbortSignal.timeout(30000) // 30 second timeout
-                    })
-                        .then(async () => {
-                            console.log('⚡ Outbound connection established to peer:', peerId)
-                            return { peerId, success: true }
-                        })
-                        .catch((error) => {
-                            console.warn('❌ Failed to connect to peer:', peerId, error)
-                            return { peerId, success: false, error }
-                        })
-                })
-
-                // Resolve immediately on first successful connection
-                await new Promise<void>((resolve) => {
-                    let resolved = false
-                    let successCount = 0
-                    let failureCount = 0
-                    
-                    // Handle each connection individually
-                    connectionPromises.forEach(promise => {
-                        promise.then(result => {
-                            if (result.success) {
-                                successCount++
-                                if (!resolved) {
-                                    resolved = true
-                                    console.log('🚀 First peer connected! Opening room immediately...')
-                                    console.log('roomAddress', auction.roomAddress)
-                                    orbit.open(auction.roomAddress).then(openedRoom => {
-                                        console.log('🎮 Room opened successfully:', openedRoom)
-                                        room = openedRoom
-                                        resolve()
-                                    }).catch(error => {
-                                        console.error('❌ Failed to open room:', error)
-                                        resolve() // Still resolve to prevent hanging
-                                    })
-                                }
-                            } else {
-                                failureCount++
-                                // Check if all connections have failed
-                                if (failureCount === peerEntries.length && !resolved) {
-                                    resolved = true
-                                    console.warn('⚠️ All peer connections failed, opening room anyway')
-                                    orbit.open(auction.roomAddress).then(openedRoom => {
-                                        console.log('🎮 Room opened (fallback):', openedRoom)
-                                        room = openedRoom
-
-                                        auction.peers[orbit.ipfs.libp2p.peerId.toString()] = selfAddress.toString()
-                                        auctionsDB.put(auction)
-                                        resolve()
-                                    }).catch(error => {
-                                        console.error('❌ Failed to open room (fallback):', error)
-                                        resolve() // Still resolve to prevent hanging
-                                    })
-                                }
-                            }
-                        })
-                    })
-                    
-                    // Continue all remaining connections in background
-                    Promise.allSettled(connectionPromises).then((results) => {
-                        const successful = results.filter(r => r.status === 'fulfilled' && r.value.success).length
-                        console.log(`🌐 Final mesh status: ${successful}/${peerEntries.length} peers connected`)
-                    })
-                })
-            }
-            console.log('orbit identity', orbit.identity)
-            console.log('libp2p peerid', orbit.ipfs.libp2p.peerId.toString())
-            return {auction, room}
-        } catch (e) {
-            console.error('Error joining auction:', e)
-        }
-    }, [auctionsDB, orbit, selfAddress])
 
 
     const watchAuctions = useCallback((onNewAuction?: (auction: any) => void) => {
@@ -252,8 +158,7 @@ export const useAuctionsDB = () => {
     return {
         createAuction,
         getAuctions,
-        getAuction, 
-        joinAuction,
+        getAuction,
         updateAuction,
         watchAuctions
     }

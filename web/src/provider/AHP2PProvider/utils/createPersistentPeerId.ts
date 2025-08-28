@@ -1,8 +1,7 @@
 import { keys } from '@libp2p/crypto'
 import { keccak256, hexToBytes } from 'viem'
 import type { WalletClient } from 'viem'
-
-import { englishAuctionAddr } from '@/assets/Static.json'
+import { zeroAddress } from 'viem'
 
 const EIP712_TYPES = {
   PeerIdSeed: [
@@ -29,7 +28,7 @@ export const createPersistentPeerId = async (
     name: 'AH-P2P Network',
     version: '1',
     chainId,
-    verifyingContract: englishAuctionAddr as `0x${string}`
+    verifyingContract: zeroAddress
   }
   
   // Check if we already have a cached peer ID for this address

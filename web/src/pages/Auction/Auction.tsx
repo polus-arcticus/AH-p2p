@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { useAuctionRoom } from "@/hooks/useAuctionRoom"
+import { useAuctionsDB } from "@/hooks/useAuctionsDB"
+import { useParams } from "react-router"
 import AuctionDetailsCard from "./AuctionDetailsCard"
 import AuctionChat from "./AuctionChat"
 import { NFTBalanceCard } from "./NFTBalanceCard"
@@ -7,15 +9,21 @@ import { TokenBalanceCard } from "./TokenBalanceCard"
 import { SuccessModal } from "../../components/SuccessModal"
 
 export const Auction = () => {
+    const { auctionId } = useParams()
     const watcherCleanupRef = useRef<(() => void) | null>(null)
     const [messages, setMessages] = useState<any>([])
     const [highBid, setHighBid] = useState<string>('0')
     const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false)
     const [auctionResult, setAuctionResult] = useState<{ winnerAddress?: string; finalBid?: string; nftName?: string } | null>(null)
     const [auctionCompleted, setAuctionCompleted] = useState<boolean>(false)
+    const [auction, setAuction] = useState<any>(null)
+    const [auctionError, setAuctionError] = useState<string | null>(null)
+    
+    // Separate hooks for auction data and room functionality
+    const { getAuction } = useAuctionsDB()
     const { 
-        auction, 
         room, 
+        roomError,
         postChatMessage, 
         postBid,
         fetchMessages, 
@@ -24,9 +32,29 @@ export const Auction = () => {
         completeAuction
     } = useAuctionRoom()
     
+    // Load auction data independently of room
     useEffect(() => {
-        console.log('Auction.tsx::auction', auction)
-    }, [auction])
+        if (!auctionId) return
+        
+        const loadAuction = async () => {
+            try {
+                setAuctionError(null)
+                const auctionData = await getAuction(auctionId)
+                if (auctionData) {
+                    setAuction(auctionData)
+                    console.log('Auction.tsx::auction loaded', auctionData)
+                } else {
+                    setAuctionError('Auction not found')
+                }
+            } catch (error) {
+                console.error('Failed to load auction:', error)
+                setAuctionError('Failed to load auction data')
+            }
+        }
+        
+        loadAuction()
+    }, [auctionId, getAuction])
+    
     
     // Load initial messages when room is available
     useEffect(() => {
@@ -149,6 +177,26 @@ export const Auction = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-4">
+            {/* Error States */}
+            {auctionError && (
+                <div className="max-w-7xl mx-auto mb-6">
+                    <div className="bg-red-900/50 border border-red-500 rounded-lg p-4 text-red-200">
+                        <h3 className="font-bold mb-2">❌ Auction Error</h3>
+                        <p>{auctionError}</p>
+                    </div>
+                </div>
+            )}
+            
+            {roomError && (
+                <div className="max-w-7xl mx-auto mb-6">
+                    <div className="bg-yellow-900/50 border border-yellow-500 rounded-lg p-4 text-yellow-200">
+                        <h3 className="font-bold mb-2">⚠️ Room Connection Issue</h3>
+                        <p>{roomError}</p>
+                        <p className="text-sm mt-2">Auction data is still available, but real-time features may not work.</p>
+                    </div>
+                </div>
+            )}
+            
             {/* Main Dashboard Grid */}
             <div className="max-w-7xl mx-auto space-y-6">
                 {/* First Row: 1/3 Auction Details + 2/3 Chat */}

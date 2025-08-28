@@ -1,33 +1,34 @@
 import { useAccount, useReadContracts } from 'wagmi'
 import { erc20Abi, erc1155Abi } from 'viem'
-import staticContracts from '../assets/Static.json'
+import { useStaticData } from './useStaticData'
 
 export const useFaucetBalances = () => {
     const { address, isConnected } = useAccount()
-    
+    const { staticData } = useStaticData()
+
     // Get ERC20 token balance
     const { data: tokenData, refetch: refetchTokenData } = useReadContracts({
         allowFailure: false,
         contracts: [
             {
-                address: staticContracts.exampleTokenAddr as `0x${string}`,
+                address: staticData?.exampleTokenAddr as `0x${string}`,
                 abi: erc20Abi,
                 functionName: 'balanceOf',
                 args: [address!],
             },
             {
-                address: staticContracts.exampleTokenAddr as `0x${string}`,
+                address: staticData?.exampleTokenAddr as `0x${string}`,
                 abi: erc20Abi,
                 functionName: 'decimals',
             },
             {
-                address: staticContracts.exampleTokenAddr as `0x${string}`,
+                address: staticData?.exampleTokenAddr as `0x${string}`,
                 abi: erc20Abi,
                 functionName: 'symbol',
             },
         ],
         query: {
-            enabled: isConnected && !!address
+            enabled: isConnected && !!address && !!staticData
         }
     })
 
@@ -36,14 +37,14 @@ export const useFaucetBalances = () => {
         allowFailure: false,
         contracts: [
             {
-                address: staticContracts.exampleNftAddr as `0x${string}`,
+                address: staticData?.exampleNftAddr as `0x${string}`,
                 abi: erc1155Abi,
                 functionName: 'balanceOf',
                 args: [address!, 2n], // Token ID 0 for Thor's Hammer
             },
         ],
         query: {
-            enabled: isConnected && !!address
+            enabled: isConnected && !!address && !!staticData
         }
     })
     
