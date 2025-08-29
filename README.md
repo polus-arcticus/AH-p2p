@@ -25,8 +25,6 @@ Current offchain orderbooks are facing **natural limits to scalability** and res
 - **False market depth** - Orders appear valid but fail when executed
 
 > *"As offchain orderbooks crumble under their own weight, the market desperately needs alternatives"*
-> 
-
 ---
 
 ## 💡 **Our Innovation: Two Revolutionary Components**
@@ -83,12 +81,18 @@ node.services.pubsub.subscribe('ah-p2p.market/peer-announce')
 ## 🏗️ **Technical Architecture**
 
 ```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Bidder A      │    │   Bidder B      │    │   Bidder C      │
-│  (Signs Bid)    │    │  (Signs Bid)    │    │  (Signs Bid)    │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
+                    ┌─────────────────────────────┐
+                    │       Auctioneer            │
+                    │ (Signs Auction Authorization│
+                    │  Defines NFT, Token, Rules) │
+                    └─────────────┬───────────────┘
+                                 │
+┌─────────────────┐    ┌─────────▼─────────┐    ┌─────────────────┐
+│   Bidder A      │    │   Bidder B        │    │   Bidder C      │
+│  (Signs Bid)    │    │  (Signs Bid)      │    │  (Signs Bid)    │
+└─────────┬───────┘    └─────────┬─────────┘    └─────────┬───────┘
+          │                      │                        │
+          └──────────────────────┼────────────────────────┘
                                  │
                     ┌─────────────▼───────────────┐
                     │     P2P Relay Network       │
