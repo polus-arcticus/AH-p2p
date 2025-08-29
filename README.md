@@ -3,7 +3,7 @@
 
 *Solving the orderbook revalidation problem with multiplayer metatransactions and real-time P2P networking.*
 ---
-https://www.youtube.com/watch?v=rPoKLba0bdU
+[▶️ Watch Video](https://www.youtube.com/watch?v=rPoKLba0bdU)
 
 ## 🚀 **The Problem: Fragile Offchain Orderbooks**
 
