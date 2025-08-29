@@ -2,8 +2,8 @@
 > **Revolutionizing NFT Trading Through Decentralized P2P Architecture**
 
 *Solving the orderbook revalidation problem with multiplayer metatransactions and real-time P2P networking.*
-https://www.youtube.com/watch?v=rPoKLba0bdU
 ---
+https://www.youtube.com/watch?v=rPoKLba0bdU
 
 ## 🚀 **The Problem: Fragile Offchain Orderbooks**
 
